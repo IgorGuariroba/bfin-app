@@ -8,10 +8,10 @@ Cada task = entregável testável. Marque `[x]` quando done.
 
 **Entregável**: Projeto Next.js rodando em `localhost:3000` com página em branco.
 
-- [ ] `npx create-next-app@latest` — App Router, TypeScript, Tailwind, ESLint
-- [ ] `.env` com variáveis placeholder (`DATABASE_URL`, `AUTH_SECRET`, `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`)
-- [ ] `.gitignore` atualizado (node_modules, .env, .next)
-- [ ] Commit inicial
+- [x] `npx create-next-app@latest` — App Router, TypeScript, Tailwind, ESLint
+- [x] `.env` com variáveis placeholder (`DATABASE_URL`, `AUTH_SECRET`, `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`)
+- [x] `.gitignore` atualizado (node_modules, .env, .next)
+- [x] Commit inicial
 
 **Verificação**: `npm run dev` → `localhost:3000` carrega sem erros.
 
