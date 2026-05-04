@@ -36,11 +36,11 @@ Cada task = entregável testável. Marque `[x]` quando done.
 
 **Entregável**: shadcn instalado com tema customizado do bfin (DESIGN.md).
 
-- [ ] `npx shadcn@latest init` — estilo "new-york", cor base customizada
-- [ ] `globals.css` com CSS vars mapeadas do DESIGN.md (Rausch, ink, muted, surfaces, hairlines)
-- [ ] `tailwind.config.ts` com tokens de cor, radius, spacing do bfin
-- [ ] Instalar componentes shadcn: `button input dialog sheet dropdown-menu badge progress separator toast select scroll-area popover card label`
-- [ ] Font Inter configurada no layout
+- [x] `npx shadcn@latest init` — preset nova (Tailwind v4), cor base customizada
+- [x] `globals.css` com CSS vars mapeadas do DESIGN.md (Rausch, ink, muted, surfaces, hairlines)
+- [x] Tailwind v4 — tokens via `@theme inline` em globals.css (sem tailwind.config.ts)
+- [x] Instalar componentes shadcn: `button input dialog sheet dropdown-menu badge progress separator sonner select scroll-area popover card label`
+- [x] Font Inter configurada no layout
 
 **Verificação**: Página de teste com Button primary → cor `#ff385c`, radius 8px, fonte Inter.
 
