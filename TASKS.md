@@ -46,16 +46,16 @@ Cada task = entregável testável. Marque `[x]` quando done.
 
 ---
 
-## T4 — Auth.js + Login screen
+## T4 — Auth.js + Login screen [DONE]
 
 **Entregável**: Login funcional com Google OAuth + email/senha.
 
-- [ ] `src/lib/auth.ts` — Auth.js config com Google + Credentials providers
-- [ ] `src/app/api/auth/[...nextauth]/route.ts`
-- [ ] `src/app/(auth)/layout.tsx` — layout sem bottom nav
-- [ ] `src/app/(auth)/login/page.tsx` — tela login (logo bfin, Google button, email form, ilustração)
-- [ ] `src/middleware.ts` — proteger rotas `(app)`, redirecionar não logados
-- [ ] `src/app/page.tsx` — redirect para `/login` ou `/saldos`
+- [x] `src/lib/auth.ts` — Auth.js config com Google + Credentials providers
+- [x] `src/app/api/auth/[...nextauth]/route.ts`
+- [x] `src/app/(auth)/layout.tsx` — layout sem bottom nav
+- [x] `src/app/(auth)/login/page.tsx` — tela login (logo bfin, Google button, email form, ilustração)
+- [x] `src/middleware.ts` — proteger rotas `(app)`, redirecionar não logados
+- [x] `src/app/page.tsx` — redirect para `/login` ou `/saldos`
 
 **Verificação**: Login com Google redireciona para `/saldos`. Não logado → `/login`.
 
