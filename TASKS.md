@@ -21,12 +21,12 @@ Cada task = entregável testável. Marque `[x]` quando done.
 
 **Entregável**: Banco PostgreSQL rodando, schema aplicado, Prisma Client gerado.
 
-- [ ] `docker-compose.yml` com PostgreSQL 16 (porta 5432, volume persistente)
-- [ ] `npm install prisma @prisma/client` + `npx prisma init`
-- [ ] `prisma/schema.prisma` com models: `User`, `Account`, `Session`, `VerificationToken`, `Transaction`, `Tag`, `Previsao`
-- [ ] `src/lib/prisma.ts` — singleton PrismaClient
-- [ ] `npx prisma migrate dev --name init`
-- [ ] Seed script com dados de exemplo (`prisma/seed.ts`)
+- [x] `docker-compose.yml` com PostgreSQL 16 (porta 5432, volume persistente)
+- [x] `npm install prisma @prisma/client` + `npx prisma init`
+- [x] `prisma/schema.prisma` com models: `User`, `Account`, `Session`, `VerificationToken`, `Transaction`, `Tag`, `Previsao`
+- [x] `src/lib/prisma.ts` — singleton PrismaClient
+- [x] `npx prisma migrate dev --name init`
+- [x] Seed script com dados de exemplo (`prisma/seed.ts`)
 
 **Verificação**: `docker compose up -d` → `npx prisma studio` mostra tabelas vazias.
 
