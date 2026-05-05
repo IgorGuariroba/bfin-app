@@ -15,7 +15,7 @@ export function BackHeader({ title, action, onBack, className }: BackHeaderProps
   const router = useRouter();
 
   return (
-    <header className={cn("flex items-center justify-between px-2 py-3 bg-canvas border-b border-hairline", className)}>
+    <header className={cn("sticky top-0 z-30 flex items-center justify-between px-2 py-3 bg-canvas border-b border-hairline", className)}>
       <button
         onClick={onBack ?? (() => router.back())}
         className="flex items-center justify-center w-10 h-10 rounded-full text-ink hover:bg-surface-soft transition-colors"

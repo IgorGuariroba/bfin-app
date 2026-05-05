@@ -32,7 +32,7 @@ export default function SaldosPage() {
       <MonthHeader month={label} onPrev={prev} onNext={next} />
 
       {/* Column header: Dia | Filter | Saldos */}
-      <div className="flex items-center px-4 py-2 border-b border-[var(--color-hairline-soft)] bg-canvas">
+      <div className="sticky top-[49px] z-20 flex items-center px-4 py-2 border-b border-[var(--color-hairline-soft)] bg-canvas">
         <span className="w-8 text-xs font-medium text-[var(--color-muted)] shrink-0">
           Dia
         </span>
