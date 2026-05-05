@@ -1,6 +1,7 @@
 "use client";
 
 import { ChevronLeft, ChevronRight, CalendarDays, LayoutGrid } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 
 interface MonthHeaderProps {
@@ -12,10 +13,20 @@ interface MonthHeaderProps {
 }
 
 export function MonthHeader({ month, onPrev, onNext, onGridToggle, className }: MonthHeaderProps) {
+  const router = useRouter();
+
+  const handleGrid = () => {
+    if (onGridToggle) {
+      onGridToggle();
+    } else {
+      router.push("/horizonte");
+    }
+  };
+
   return (
     <header className={cn("flex items-center justify-between px-4 py-3 bg-canvas border-b border-hairline", className)}>
       <button
-        onClick={onGridToggle}
+        onClick={handleGrid}
         className="flex items-center justify-center w-9 h-9 rounded-full text-muted-foreground hover:text-ink transition-colors"
         aria-label="Alternar visualização"
       >
@@ -41,9 +52,9 @@ export function MonthHeader({ month, onPrev, onNext, onGridToggle, className }: 
       </div>
 
       <button
-        onClick={onGridToggle}
+        onClick={handleGrid}
         className="flex items-center justify-center w-9 h-9 rounded-full text-muted-foreground hover:text-ink transition-colors"
-        aria-label="Grade"
+        aria-label="Horizonte de saldos"
       >
         <LayoutGrid size={20} />
       </button>
