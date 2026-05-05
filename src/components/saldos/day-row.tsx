@@ -59,7 +59,7 @@ export function DayRow({ entry, filter, isToday, onClick }: DayRowProps) {
       className={cn(
         "flex w-full border-b border-[var(--color-hairline-soft)] text-left transition-colors",
         isToday
-          ? "bg-[var(--color-surface-soft)]"
+          ? "bg-canvas hover:bg-canvas"
           : "bg-canvas hover:bg-[var(--color-surface-soft)]/60"
       )}
     >
@@ -67,13 +67,17 @@ export function DayRow({ entry, filter, isToday, onClick }: DayRowProps) {
       <div
         className={cn(
           "w-12 shrink-0 flex flex-col items-center justify-start pt-2 gap-0",
-          isToday
-            ? "font-bold text-primary"
-            : "font-medium text-[var(--color-ink)]"
+          isToday ? "bg-ink" : ""
         )}
       >
-        <span className="text-sm tabular-nums leading-tight">{day}</span>
-        <span className="text-[9px] uppercase leading-tight text-[var(--color-muted-soft)]">
+        <span className={cn(
+          "text-sm tabular-nums leading-tight",
+          isToday ? "font-bold text-canvas" : "font-medium text-ink"
+        )}>{day}</span>
+        <span className={cn(
+          "text-[9px] uppercase leading-tight",
+          isToday ? "text-canvas/60" : "text-[var(--color-muted-soft)]"
+        )}>
           {getWeekdayAbbr(entry.date)}
         </span>
       </div>

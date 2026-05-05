@@ -69,7 +69,7 @@ export function DayDetail({ date, onClose, onNavigate }: DayDetailProps) {
     <Sheet open={!!date} onOpenChange={(o) => { if (!o) { onClose(); setFilterOpen(false); } }}>
       <SheetContent
         side="bottom"
-        className="h-[85dvh] flex flex-col rounded-t-2xl p-0 gap-0"
+        className="data-[side=bottom]:h-[96dvh] flex flex-col rounded-t-2xl p-0 gap-0"
         showCloseButton={false}
       >
         <SheetTitle className="sr-only">Detalhe do dia</SheetTitle>
