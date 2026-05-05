@@ -131,9 +131,9 @@ Cada task = entregável testável. Marque `[x]` quando done.
 
 **Entregável**: APIs que calculam saldos diários e totais mensais.
 
-- [ ] `src/app/api/saldos/route.ts` — GET saldos diários de um mês (entrada, saída, diário, cartão, economia, saldo acumulado por dia)
-- [ ] `src/app/api/totais/route.ts` — GET totais calculados (entradas, saídas, diários, economias, cartão, performance, custoVida, diarioMedio, diarioPrev)
-- [ ] `src/hooks/use-month.ts` — hook para mês selecionado + navegação
+- [x] `src/app/api/saldos/route.ts` — GET saldos diários de um mês (entrada, saída, diário, cartão, economia, saldo acumulado por dia)
+- [x] `src/app/api/totais/route.ts` — GET totais calculados (entradas, saídas, diários, economias, cartão, performance, custoVida, diarioMedio, diarioPrev)
+- [x] `src/hooks/use-month.ts` — hook para mês selecionado + navegação
 
 **Verificação**: GET `/api/saldos?month=2026-05` → array de saldos diários. GET `/api/totais?month=2026-05` → totais calculados.
 
@@ -143,12 +143,12 @@ Cada task = entregável testável. Marque `[x]` quando done.
 
 **Entregável**: Tela de totais mensais com métricas e lista de movimentações.
 
-- [ ] `src/app/(app)/totais/page.tsx`
-- [ ] `src/components/totais/metric-row.tsx` — linha de métrica com badges e valor
-- [ ] `src/components/totais/movimentacao-item.tsx` — item clicável com ícone de categoria
-- [ ] Seções: Performance, Economizado (com progress bar), Custo de vida, Diário médio
-- [ ] Lista de movimentações com link para detalhes por categoria
-- [ ] "Ver todas" no final
+- [x] `src/app/(app)/totais/page.tsx`
+- [x] `src/components/totais/metric-row.tsx` — linha de métrica com badges e valor
+- [x] `src/components/totais/movimentacao-item.tsx` — item clicável com ícone de categoria
+- [x] Seções: Performance, Economizado (com progress bar), Custo de vida, Diário médio
+- [x] Lista de movimentações com link para detalhes por categoria
+- [x] "Ver todas" no final
 
 **Verificação**: Ver totais do mês. Clicar em "Entradas" → navega para detalhes.
 
@@ -158,11 +158,11 @@ Cada task = entregável testável. Marque `[x]` quando done.
 
 **Entregável**: Tela de detalhes por categoria com lista de transações.
 
-- [ ] `src/app/(app)/movimentacoes/[tipo]/page.tsx`
-- [ ] Header com back + navegação de mês
-- [ ] Filtro dropdown de categoria
-- [ ] Lista de transações com ícone, descrição, valor, data
-- [ ] Empty state quando não há lançamentos
+- [x] `src/app/(app)/movimentacoes/[tipo]/page.tsx`
+- [x] Header com back + navegação de mês
+- [x] Filtro dropdown de categoria
+- [x] Lista de transações com ícone, descrição, valor, data
+- [x] Empty state quando não há lançamentos
 
 **Verificação**: Totais → clicar "Entradas" → lista de entradas do mês. Filtrar por "Cartão".
 
@@ -172,11 +172,11 @@ Cada task = entregável testável. Marque `[x]` quando done.
 
 **Entregável**: Detalhe do dia com transações e navegação entre dias.
 
-- [ ] `src/components/transactions/day-detail.tsx`
-- [ ] Header com back + navegação dia anterior/seguinte + botão add
-- [ ] Filtro dropdown por tipo
-- [ ] Lista de transações do dia
-- [ ] Empty state com botão "adicionar"
+- [x] `src/components/transactions/day-detail.tsx`
+- [x] Header com back + navegação dia anterior/seguinte + botão add
+- [x] Filtro dropdown por tipo
+- [x] Lista de transações do dia
+- [x] Empty state com botão "adicionar"
 
 **Verificação**: Saldos → clicar no dia 4 → ver transações. Navegar dia 3 e dia 5.
 
@@ -186,13 +186,13 @@ Cada task = entregável testável. Marque `[x]` quando done.
 
 **Entregável**: Grid multi-mês com projeção de saldos, swipe horizontal.
 
-- [ ] `src/app/(app)/horizonte/page.tsx`
-- [ ] `src/components/horizonte/horizonte-grid.tsx`
-- [ ] Grid 3 meses lado a lado com scroll vertical por dia
-- [ ] Células coloridas por saldo (green/amber/red)
-- [ ] Destaque "today" em fundo ink
-- [ ] Swipe horizontal (touch + mouse) para trocar conjunto de meses
-- [ ] Headers de mês com navegação
+- [x] `src/app/(app)/horizonte/page.tsx`
+- [x] `src/components/horizonte/horizonte-grid.tsx`
+- [x] Grid 3 meses lado a lado com scroll vertical por dia
+- [x] Células coloridas por saldo (green/amber/red)
+- [x] Destaque "today" em fundo ink
+- [x] Swipe horizontal (touch + mouse) para trocar conjunto de meses
+- [x] Headers de mês com navegação
 
 **Verificação**: Ver 3 meses. Swipe para esquerda → próximos 3 meses. Scroll vertical por dia.
 

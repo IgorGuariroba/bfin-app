@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { MonthHeader } from "@/components/layout/month-header";
 import { SaldosGrid } from "@/components/saldos/saldos-grid";
+import { DayDetail } from "@/components/transactions/day-detail";
 import { useMonth } from "@/hooks/use-month";
 import {
   Select,
@@ -24,6 +25,7 @@ const FILTER_OPTIONS = [
 export default function SaldosPage() {
   const { month, prev, next, label } = useMonth();
   const [filter, setFilter] = useState("all");
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
   return (
     <div className="flex flex-col">
@@ -47,9 +49,13 @@ export default function SaldosPage() {
       <SaldosGrid
         month={month}
         filter={filter}
-        onDayClick={(_date) => {
-          // T12 — Day Detail (not yet implemented)
-        }}
+        onDayClick={(date) => setSelectedDate(date)}
+      />
+
+      <DayDetail
+        date={selectedDate}
+        onClose={() => setSelectedDate(null)}
+        onNavigate={(date) => setSelectedDate(date)}
       />
     </div>
   );
