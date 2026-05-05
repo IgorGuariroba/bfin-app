@@ -1,0 +1,8 @@
+{
+    email admin@bfincont.com.br
+}
+
+bfincont.com.br {
+    encode zstd gzip
+    reverse_proxy app:3000
+}
