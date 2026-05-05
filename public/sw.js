@@ -1,6 +1,6 @@
 /// <reference lib="webworker" />
 
-const CACHE_NAME = 'bfin-cache-v1'
+const CACHE_NAME = 'bfin-cache-v2'
 
 // Assets to precache on install
 const PRECACHE_ASSETS = [
@@ -35,7 +35,7 @@ self.addEventListener('activate', (event) => {
   self.clients.claim()
 })
 
-// Fetch — network-first for API/navigation, cache-first for static assets
+// Fetch — network-first for API/navigation/_next, cache-first for static assets
 self.addEventListener('fetch', (event) => {
   const { request } = event
   const url = new URL(request.url)
@@ -67,11 +67,15 @@ self.addEventListener('fetch', (event) => {
     return
   }
 
-  // For static assets (JS, CSS, images, fonts) — cache first, then network
+  // _next chunks use content hashes — always fetch from network to avoid stale modules
+  if (url.pathname.startsWith('/_next/')) {
+    return
+  }
+
+  // For static assets (images, fonts, icons) — cache first, then network
   if (
-    url.pathname.startsWith('/_next/static/') ||
     url.pathname.startsWith('/icons/') ||
-    url.pathname.match(/\.(js|css|png|jpg|jpeg|svg|webp|woff|woff2|ttf)$/)
+    url.pathname.match(/\.(png|jpg|jpeg|svg|webp|woff|woff2|ttf)$/)
   ) {
     event.respondWith(
       caches.match(request).then((cached) => {

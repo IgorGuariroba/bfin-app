@@ -19,6 +19,14 @@ interface DayRowProps {
 
 const ALL_TYPES = ["entrada", "saida", "diario", "cartao", "economia"] as const;
 
+const WEEKDAY_ABBR = ["dom", "seg", "ter", "qua", "qui", "sex", "sáb"];
+
+function getWeekdayAbbr(dateStr: string): string {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  const dow = new Date(y, m - 1, d).getDay();
+  return WEEKDAY_ABBR[dow];
+}
+
 const CAT_INITIALS: Record<string, string> = {
   entrada: "E",
   saida: "S",
@@ -30,13 +38,13 @@ const CAT_INITIALS: Record<string, string> = {
 function saldoColor(value: number): string {
   if (value > 0) return "#2db55d";
   if (value < 0) return "#ff385c";
-  return "var(--color-muted)";
+  return "#92640a";
 }
 
 function saldoBg(value: number): string {
-  if (value > 0) return "rgba(45, 181, 93, 0.08)";
-  if (value < 0) return "rgba(255, 56, 92, 0.08)";
-  return "transparent";
+  if (value > 0) return "rgba(45, 181, 93, 0.12)";
+  if (value < 0) return "rgba(255, 56, 92, 0.12)";
+  return "rgba(245, 195, 50, 0.25)";
 }
 
 export function DayRow({ entry, filter, isToday, onClick }: DayRowProps) {
@@ -55,16 +63,19 @@ export function DayRow({ entry, filter, isToday, onClick }: DayRowProps) {
           : "bg-canvas hover:bg-[var(--color-surface-soft)]/60"
       )}
     >
-      {/* Day number */}
+      {/* Day number + weekday */}
       <div
         className={cn(
-          "w-8 shrink-0 flex items-start justify-center pt-3 text-sm tabular-nums",
+          "w-12 shrink-0 flex flex-col items-center justify-start pt-2 gap-0",
           isToday
             ? "font-bold text-primary"
             : "font-medium text-[var(--color-ink)]"
         )}
       >
-        {day}
+        <span className="text-sm tabular-nums leading-tight">{day}</span>
+        <span className="text-[9px] uppercase leading-tight text-[var(--color-muted-soft)]">
+          {getWeekdayAbbr(entry.date)}
+        </span>
       </div>
 
       {/* Category values column */}
@@ -99,7 +110,7 @@ export function DayRow({ entry, filter, isToday, onClick }: DayRowProps) {
 
       {/* Saldo column */}
       <div
-        className="w-[100px] shrink-0 flex items-center justify-end pr-3"
+        className="w-[140px] shrink-0 flex items-center justify-end pr-3"
         style={{ backgroundColor: saldoBg(accSaldo) }}
       >
         <span

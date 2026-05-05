@@ -32,8 +32,8 @@ export default function SaldosPage() {
       <MonthHeader month={label} onPrev={prev} onNext={next} />
 
       {/* Column header: Dia | Filter | Saldos */}
-      <div className="sticky top-[49px] z-20 flex items-center px-4 py-2 border-b border-[var(--color-hairline-soft)] bg-canvas">
-        <span className="w-8 text-xs font-medium text-[var(--color-muted)] shrink-0">
+      <div className="sticky top-[61px] z-20 flex items-center px-4 py-2 border-b border-[var(--color-hairline-soft)] bg-canvas">
+        <span className="w-12 text-xs font-semibold text-[var(--color-ink)] shrink-0">
           Dia
         </span>
         <div className="flex-1">
@@ -50,7 +50,7 @@ export default function SaldosPage() {
             </SelectContent>
           </Select>
         </div>
-        <span className="w-[100px] text-xs font-medium text-[var(--color-muted)] text-right pr-3 shrink-0">
+        <span className="w-[140px] text-xs font-semibold text-[var(--color-ink)] text-right pr-3 shrink-0">
           Saldos
         </span>
       </div>
