@@ -52,7 +52,7 @@ interface SaldosGridProps {
 }
 
 export function SaldosGrid({ month, filter, onDayClick }: SaldosGridProps) {
-  const { transactions, loading } = useTransactions({ month });
+  const { transactions, loading, refetch } = useTransactions({ month });
 
   const [year, mon] = month.split("-").map(Number);
   const today = new Date();
@@ -60,6 +60,12 @@ export function SaldosGrid({ month, filter, onDayClick }: SaldosGridProps) {
   const todayDay = isCurrentMonth ? today.getDate() : -1;
 
   const entries = computeDailyEntries(transactions, year, mon, filter);
+
+  useEffect(() => {
+    const handler = () => refetch();
+    window.addEventListener("bfin:transaction-created", handler);
+    return () => window.removeEventListener("bfin:transaction-created", handler);
+  }, [refetch]);
 
   useEffect(() => {
     const el = document.querySelector("[data-today='true']");

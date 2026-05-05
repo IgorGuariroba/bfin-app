@@ -90,37 +90,38 @@ Cada task = entregável testável. Marque `[x]` quando done.
 
 ---
 
-## T7 — Tela Saldos
+## T7 — Tela Saldos [DONE]
 
 **Entregável**: Grid diário com saldos acumulados, filtros, scroll to today.
 
-- [ ] `src/app/(app)/saldos/page.tsx`
-- [ ] `src/components/saldos/saldos-grid.tsx` — grid dia × categoria
-- [ ] `src/components/saldos/day-row.tsx` — linha do dia com badges de categoria
-- [ ] `src/components/saldos/saldo-cell.tsx` — célula colorida (green/amber/red/zero)
-- [ ] Filtro dropdown por categoria (Todas, Entradas, Saídas, Diário, Cartão, Guardado)
-- [ ] Scroll automático para o dia atual
-- [ ] Clique em célula → abre detail ou add modal
+- [x] `src/app/(app)/saldos/page.tsx`
+- [x] `src/components/saldos/saldos-grid.tsx` — grid dia × categoria
+- [x] `src/components/saldos/day-row.tsx` — linha do dia com badges de categoria
+- [x] `src/components/saldos/saldo-cell.tsx` — célula colorida (green/amber/red/zero)
+- [x] Filtro dropdown por categoria (Todas, Entradas, Saídas, Diário, Cartão, Guardado)
+- [x] Scroll automático para o dia atual
+- [ ] Clique em célula → abre detail ou add modal (stub — aguarda T8/T12)
 
 **Verificação**: Ver grid de saldos do mês. Filtrar por "Entradas". Scroll para hoje.
 
 ---
 
-## T8 — Add Transaction Modal
+## T8 — Add Transaction Modal [DONE]
 
 **Entregável**: Modal bottom sheet para adicionar transação com numpad.
 
-- [ ] `src/components/transactions/quick-add-modal.tsx` — Sheet bottom com:
-  - Campo valor com numpad customizado
+- [x] `src/components/transactions/quick-add-modal.tsx` — Sheet bottom com:
+  - Campo valor com numpad customizado (centavos, sem decimal manual)
   - Type selector (Entrada/Saída/Diário/Cartão/Guardado) com cores
   - Campo descrição
   - Campo data (date picker)
   - Opção "Repetir" (todo mês/semana/dia)
   - Opção "Até quando" (a perder de vista / número de vezes com stepper)
-  - Campo tags
-- [ ] `src/components/transactions/add-modal.tsx` — versão simplificada via FAB
-- [ ] Integração com API (POST `/api/transactions`)
-- [ ] Toast de confirmação
+  - Campo tags (mostra tags existentes; vazio até T16)
+- [x] FAB no BottomNav abre modal via AddModalContext
+- [x] Integração com API (POST `/api/transactions`)
+- [x] Toast de confirmação (sonner)
+- [x] `bfin:transaction-created` event → SaldosGrid refetch automático
 
 **Verificação**: FAB+ → modal abre → preencher valor → selecionar tipo → submit → transação aparece.
 
