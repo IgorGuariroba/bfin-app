@@ -1,9 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { ArrowLeft, Plus } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useAddModal } from "@/lib/add-modal-context";
 import {
   HorizonteGrid,
   addMonths,
@@ -20,7 +19,6 @@ export default function HorizontePage() {
   const [data, setData] = useState<MonthData[]>([]);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
-  const { setOpen: openAddModal } = useAddModal();
 
   const months: [string, string, string] = [
     firstMonth,
@@ -68,13 +66,7 @@ export default function HorizontePage() {
           <ArrowLeft size={20} />
         </button>
         <h1 className="text-sm font-bold text-ink">Horizonte de saldos</h1>
-        <button
-          onClick={() => openAddModal(true)}
-          className="w-9 h-9 flex items-center justify-center rounded-full text-muted-foreground hover:text-ink transition-colors"
-          aria-label="Adicionar"
-        >
-          <Plus size={20} />
-        </button>
+        <div className="w-9 h-9" />
       </header>
 
       <HorizonteGrid
