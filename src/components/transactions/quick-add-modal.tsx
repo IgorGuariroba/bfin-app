@@ -6,6 +6,7 @@ import { Delete, Check, Minus, Plus } from "lucide-react";
 import {
   Sheet,
   SheetContent,
+  SheetTitle,
 } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import { useAddModal } from "@/lib/add-modal-context";
@@ -134,6 +135,7 @@ export function QuickAddModal() {
         showCloseButton={false}
         className="p-0 rounded-t-2xl max-h-[92dvh] flex flex-col gap-0"
       >
+        <SheetTitle className="sr-only">Adicionar Transação</SheetTitle>
         {/* drag handle */}
         <div className="flex justify-center pt-3 pb-2 flex-shrink-0">
           <div className="w-10 h-1 rounded-full bg-hairline" />

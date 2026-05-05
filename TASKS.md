@@ -198,16 +198,16 @@ Cada task = entregável testável. Marque `[x]` quando done.
 
 ---
 
-## T14 — Previsão de Diário
+## T14 — Previsão de Diário [DONE]
 
 **Entregável**: Lista de gastos mensais previstos + cálculo do diário.
 
-- [ ] `src/app/(app)/previsao/page.tsx`
-- [ ] `src/components/previsao/swipeable-item.tsx` — item com swipe-to-delete
-- [ ] `src/components/previsao/previsao-form.tsx` — form adicionar/editar gasto
-- [ ] API: `src/app/api/previsao/route.ts` + `[id]/route.ts`
-- [ ] Footer com total mensal, seletor de dias (28/30/31), cálculo do diário
-- [ ] Empty state com botão adicionar
+- [x] `src/app/(app)/previsao/page.tsx`
+- [x] `src/components/previsao/swipeable-item.tsx` — item com swipe-to-delete
+- [x] `src/components/previsao/previsao-form.tsx` — form adicionar/editar gasto
+- [x] API: `src/app/api/previsao/route.ts` + `[id]/route.ts`
+- [x] Footer com total mensal, seletor de dias (28/30/31), cálculo do diário
+- [x] Empty state com botão adicionar
 
 **Verificação**: Adicionar "Combustível R$400" → total atualiza. Swipe item → botão excluir. Diário calculado.
 
