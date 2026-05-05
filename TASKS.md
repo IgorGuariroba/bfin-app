@@ -76,15 +76,15 @@ Cada task = entregável testável. Marque `[x]` quando done.
 
 ---
 
-## T6 — API Transactions CRUD
+## T6 — API Transactions CRUD [DONE]
 
 **Entregável**: API completa para criar, listar, editar e deletar transações.
 
-- [ ] `src/app/api/transactions/route.ts` — GET (filtros: month, type, date range) + POST
-- [ ] `src/app/api/transactions/[id]/route.ts` — PUT + DELETE
-- [ ] Validação de input (zod ou manual)
-- [ ] Lógica de repeat: ao criar com `repeat != none`, gerar transações futuras
-- [ ] `src/hooks/use-transactions.ts` — hook client-side para fetch/mutate
+- [x] `src/app/api/transactions/route.ts` — GET (filtros: month, type, date range) + POST
+- [x] `src/app/api/transactions/[id]/route.ts` — PUT + DELETE
+- [x] Validação de input (zod ou manual)
+- [x] Lógica de repeat: ao criar com `repeat != none`, gerar transações futuras
+- [x] `src/hooks/use-transactions.ts` — hook client-side para fetch/mutate
 
 **Verificação**: POST criar transação → GET lista com filtro → PUT edita → DELETE remove.
 
