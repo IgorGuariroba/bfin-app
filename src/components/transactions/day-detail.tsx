@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react";
 import { ChevronLeft, ChevronRight, Plus, ArrowDown, ArrowUp, CreditCard, PiggyBank, Wallet, X } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import {
   Select,
   SelectContent,
@@ -73,6 +73,7 @@ export function DayDetail({ date, onClose, onNavigate }: DayDetailProps) {
         side="bottom"
         className="h-[75vh] flex flex-col rounded-t-2xl p-0 gap-0"
       >
+        <SheetTitle className="sr-only">Detalhe do dia</SheetTitle>
         {/* Header */}
         <div className="flex items-center justify-between px-2 py-3 border-b border-[var(--color-hairline-soft)] shrink-0">
           <button
