@@ -2,6 +2,10 @@
     email admin@bfincont.com.br
 }
 
+www.bfincont.com.br {
+    redir https://bfincont.com.br{uri} permanent
+}
+
 bfincont.com.br {
     encode zstd gzip
     reverse_proxy app:3000
