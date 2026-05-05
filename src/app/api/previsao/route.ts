@@ -1,13 +1,16 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { getEffectiveUserId } from "@/lib/effective-user";
 import type { NextRequest } from "next/server";
 
 export async function GET() {
   const session = await auth();
   if (!session?.user?.id) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
+  const userId = await getEffectiveUserId(session.user.id);
+
   const previsoes = await prisma.previsao.findMany({
-    where: { userId: session.user.id },
+    where: { userId },
     orderBy: { name: "asc" },
   });
 
@@ -17,6 +20,8 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   const session = await auth();
   if (!session?.user?.id) return Response.json({ error: "Unauthorized" }, { status: 401 });
+
+  const userId = await getEffectiveUserId(session.user.id);
 
   try {
     const data = await request.json();
@@ -28,7 +33,7 @@ export async function POST(request: NextRequest) {
 
     const previsao = await prisma.previsao.create({
       data: {
-        userId: session.user.id,
+        userId,
         name,
         amount,
       },

@@ -1,5 +1,6 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { getEffectiveUserId } from "@/lib/effective-user";
 import type { NextRequest } from "next/server";
 import { addDays, addWeeks, addMonths } from "@/lib/date-utils";
 
@@ -7,13 +8,15 @@ export async function GET(request: NextRequest) {
   const session = await auth();
   if (!session?.user?.id) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
+  const userId = await getEffectiveUserId(session.user.id);
+
   const { searchParams } = request.nextUrl;
   const month = searchParams.get("month"); // YYYY-MM
   const type = searchParams.get("type");
   const from = searchParams.get("from");
   const to = searchParams.get("to");
 
-  const where: Record<string, unknown> = { userId: session.user.id };
+  const where: Record<string, unknown> = { userId };
 
   if (month) {
     const [year, mon] = month.split("-").map(Number);
@@ -47,6 +50,8 @@ export async function POST(request: NextRequest) {
   const session = await auth();
   if (!session?.user?.id) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
+  const userId = await getEffectiveUserId(session.user.id);
+
   const body = await request.json();
   const { type, description, amount, date, repeat, repeatEnd, repeatCount, tagIds } = body;
 
@@ -74,7 +79,7 @@ export async function POST(request: NextRequest) {
 
   const base = await prisma.transaction.create({
     data: {
-      userId: session.user.id,
+      userId,
       type,
       description,
       amount,
@@ -91,7 +96,7 @@ export async function POST(request: NextRequest) {
     const extras = buildRepeatDates(baseDate, repeatMode, endMode, count);
     await prisma.transaction.createMany({
       data: extras.map((d) => ({
-        userId: session.user.id,
+        userId,
         type,
         description,
         amount,
@@ -103,7 +108,7 @@ export async function POST(request: NextRequest) {
     });
     if (connectTags && extras.length > 0) {
       const created = await prisma.transaction.findMany({
-        where: { userId: session.user.id, date: { in: extras }, description, type },
+        where: { userId, date: { in: extras }, description, type },
         select: { id: true },
       });
       await Promise.all(

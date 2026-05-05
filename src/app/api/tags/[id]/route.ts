@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { getEffectiveUserId } from "@/lib/effective-user";
 import { z } from "zod";
 
 const tagSchema = z.object({
@@ -14,18 +15,19 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    
+
+    const userId = await getEffectiveUserId(session.user.id);
+
     const { id } = await params;
 
     const body = await req.json();
     const data = tagSchema.parse(body);
 
-    // Verify ownership
     const existing = await prisma.tag.findUnique({
       where: { id },
     });
 
-    if (!existing || existing.userId !== session.user.id) {
+    if (!existing || existing.userId !== userId) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 
@@ -37,12 +39,11 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       );
     }
 
-    // If changing name, check uniqueness
     if (data.name && data.name !== existing.name) {
       const duplicate = await prisma.tag.findUnique({
         where: {
           userId_name: {
-            userId: session.user.id,
+            userId,
             name: data.name,
           },
         },
@@ -75,14 +76,15 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const userId = await getEffectiveUserId(session.user.id);
+
     const { id } = await params;
 
-    // Verify ownership
     const existing = await prisma.tag.findUnique({
       where: { id },
     });
 
-    if (!existing || existing.userId !== session.user.id) {
+    if (!existing || existing.userId !== userId) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 

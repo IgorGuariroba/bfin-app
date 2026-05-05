@@ -1,10 +1,13 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { getEffectiveUserId } from "@/lib/effective-user";
 import type { NextRequest } from "next/server";
 
 export async function GET(request: NextRequest) {
   const session = await auth();
   if (!session?.user?.id) return Response.json({ error: "Unauthorized" }, { status: 401 });
+
+  const userId = await getEffectiveUserId(session.user.id);
 
   const { searchParams } = request.nextUrl;
   const month = searchParams.get("month"); // YYYY-MM
@@ -21,11 +24,11 @@ export async function GET(request: NextRequest) {
   const [prevAgg, transactions] = await Promise.all([
     prisma.transaction.groupBy({
       by: ["type"],
-      where: { userId: session.user.id, date: { lt: start } },
+      where: { userId, date: { lt: start } },
       _sum: { amount: true },
     }),
     prisma.transaction.findMany({
-      where: { userId: session.user.id, date: { gte: start, lt: end } },
+      where: { userId, date: { gte: start, lt: end } },
       select: { type: true, amount: true, date: true },
       orderBy: { date: "asc" },
     }),

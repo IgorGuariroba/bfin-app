@@ -1,5 +1,6 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { getEffectiveUserId } from "@/lib/effective-user";
 import type { NextRequest } from "next/server";
 
 export async function PUT(
@@ -9,9 +10,11 @@ export async function PUT(
   const session = await auth();
   if (!session?.user?.id) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
+  const userId = await getEffectiveUserId(session.user.id);
+
   const { id } = await params;
   const existing = await prisma.transaction.findUnique({ where: { id } });
-  if (!existing || existing.userId !== session.user.id) {
+  if (!existing || existing.userId !== userId) {
     return Response.json({ error: "Not found" }, { status: 404 });
   }
 
@@ -53,9 +56,11 @@ export async function DELETE(
   const session = await auth();
   if (!session?.user?.id) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
+  const userId = await getEffectiveUserId(session.user.id);
+
   const { id } = await params;
   const existing = await prisma.transaction.findUnique({ where: { id } });
-  if (!existing || existing.userId !== session.user.id) {
+  if (!existing || existing.userId !== userId) {
     return Response.json({ error: "Not found" }, { status: 404 });
   }
 

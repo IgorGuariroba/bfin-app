@@ -32,7 +32,7 @@ export default async function MenuPage() {
     {
       icon: Settings,
       label: "Configurações",
-      href: "#", // stub
+      href: "/configuracoes",
       color: "text-ink",
       bgColor: "bg-surface-soft",
     },

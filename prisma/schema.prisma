@@ -19,6 +19,24 @@ model User {
   transactions   Transaction[]
   previsoes      Previsao[]
   tags           Tag[]
+  ownedMembers   AccountMember[] @relation("OwnedMembers")
+  memberOf       AccountMember[] @relation("MemberOf")
+}
+
+model AccountMember {
+  id          String   @id @default(cuid())
+  ownerId     String
+  memberId    String?
+  inviteEmail String
+  inviteToken String   @unique
+  role        String   @default("editor")
+  status      String   @default("pending")
+  createdAt   DateTime @default(now())
+  owner       User     @relation("OwnedMembers", fields: [ownerId], references: [id], onDelete: Cascade)
+  member      User?    @relation("MemberOf", fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@index([ownerId])
+  @@index([memberId])
 }
 
 model Account {

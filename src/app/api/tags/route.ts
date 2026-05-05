@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { getEffectiveUserId } from "@/lib/effective-user";
 import { z } from "zod";
 import { ensureSystemTags } from "@/lib/seed-system-tags";
 
@@ -16,11 +17,12 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Garante que as tags de sistema existam (self-healing para usuários antigos)
-    await ensureSystemTags(session.user.id);
+    const userId = await getEffectiveUserId(session.user.id);
+
+    await ensureSystemTags(userId);
 
     const tags = await prisma.tag.findMany({
-      where: { userId: session.user.id },
+      where: { userId },
       orderBy: [{ isSystem: "desc" }, { name: "asc" }],
     });
 
@@ -38,14 +40,15 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const userId = await getEffectiveUserId(session.user.id);
+
     const body = await req.json();
     const data = tagSchema.parse(body);
 
-    // Check if tag with same name already exists for this user
     const existingTag = await prisma.tag.findUnique({
       where: {
         userId_name: {
-          userId: session.user.id,
+          userId,
           name: data.name,
         },
       },
@@ -58,7 +61,7 @@ export async function POST(req: Request) {
     const tag = await prisma.tag.create({
       data: {
         ...data,
-        userId: session.user.id,
+        userId,
         isSystem: false,
       },
     });
