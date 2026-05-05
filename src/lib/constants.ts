@@ -24,3 +24,11 @@ export const TYPE_LABELS_FULL = {
 
 export const CATEGORIES = ["entrada", "saida", "diario", "cartao", "economia"] as const;
 export type Category = (typeof CATEGORIES)[number];
+
+/** Tags padrão do sistema — criadas automaticamente para cada usuário e não editáveis */
+export const DEFAULT_SYSTEM_TAGS = [
+  { name: "Entradas", color: "#2db55d" },
+  { name: "Saídas",   color: "#ff385c" },
+  { name: "Diários",  color: "#92174d" },
+  { name: "Economias", color: "#2db55d" },
+] as const;

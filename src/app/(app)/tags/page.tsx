@@ -4,8 +4,7 @@ import { useState } from "react";
 import { BackHeader } from "@/components/layout/back-header";
 import { Tag, useTags } from "@/hooks/use-tags";
 import { TagFormModal } from "@/components/tags/tag-form-modal";
-import { Plus } from "lucide-react";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Plus, Lock } from "lucide-react";
 
 export default function TagsPage() {
   const { tags, loading, create, update, remove } = useTags();
@@ -19,6 +18,8 @@ export default function TagsPage() {
   };
 
   const handleOpenEdit = (tag: Tag) => {
+    // Não permite editar tags do sistema
+    if (tag.isSystem) return;
     setEditingTag(tag);
     setModalOpen(true);
   };
@@ -34,6 +35,9 @@ export default function TagsPage() {
   const handleDelete = async (id: string) => {
     await remove(id);
   };
+
+  const systemTags = tags.filter((t) => t.isSystem);
+  const userTags = tags.filter((t) => !t.isSystem);
 
   return (
     <div className="flex flex-col min-h-full bg-canvas pb-24">
@@ -56,46 +60,108 @@ export default function TagsPage() {
               <div key={i} className="h-16 w-full rounded-2xl bg-surface-soft animate-pulse" />
             ))}
           </div>
-        ) : tags.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-[50vh] text-center px-4">
-            <div className="w-16 h-16 rounded-full bg-surface-soft flex items-center justify-center text-muted-foreground mb-4">
-              <Plus size={32} />
-            </div>
-            <h2 className="text-xl font-bold text-ink mb-2">Nenhuma tag</h2>
-            <p className="text-muted-foreground mb-6">
-              Crie tags para organizar e classificar melhor suas movimentações.
-            </p>
-            <button
-              onClick={handleOpenAdd}
-              className="h-12 px-6 rounded-full bg-primary text-white font-semibold flex items-center gap-2 shadow-lg shadow-primary/20 active:scale-95 transition-transform"
-            >
-              <Plus size={20} />
-              Criar Tag
-            </button>
-          </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {tags.map((tag) => (
-              <button
-                key={tag.id}
-                onClick={() => handleOpenEdit(tag)}
-                className="flex items-center gap-4 bg-surface p-4 rounded-2xl shadow-sm text-left active:scale-95 transition-transform"
-              >
-                <div 
-                  className="w-10 h-10 rounded-full flex items-center justify-center shrink-0"
-                  style={{ backgroundColor: `${tag.color}20`, color: tag.color }} 
-                >
-                  <div 
-                    className="w-4 h-4 rounded-full"
-                    style={{ backgroundColor: tag.color }}
-                  />
+          <>
+            {/* ── Tags do sistema ── */}
+            {systemTags.length > 0 && (
+              <div className="mb-6">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 px-1">
+                  Padrão do sistema
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {systemTags.map((tag) => (
+                    <div
+                      key={tag.id}
+                      className="flex items-center gap-4 bg-surface p-4 rounded-2xl shadow-sm opacity-90"
+                    >
+                      <div 
+                        className="w-10 h-10 rounded-full flex items-center justify-center shrink-0"
+                        style={{ backgroundColor: `${tag.color}20`, color: tag.color }} 
+                      >
+                        <div 
+                          className="w-4 h-4 rounded-full"
+                          style={{ backgroundColor: tag.color }}
+                        />
+                      </div>
+                      <span className="flex-1 font-semibold text-ink text-base truncate">
+                        {tag.name}
+                      </span>
+                      <Lock size={14} className="text-muted-foreground/50 shrink-0" />
+                    </div>
+                  ))}
                 </div>
-                <span className="flex-1 font-semibold text-ink text-base truncate">
-                  {tag.name}
-                </span>
-              </button>
-            ))}
-          </div>
+              </div>
+            )}
+
+            {/* ── Tags do usuário ── */}
+            {userTags.length > 0 && (
+              <div>
+                {systemTags.length > 0 && (
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 px-1">
+                    Minhas tags
+                  </p>
+                )}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {userTags.map((tag) => (
+                    <button
+                      key={tag.id}
+                      onClick={() => handleOpenEdit(tag)}
+                      className="flex items-center gap-4 bg-surface p-4 rounded-2xl shadow-sm text-left active:scale-95 transition-transform"
+                    >
+                      <div 
+                        className="w-10 h-10 rounded-full flex items-center justify-center shrink-0"
+                        style={{ backgroundColor: `${tag.color}20`, color: tag.color }} 
+                      >
+                        <div 
+                          className="w-4 h-4 rounded-full"
+                          style={{ backgroundColor: tag.color }}
+                        />
+                      </div>
+                      <span className="flex-1 font-semibold text-ink text-base truncate">
+                        {tag.name}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* ── Empty state (só para tags do usuário) ── */}
+            {userTags.length === 0 && systemTags.length > 0 && (
+              <div className="flex flex-col items-center justify-center py-12 text-center px-4">
+                <p className="text-muted-foreground mb-4">
+                  Crie suas próprias tags para organizar melhor.
+                </p>
+                <button
+                  onClick={handleOpenAdd}
+                  className="h-12 px-6 rounded-full bg-primary text-white font-semibold flex items-center gap-2 shadow-lg shadow-primary/20 active:scale-95 transition-transform"
+                >
+                  <Plus size={20} />
+                  Criar Tag
+                </button>
+              </div>
+            )}
+
+            {/* ── Empty state total ── */}
+            {tags.length === 0 && (
+              <div className="flex flex-col items-center justify-center h-[50vh] text-center px-4">
+                <div className="w-16 h-16 rounded-full bg-surface-soft flex items-center justify-center text-muted-foreground mb-4">
+                  <Plus size={32} />
+                </div>
+                <h2 className="text-xl font-bold text-ink mb-2">Nenhuma tag</h2>
+                <p className="text-muted-foreground mb-6">
+                  Crie tags para organizar e classificar melhor suas movimentações.
+                </p>
+                <button
+                  onClick={handleOpenAdd}
+                  className="h-12 px-6 rounded-full bg-primary text-white font-semibold flex items-center gap-2 shadow-lg shadow-primary/20 active:scale-95 transition-transform"
+                >
+                  <Plus size={20} />
+                  Criar Tag
+                </button>
+              </div>
+            )}
+          </>
         )}
       </div>
 

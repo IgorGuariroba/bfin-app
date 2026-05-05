@@ -29,6 +29,14 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 
+    // Proteger tags de sistema contra edição
+    if (existing.isSystem) {
+      return NextResponse.json(
+        { error: "Tags do sistema não podem ser editadas" },
+        { status: 403 }
+      );
+    }
+
     // If changing name, check uniqueness
     if (data.name && data.name !== existing.name) {
       const duplicate = await prisma.tag.findUnique({
@@ -76,6 +84,14 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
 
     if (!existing || existing.userId !== session.user.id) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+
+    // Proteger tags de sistema contra exclusão
+    if (existing.isSystem) {
+      return NextResponse.json(
+        { error: "Tags do sistema não podem ser excluídas" },
+        { status: 403 }
+      );
     }
 
     await prisma.tag.delete({

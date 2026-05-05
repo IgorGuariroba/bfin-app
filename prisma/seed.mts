@@ -25,6 +25,23 @@ async function main() {
     },
   });
 
+  // Tags de sistema (padrão, não editáveis)
+  const systemTagDefs = [
+    { name: "Entradas", color: "#2db55d" },
+    { name: "Saídas",   color: "#ff385c" },
+    { name: "Diários",  color: "#92174d" },
+    { name: "Economias", color: "#2db55d" },
+  ];
+
+  for (const st of systemTagDefs) {
+    await prisma.tag.upsert({
+      where: { userId_name: { userId: user.id, name: st.name } },
+      update: { isSystem: true },
+      create: { userId: user.id, name: st.name, color: st.color, isSystem: true },
+    });
+  }
+
+  // Tags do usuário (editáveis)
   const tags = await Promise.all([
     prisma.tag.upsert({
       where: { id: "tag-alimentacao" },

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
+import { ensureSystemTags } from "@/lib/seed-system-tags";
 
 const tagSchema = z.object({
   name: z.string().min(1, "Nome é obrigatório").max(50, "Nome muito longo"),
@@ -15,9 +16,12 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    // Garante que as tags de sistema existam (self-healing para usuários antigos)
+    await ensureSystemTags(session.user.id);
+
     const tags = await prisma.tag.findMany({
       where: { userId: session.user.id },
-      orderBy: { name: "asc" },
+      orderBy: [{ isSystem: "desc" }, { name: "asc" }],
     });
 
     return NextResponse.json(tags);
@@ -55,6 +59,7 @@ export async function POST(req: Request) {
       data: {
         ...data,
         userId: session.user.id,
+        isSystem: false,
       },
     });
 

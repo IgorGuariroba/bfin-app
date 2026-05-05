@@ -6,6 +6,7 @@ export type Tag = {
   id: string;
   name: string;
   color: string;
+  isSystem: boolean;
 };
 
 export type TagInput = {

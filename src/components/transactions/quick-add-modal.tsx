@@ -42,7 +42,7 @@ const REPEAT_OPTS = [
   { value: "daily", label: "Repete todo dia" },
 ] as const;
 
-type TagItem = { id: string; name: string; color: string };
+type TagItem = { id: string; name: string; color: string; isSystem: boolean };
 
 /* ── Category initial circle ─────────────────── */
 const CAT_INITIALS: Record<Category, string> = {

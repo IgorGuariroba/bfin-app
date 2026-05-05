@@ -79,6 +79,7 @@ model Tag {
   userId       String
   name         String
   color        String
+  isSystem     Boolean       @default(false)
   user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   transactions Transaction[]
 
