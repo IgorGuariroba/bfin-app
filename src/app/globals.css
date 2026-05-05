@@ -132,6 +132,16 @@
 }
 
 .dark {
+  --canvas: #0f0f0f;
+  --ink: #ededed;
+  --body-text: #c0c0c0;
+  --muted: #a0a0a0;
+  --muted-soft: #6a6a6a;
+  --hairline: rgba(255, 255, 255, 0.1);
+  --hairline-soft: rgba(255, 255, 255, 0.06);
+  --border-strong: rgba(255, 255, 255, 0.2);
+  --surface-soft: #1a1a1a;
+  --surface-strong: #262626;
   --background: #0f0f0f;
   --foreground: #ededed;
   --card: #1a1a1a;

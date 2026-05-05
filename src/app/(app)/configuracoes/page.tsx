@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTheme } from "next-themes";
 import {
   Users,
   UserPlus,
@@ -11,6 +12,9 @@ import {
   ChevronLeft,
   Loader2,
   Star,
+  Sun,
+  Moon,
+  Monitor,
 } from "lucide-react";
 
 type Invite = {
@@ -27,8 +31,15 @@ type ReceivedInvite = {
   owner: { id: string; name: string; email: string; image?: string };
 };
 
+const THEME_OPTIONS = [
+  { value: "light", label: "Claro", icon: Sun },
+  { value: "dark", label: "Escuro", icon: Moon },
+  { value: "system", label: "Sistema", icon: Monitor },
+] as const;
+
 export default function ConfiguracoesPage() {
   const router = useRouter();
+  const { theme, setTheme } = useTheme();
   const [sent, setSent] = useState<Invite[]>([]);
   const [received, setReceived] = useState<ReceivedInvite[]>([]);
   const [loading, setLoading] = useState(true);
@@ -212,6 +223,34 @@ export default function ConfiguracoesPage() {
           </div>
         </section>
       )}
+
+      {/* Aparência */}
+      <section className="mb-6">
+        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+          Aparência
+        </h2>
+        <div className="rounded-3xl bg-surface p-4 shadow-sm">
+          <div className="flex gap-2">
+            {THEME_OPTIONS.map(({ value, label, icon: Icon }) => {
+              const active = theme === value;
+              return (
+                <button
+                  key={value}
+                  onClick={() => setTheme(value)}
+                  className={`flex flex-1 flex-col items-center gap-2 rounded-2xl py-4 transition-colors ${
+                    active
+                      ? "bg-primary/10 border border-primary/30 text-primary"
+                      : "bg-canvas text-muted-foreground hover:text-ink"
+                  }`}
+                >
+                  <Icon size={20} />
+                  <span className="text-xs font-medium">{label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </section>
 
       {/* Convidar */}
       <section className="mb-6">

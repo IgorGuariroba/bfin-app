@@ -29,7 +29,15 @@ export default function SaldosPage() {
 
   return (
     <div className="flex flex-col">
-      <MonthHeader month={label} onPrev={prev} onNext={next} />
+      <MonthHeader
+        month={label}
+        onPrev={prev}
+        onNext={next}
+        onTodayClick={() => {
+          const el = document.querySelector("[data-today='true']");
+          if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+        }}
+      />
 
       {/* Column header: Dia | Filter | Saldos */}
       <div className="sticky top-[61px] z-20 flex items-center px-4 py-2 border-b border-[var(--color-hairline-soft)] bg-canvas">

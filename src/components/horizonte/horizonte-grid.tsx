@@ -27,24 +27,29 @@ function monthLabel(month: string): string {
 
 /** Color grade based on saldo value */
 function cellColor(value: number): { bg: string; text: string } {
-  if (value === 0) return { bg: "transparent", text: "var(--muted)" };
+  if (value === 0) return { bg: "#fffbeb", text: "#92400e" };
   if (value > 0) {
-    // Yellow/amber tones – the bigger the value, the more saturated
-    if (value >= 1000) return { bg: "#fff3c4", text: "#92400e" };
-    if (value >= 500) return { bg: "#fff8dc", text: "#92400e" };
-    return { bg: "#fffbeb", text: "#92400e" };
+    if (value >= 1000) return { bg: "#bbf7d0", text: "#14532d" };
+    if (value >= 500)  return { bg: "#dcfce7", text: "#166534" };
+    return                    { bg: "#f0fdf4", text: "#166534" };
   }
-  // Negative: salmon → red → dark red
   const abs = Math.abs(value);
-  if (abs < 200) return { bg: "#fef2f2", text: "#b91c1c" };
-  if (abs < 500) return { bg: "#fecaca", text: "#b91c1c" };
+  if (abs < 200)  return { bg: "#fef2f2", text: "#b91c1c" };
+  if (abs < 500)  return { bg: "#fecaca", text: "#b91c1c" };
   if (abs < 1000) return { bg: "#fca5a5", text: "#991b1b" };
   if (abs < 2000) return { bg: "#f87171", text: "#7f1d1d" };
-  return { bg: "#ef4444", text: "#ffffff" };
+  return                 { bg: "#ef4444", text: "#ffffff" };
+}
+
+const WEEK_ABBR = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+
+function weekdayAbbr(month: string, day: number): string {
+  const [y, m] = month.split("-").map(Number);
+  return WEEK_ABBR[new Date(y, m - 1, day).getDay()];
 }
 
 function fmtCompact(val: number): string {
-  if (val === 0) return "—";
+  if (val === 0) return "R$ 0,00";
   const abs = Math.abs(val);
   const sign = val < 0 ? "-" : "";
   if (abs >= 1000) {
@@ -119,10 +124,10 @@ export function HorizonteGrid({
               className={cn(
                 "py-2.5 text-center text-xs font-bold tracking-wide",
                 i < 2 && "border-r border-hairline",
-                isCurrent ? "bg-ink text-white" : "text-ink"
+                isCurrent ? "bg-ink text-canvas" : "text-ink"
               )}
             >
-              {monthLabel(m)}{isCurrent ? " ›" : ""}
+              {monthLabel(m)}
             </div>
           );
         })}
@@ -143,7 +148,7 @@ export function HorizonteGrid({
                   return (
                     <div
                       key={m}
-                      className={cn("h-8", idx < 2 && "border-r border-hairline-soft")}
+                      className={cn("h-11", idx < 2 && "border-r border-hairline-soft")}
                     />
                   );
                 }
@@ -156,21 +161,39 @@ export function HorizonteGrid({
                   <div
                     key={m}
                     className={cn(
-                      "flex items-center h-8 px-1.5 text-[11px] font-semibold tabular-nums",
+                      "flex items-stretch h-11",
                       idx < 2 && "border-r border-hairline-soft",
-                      isToday && "!bg-ink !text-white"
+                      isToday && "bg-ink"
                     )}
-                    style={isToday ? undefined : { backgroundColor: colors.bg, color: colors.text }}
                   >
-                    <span className={cn(
-                      "w-5 text-left text-[10px]",
-                      isToday ? "text-white font-bold" : "text-muted-foreground font-medium"
-                    )}>
-                      {day}
-                    </span>
-                    <span className="flex-1 text-right">
-                      {fmtCompact(saldo)}
-                    </span>
+                    {/* Label: dia + dia da semana — sem border interna, só largura separa */}
+                    <div className="flex flex-col items-center justify-center w-8 shrink-0">
+                      <span className={cn(
+                        "text-[11px] tabular-nums leading-none",
+                        isToday ? "font-bold text-canvas" : "font-medium text-ink"
+                      )}>
+                        {day}
+                      </span>
+                      <span className={cn(
+                        "text-[8px] uppercase leading-none mt-0.5",
+                        isToday ? "text-canvas/60" : "text-[var(--color-muted-soft)]"
+                      )}>
+                        {weekdayAbbr(m, day)}
+                      </span>
+                    </div>
+
+                    {/* Saldo — cor de fundo só aqui */}
+                    <div
+                      className="flex-1 flex items-center justify-end px-1.5 text-[11px] font-semibold tabular-nums"
+                      style={isToday
+                        ? undefined
+                        : { backgroundColor: colors.bg, color: colors.text }
+                      }
+                    >
+                      <span style={isToday ? { color: "var(--color-canvas)" } : undefined}>
+                        {fmtCompact(saldo)}
+                      </span>
+                    </div>
                   </div>
                 );
               })}

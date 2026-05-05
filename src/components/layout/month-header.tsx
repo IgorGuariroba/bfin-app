@@ -36,10 +36,11 @@ interface MonthHeaderProps {
   onPrev: () => void;
   onNext: () => void;
   onGridToggle?: () => void;
+  onTodayClick?: () => void;
   className?: string;
 }
 
-export function MonthHeader({ month, onPrev, onNext, onGridToggle, className }: MonthHeaderProps) {
+export function MonthHeader({ month, onPrev, onNext, onGridToggle, onTodayClick, className }: MonthHeaderProps) {
   const router = useRouter();
 
   const handleGrid = () => {
@@ -50,12 +51,18 @@ export function MonthHeader({ month, onPrev, onNext, onGridToggle, className }: 
     }
   };
 
+  const handleToday = () => {
+    if (onTodayClick) {
+      onTodayClick();
+    }
+  };
+
   return (
     <header className={cn("sticky top-0 z-30 flex items-center justify-between px-4 py-3 bg-canvas border-b border-hairline", className)}>
       <button
-        onClick={handleGrid}
+        onClick={handleToday}
         className="flex items-center justify-center w-9 h-9 rounded-full text-muted-foreground hover:text-ink transition-colors"
-        aria-label="Alternar visualização"
+        aria-label="Ir para hoje"
       >
         <TodayCalendar />
       </button>

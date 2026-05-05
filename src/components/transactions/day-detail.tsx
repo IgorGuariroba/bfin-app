@@ -4,12 +4,13 @@ import { useState, useMemo } from "react";
 import { ArrowLeft, ChevronLeft, ChevronRight, Plus, ChevronDown, Wallet } from "lucide-react";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { useTransactions } from "@/hooks/use-transactions";
+import type { Transaction } from "@/hooks/use-transactions";
 import { useAddModal } from "@/lib/add-modal-context";
 import { CAT_COLORS, CAT_LABELS, CATEGORIES } from "@/lib/constants";
 import type { Category } from "@/lib/constants";
 import { fmt } from "@/lib/utils";
 import { cn } from "@/lib/utils";
-import { useTags } from "@/hooks/use-tags";
+import { EditTransactionModal } from "@/components/transactions/edit-transaction-modal";
 
 /* ── Category initials ─────────────────── */
 const CAT_INITIALS: Record<string, string> = {
@@ -45,11 +46,11 @@ interface DayDetailProps {
 export function DayDetail({ date, onClose, onNavigate }: DayDetailProps) {
   const [filterTipo, setFilterTipo] = useState("all");
   const [filterOpen, setFilterOpen] = useState(false);
+  const [editingTx, setEditingTx] = useState<Transaction | null>(null);
   const { setOpen: openAddModal } = useAddModal();
-  const { tags } = useTags();
 
   const queryType = filterTipo === "all" ? undefined : filterTipo;
-  const { transactions, loading } = useTransactions(
+  const { transactions, loading, refetch } = useTransactions(
     date ? { from: date, to: date, type: queryType } : {}
   );
 
@@ -66,10 +67,11 @@ export function DayDetail({ date, onClose, onNavigate }: DayDetailProps) {
   const filterInitial = filterTipo === "all" ? "T" : (CAT_INITIALS[filterTipo] ?? "T");
 
   return (
+    <>
     <Sheet open={!!date} onOpenChange={(o) => { if (!o) { onClose(); setFilterOpen(false); } }}>
       <SheetContent
         side="bottom"
-        className="h-[85dvh] flex flex-col rounded-t-2xl p-0 gap-0"
+        className="data-[side=bottom]:h-[96dvh] flex flex-col rounded-t-2xl p-0 gap-0"
         showCloseButton={false}
       >
         <SheetTitle className="sr-only">Detalhe do dia</SheetTitle>
@@ -204,7 +206,8 @@ export function DayDetail({ date, onClose, onNavigate }: DayDetailProps) {
                 return (
                   <li
                     key={tx.id}
-                    className="flex items-center gap-3 px-4 py-3.5 border-b border-hairline-soft"
+                    onClick={() => setEditingTx(tx)}
+                    className="flex items-center gap-3 px-4 py-3.5 border-b border-hairline-soft cursor-pointer active:bg-surface-soft transition-colors"
                   >
                     {/* Category circle */}
                     <span
@@ -233,5 +236,12 @@ export function DayDetail({ date, onClose, onNavigate }: DayDetailProps) {
         </div>
       </SheetContent>
     </Sheet>
+
+    <EditTransactionModal
+      transaction={editingTx}
+      onClose={() => setEditingTx(null)}
+      onUpdated={refetch}
+    />
+    </>
   );
 }
