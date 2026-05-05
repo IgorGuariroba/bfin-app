@@ -34,15 +34,6 @@ jobs:
             ${{ env.IMAGE_NAME }}:${{ github.sha }}
             ${{ env.IMAGE_NAME }}:latest
 
-      - name: Copy compose files to VPS
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.VPS_HOST }}
-          username: deploy
-          key: ${{ secrets.VPS_SSH_KEY }}
-          source: "docker-compose.prod.yml,caddy/Caddyfile"
-          target: /opt/bfin-app
-
       - name: Deploy to VPS
         uses: appleboy/ssh-action@v1
         with:
@@ -50,6 +41,87 @@ jobs:
           username: deploy
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
+            set -e
+            mkdir -p /opt/bfin-app/caddy
+
+            cat > /opt/bfin-app/docker-compose.prod.yml << 'COMPOSEOF'
+            services:
+              app:
+                image: ghcr.io/igorguariroba/bfin-app:${IMAGE_TAG:-latest}
+                restart: unless-stopped
+                env_file: .env
+                depends_on:
+                  db:
+                    condition: service_healthy
+                networks:
+                  - internal
+                logging:
+                  driver: json-file
+                  options:
+                    max-size: "10m"
+                    max-file: "3"
+
+              db:
+                image: postgres:16-alpine
+                restart: unless-stopped
+                environment:
+                  POSTGRES_USER: ${POSTGRES_USER}
+                  POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+                  POSTGRES_DB: ${POSTGRES_DB}
+                volumes:
+                  - pgdata:/var/lib/postgresql/data
+                healthcheck:
+                  test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+                  interval: 10s
+                  timeout: 5s
+                  retries: 5
+                networks:
+                  - internal
+                logging:
+                  driver: json-file
+                  options:
+                    max-size: "10m"
+                    max-file: "3"
+
+              caddy:
+                image: caddy:2.8-alpine
+                restart: unless-stopped
+                ports:
+                  - "80:80"
+                  - "443:443"
+                  - "443:443/udp"
+                volumes:
+                  - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+                  - caddy_data:/data
+                  - caddy_config:/config
+                networks:
+                  - internal
+                logging:
+                  driver: json-file
+                  options:
+                    max-size: "5m"
+                    max-file: "2"
+
+            networks:
+              internal:
+
+            volumes:
+              pgdata:
+              caddy_data:
+              caddy_config:
+            COMPOSEOF
+
+            cat > /opt/bfin-app/caddy/Caddyfile << 'CADDYEOF'
+            {
+                email admin@bfincont.com.br
+            }
+
+            bfincont.com.br {
+                encode zstd gzip
+                reverse_proxy app:3000
+            }
+            CADDYEOF
+
             cd /opt/bfin-app
             export IMAGE_TAG=${{ github.sha }}
             docker compose -f docker-compose.prod.yml pull
