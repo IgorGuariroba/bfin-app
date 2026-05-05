@@ -43,6 +43,9 @@ async function main() {
     }),
   ]);
 
+  await prisma.transaction.deleteMany({ where: { userId: user.id } });
+  await prisma.previsao.deleteMany({ where: { userId: user.id } });
+
   const transactions = [
     { type: "entrada", description: "Salário", amount: 8000, date: new Date("2026-05-01") },
     { type: "saida", description: "Aluguel", amount: 2500, date: new Date("2026-05-01") },
