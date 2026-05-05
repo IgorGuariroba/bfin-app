@@ -8,7 +8,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "seed": "npx tsx prisma/seed.mts"
+    "seed": "npx tsx prisma/seed.mts",
+    "stop": "pkill -f 'next dev' || true; docker compose down"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.2",

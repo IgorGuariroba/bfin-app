@@ -18,11 +18,23 @@ export async function GET(request: NextRequest) {
   const start = new Date(year, mon - 1, 1);
   const end = new Date(year, mon, 1);
 
-  const transactions = await prisma.transaction.findMany({
-    where: { userId: session.user.id, date: { gte: start, lt: end } },
-    select: { type: true, amount: true, date: true },
-    orderBy: { date: "asc" },
-  });
+  const [prevAgg, transactions] = await Promise.all([
+    prisma.transaction.groupBy({
+      by: ["type"],
+      where: { userId: session.user.id, date: { lt: start } },
+      _sum: { amount: true },
+    }),
+    prisma.transaction.findMany({
+      where: { userId: session.user.id, date: { gte: start, lt: end } },
+      select: { type: true, amount: true, date: true },
+      orderBy: { date: "asc" },
+    }),
+  ]);
+
+  const prevByType: Record<string, number> = {};
+  for (const g of prevAgg) {
+    prevByType[g.type] = g._sum.amount ?? 0;
+  }
 
   const daysCount = new Date(year, mon, 0).getDate();
   const byDay: Record<number, Record<string, number>> = {};
@@ -33,7 +45,11 @@ export async function GET(request: NextRequest) {
     byDay[day][t.type] = (byDay[day][t.type] ?? 0) + t.amount;
   }
 
-  let accSaldo = 0;
+  let accSaldo =
+    (prevByType.entrada ?? 0) -
+    (prevByType.saida ?? 0) -
+    (prevByType.diario ?? 0) -
+    (prevByType.cartao ?? 0);
   const entries = [];
 
   for (let d = 1; d <= daysCount; d++) {

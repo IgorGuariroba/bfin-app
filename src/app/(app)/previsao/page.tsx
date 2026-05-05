@@ -4,7 +4,7 @@ import { useEffect, useState, useMemo } from "react";
 import { BackHeader } from "@/components/layout/back-header";
 import { SwipeableItem } from "@/components/previsao/swipeable-item";
 import { PrevisaoForm } from "@/components/previsao/previsao-form";
-import { Plus } from "lucide-react";
+import { Plus, ChevronDown } from "lucide-react";
 import { useMonth } from "@/hooks/use-month";
 import { useTotais } from "@/hooks/use-totais";
 import { fmt } from "@/lib/utils";
@@ -115,16 +115,21 @@ export default function PrevisaoPage() {
             </div>
             <div className="flex justify-between items-center py-1.5 text-sm">
               <span className="text-[var(--color-ink)]">Dividido por</span>
-              <select
-                value={days}
-                onChange={(e) => setDays(Number(e.target.value))}
-                className="bg-transparent text-[var(--color-ink)] font-medium outline-none text-right appearance-none text-sm"
-                style={{ WebkitAppearance: "none", direction: "rtl" }}
-              >
-                <option value={28}>28 dias</option>
-                <option value={30}>30 dias</option>
-                <option value={31}>31 dias</option>
-              </select>
+              <div className="relative inline-flex items-center">
+                <div className="flex items-center gap-1 px-2.5 py-1 rounded-full border border-[var(--color-hairline)] bg-[var(--color-surface-soft)] text-sm font-medium text-[var(--color-ink)] pointer-events-none select-none">
+                  <span>{days} dias</span>
+                  <ChevronDown size={13} strokeWidth={2} className="text-[var(--color-muted)]" />
+                </div>
+                <select
+                  value={days}
+                  onChange={(e) => setDays(Number(e.target.value))}
+                  className="absolute inset-0 opacity-0 w-full cursor-pointer"
+                >
+                  <option value={28}>28 dias</option>
+                  <option value={30}>30 dias</option>
+                  <option value={31}>31 dias</option>
+                </select>
+              </div>
             </div>
             <div className="h-[1px] bg-[var(--color-hairline-soft)] my-3" />
             <div className="flex justify-between items-center py-1 text-base font-bold">

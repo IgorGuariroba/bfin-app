@@ -49,9 +49,9 @@ function fmtCompact(val: number): string {
   const sign = val < 0 ? "-" : "";
   if (abs >= 1000) {
     const k = abs / 1000;
-    return sign + k.toFixed(k >= 10 ? 1 : 2).replace(".", ",") + "K";
+    return sign + "R$" + k.toFixed(k >= 10 ? 1 : 2).replace(".", ",") + "K";
   }
-  return sign + abs.toLocaleString("pt-BR", { maximumFractionDigits: 1 });
+  return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(val);
 }
 
 interface HorizonteGridProps {
