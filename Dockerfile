@@ -26,11 +26,7 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
 COPY --from=builder --chown=nextjs:nodejs /app/prisma.config.ts ./prisma.config.ts
 
-COPY --from=deps --chown=nextjs:nodejs /app/node_modules/prisma ./node_modules/prisma
-COPY --from=deps --chown=nextjs:nodejs /app/node_modules/@prisma/engines ./node_modules/@prisma/engines
-
-RUN mkdir -p node_modules/.bin && \
-    ln -s ../prisma/build/index.js node_modules/.bin/prisma
+RUN npm install prisma@7.8.0
 
 USER nextjs
 EXPOSE 3000
