@@ -1,7 +1,9 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { BackHeader } from "@/components/layout/back-header";
+import { ArrowLeft, Plus } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useAddModal } from "@/lib/add-modal-context";
 import {
   HorizonteGrid,
   addMonths,
@@ -17,6 +19,8 @@ export default function HorizontePage() {
   const [firstMonth, setFirstMonth] = useState(() => addMonths(currentMonth(), -1));
   const [data, setData] = useState<MonthData[]>([]);
   const [loading, setLoading] = useState(false);
+  const router = useRouter();
+  const { setOpen: openAddModal } = useAddModal();
 
   const months: [string, string, string] = [
     firstMonth,
@@ -53,8 +57,26 @@ export default function HorizontePage() {
   }, []);
 
   return (
-    <div className="flex flex-col">
-      <BackHeader title="Horizonte" />
+    <div className="flex flex-col h-[100dvh]">
+      {/* ── Header: ← Horizonte de saldos + ── */}
+      <header className="flex items-center justify-between px-3 py-3 bg-canvas shrink-0">
+        <button
+          onClick={() => router.back()}
+          className="w-9 h-9 flex items-center justify-center rounded-full text-muted-foreground hover:text-ink transition-colors"
+          aria-label="Voltar"
+        >
+          <ArrowLeft size={20} />
+        </button>
+        <h1 className="text-sm font-bold text-ink">Horizonte de saldos</h1>
+        <button
+          onClick={() => openAddModal(true)}
+          className="w-9 h-9 flex items-center justify-center rounded-full text-muted-foreground hover:text-ink transition-colors"
+          aria-label="Adicionar"
+        >
+          <Plus size={20} />
+        </button>
+      </header>
+
       <HorizonteGrid
         months={months}
         data={data}
