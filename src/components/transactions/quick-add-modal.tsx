@@ -61,6 +61,7 @@ export function QuickAddModal() {
   const [description, setDescription] = useState("");
   const [date, setDate] = useState(todayStr());
   const [repeat, setRepeat] = useState("none");
+  const [repeatEnd, setRepeatEnd] = useState<"count" | "forever">("count");
   const [repeatCount, setRepeatCount] = useState(6);
   const [tags, setTags] = useState<TagItem[]>([]);
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
@@ -69,8 +70,8 @@ export function QuickAddModal() {
   /* dropdowns */
   const [typeOpen, setTypeOpen] = useState(false);
   const [repeatOpen, setRepeatOpen] = useState(false);
+  const [repeatEndOpen, setRepeatEndOpen] = useState(false);
 
-  const dateRef = useRef<HTMLInputElement>(null);
   const valueRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -87,10 +88,12 @@ export function QuickAddModal() {
     setDescription("");
     setDate(todayStr());
     setRepeat("none");
+    setRepeatEnd("count");
     setRepeatCount(6);
     setSelectedTagIds([]);
     setTypeOpen(false);
     setRepeatOpen(false);
+    setRepeatEndOpen(false);
   }, []);
 
   const handleClose = useCallback(() => {
@@ -111,8 +114,10 @@ export function QuickAddModal() {
       };
       if (repeat !== "none") {
         body.repeat = repeat;
-        body.repeatEnd = "count";
-        body.repeatCount = repeatCount;
+        body.repeatEnd = repeatEnd;
+        if (repeatEnd === "count") {
+          body.repeatCount = repeatCount;
+        }
       }
       const res = await fetch("/api/transactions", {
         method: "POST",
@@ -131,7 +136,7 @@ export function QuickAddModal() {
     } finally {
       setSubmitting(false);
     }
-  }, [centavos, description, type, date, repeat, repeatCount, selectedTagIds, handleClose]);
+  }, [centavos, description, type, date, repeat, repeatEnd, repeatCount, selectedTagIds, handleClose]);
 
   /* Handle raw value input – user types digits, we track centavos */
   const handleValueChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -243,30 +248,30 @@ export function QuickAddModal() {
           <div className="border-t border-hairline-soft" />
 
           {/* Date */}
-          <button
-            onClick={() => dateRef.current?.showPicker?.()}
-            className="flex items-center gap-3.5 w-full py-4 text-left"
-          >
+          <div className="relative flex items-center gap-3.5 w-full py-4 text-left">
             <CalendarDays size={18} className="text-muted-foreground flex-shrink-0" />
             <span className="flex-1 text-[15px] text-ink">Data</span>
             <span className="text-[15px] text-muted-foreground">{fmtDateDisplay(date)}</span>
             <ChevronDown size={14} className="text-muted-foreground ml-0.5" />
             <input
-              ref={dateRef}
               type="date"
               value={date}
               onChange={(e) => setDate(e.target.value)}
-              className="sr-only"
-              tabIndex={-1}
+              onClick={(e) => {
+                try {
+                  (e.target as HTMLInputElement).showPicker?.();
+                } catch (err) {}
+              }}
+              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
             />
-          </button>
+          </div>
 
           <div className="border-t border-hairline-soft" />
 
           {/* Repeat */}
           <div className="relative">
             <button
-              onClick={() => { setRepeatOpen(!repeatOpen); setTypeOpen(false); }}
+              onClick={() => { setRepeatOpen(!repeatOpen); setTypeOpen(false); setRepeatEndOpen(false); }}
               className="flex items-center gap-3.5 w-full py-4 text-left"
             >
               <CalendarClock size={18} className="text-muted-foreground flex-shrink-0" />
@@ -293,31 +298,58 @@ export function QuickAddModal() {
 
           {/* Repetitions (only when repeat != none) */}
           {repeat !== "none" && (
-            <>
+            <div className="relative">
               <div className="border-t border-hairline-soft" />
               <div className="flex items-center gap-3.5 py-4">
                 <RefreshCw size={18} className="text-muted-foreground flex-shrink-0" />
-                <span className="flex-1 text-[15px] text-ink">
-                  Repetições
-                  <ChevronDown size={12} className="inline ml-1 text-muted-foreground" />
-                </span>
-                <div className="flex items-center gap-0">
+                <button
+                  onClick={() => { setRepeatEndOpen(!repeatEndOpen); setTypeOpen(false); setRepeatOpen(false); }}
+                  className="flex-1 text-left flex items-center gap-1 text-[15px] text-ink"
+                >
+                  {repeatEnd === "count" ? "Número de vezes" : "A perder de vista"}
+                  <ChevronDown size={12} className="text-muted-foreground" />
+                </button>
+                {repeatEnd === "count" && (
+                  <div className="flex items-center gap-0">
+                    <button
+                      onClick={() => setRepeatCount((n) => Math.max(2, n - 1))}
+                      className="w-9 h-9 flex items-center justify-center rounded-lg border border-hairline text-muted-foreground active:bg-surface-soft transition-colors"
+                    >
+                      <Minus size={14} />
+                    </button>
+                    <span className="w-10 text-center text-[15px] font-semibold text-ink">{repeatCount}</span>
+                    <button
+                      onClick={() => setRepeatCount((n) => Math.min(60, n + 1))}
+                      className="w-9 h-9 flex items-center justify-center rounded-lg border border-hairline text-muted-foreground active:bg-surface-soft transition-colors"
+                    >
+                      <Plus size={14} />
+                    </button>
+                  </div>
+                )}
+              </div>
+              {repeatEndOpen && (
+                <div className="absolute left-0 right-0 top-full z-10 bg-white rounded-xl shadow-lg border border-hairline-soft overflow-hidden -mt-1">
                   <button
-                    onClick={() => setRepeatCount((n) => Math.max(2, n - 1))}
-                    className="w-9 h-9 flex items-center justify-center rounded-lg border border-hairline text-muted-foreground active:bg-surface-soft transition-colors"
+                    onClick={() => { setRepeatEnd("count"); setRepeatEndOpen(false); }}
+                    className={cn(
+                      "flex items-center w-full px-4 py-3 text-left text-sm hover:bg-surface-soft transition-colors",
+                      repeatEnd === "count" && "bg-surface-soft font-medium"
+                    )}
                   >
-                    <Minus size={14} />
+                    Número de vezes
                   </button>
-                  <span className="w-10 text-center text-[15px] font-semibold text-ink">{repeatCount}</span>
                   <button
-                    onClick={() => setRepeatCount((n) => Math.min(60, n + 1))}
-                    className="w-9 h-9 flex items-center justify-center rounded-lg border border-hairline text-muted-foreground active:bg-surface-soft transition-colors"
+                    onClick={() => { setRepeatEnd("forever"); setRepeatEndOpen(false); }}
+                    className={cn(
+                      "flex items-center w-full px-4 py-3 text-left text-sm hover:bg-surface-soft transition-colors",
+                      repeatEnd === "forever" && "bg-surface-soft font-medium"
+                    )}
                   >
-                    <Plus size={14} />
+                    A perder de vista
                   </button>
                 </div>
-              </div>
-            </>
+              )}
+            </div>
           )}
 
           <div className="border-t border-hairline-soft" />
