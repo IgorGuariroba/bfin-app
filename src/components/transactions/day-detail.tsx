@@ -46,13 +46,18 @@ interface DayDetailProps {
   onNavigate: (date: string) => void;
 }
 
+import { useTags } from "@/hooks/use-tags";
+
 export function DayDetail({ date, onClose, onNavigate }: DayDetailProps) {
   const [filterTipo, setFilterTipo] = useState("all");
+  const [filterTag, setFilterTag] = useState("all");
   const { setOpen: openAddModal } = useAddModal();
+  const { tags } = useTags();
 
   const queryType = filterTipo === "all" ? undefined : filterTipo;
+  const queryTag = filterTag === "all" ? undefined : filterTag;
   const { transactions, loading } = useTransactions(
-    date ? { from: date, to: date, type: queryType } : {}
+    date ? { from: date, to: date, type: queryType, tagId: queryTag } : {}
   );
 
   const prevDate = date ? addDays(date, -1) : null;
@@ -110,13 +115,13 @@ export function DayDetail({ date, onClose, onNavigate }: DayDetailProps) {
         </div>
 
         {/* Filter */}
-        <div className="px-4 py-2 border-b border-[var(--color-hairline-soft)] shrink-0">
+        <div className="flex gap-2 px-4 py-2 border-b border-[var(--color-hairline-soft)] shrink-0 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
           <Select value={filterTipo} onValueChange={setFilterTipo}>
-            <SelectTrigger className="w-36 h-8 text-sm">
-              <SelectValue />
+            <SelectTrigger className="w-[140px] shrink-0 h-8 text-sm">
+              <SelectValue placeholder="Categoria" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Todas</SelectItem>
+              <SelectItem value="all">Todas as categorias</SelectItem>
               {CATEGORIES.map((cat) => (
                 <SelectItem key={cat} value={cat}>
                   {TYPE_LABELS_FULL[cat]}
@@ -124,6 +129,22 @@ export function DayDetail({ date, onClose, onNavigate }: DayDetailProps) {
               ))}
             </SelectContent>
           </Select>
+          
+          {tags.length > 0 && (
+            <Select value={filterTag} onValueChange={setFilterTag}>
+              <SelectTrigger className="w-[140px] shrink-0 h-8 text-sm">
+                <SelectValue placeholder="Tag" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas as tags</SelectItem>
+                {tags.map((tag) => (
+                  <SelectItem key={tag.id} value={tag.id}>
+                    {tag.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
         </div>
 
         {/* Content */}

@@ -35,6 +35,7 @@ type Filters = {
   type?: string;
   from?: string;
   to?: string;
+  tagId?: string;
 };
 
 export function useTransactions(filters: Filters = {}) {
@@ -48,6 +49,7 @@ export function useTransactions(filters: Filters = {}) {
     if (f.type) params.set("type", f.type);
     if (f.from) params.set("from", f.from);
     if (f.to) params.set("to", f.to);
+    if (f.tagId) params.set("tagId", f.tagId);
     const qs = params.toString();
     return `/api/transactions${qs ? `?${qs}` : ""}`;
   }, []);

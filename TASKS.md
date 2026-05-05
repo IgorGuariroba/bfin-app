@@ -227,17 +227,17 @@ Cada task = entregável testável. Marque `[x]` quando done.
 
 ---
 
-## T16 — Tags
+## T16 — Tags [DONE]
 
 **Entregável**: CRUD de tags com associação a transações.
 
-- [ ] `src/app/(app)/tags/page.tsx`
-- [ ] API: `src/app/api/tags/route.ts` + `[id]/route.ts`
-- [ ] Lista de tags com cor e nome
-- [ ] Form criar/editar tag (nome + cor)
-- [ ] Delete tag
-- [ ] Tags visíveis no add transaction modal
-- [ ] Filtro por tag nas listagens
+- [x] `src/app/(app)/tags/page.tsx`
+- [x] API: `src/app/api/tags/route.ts` + `[id]/route.ts`
+- [x] Lista de tags com cor e nome
+- [x] Form criar/editar tag (nome + cor)
+- [x] Delete tag
+- [x] Tags visíveis no add transaction modal
+- [x] Filtro por tag nas listagens
 
 **Verificação**: Criar tag "Alimentação" cor verde. Associar a transação. Filtrar por tag.
 

@@ -29,6 +29,11 @@ export async function GET(request: NextRequest) {
 
   if (type) where.type = type;
 
+  const tagId = searchParams.get("tagId");
+  if (tagId) {
+    where.tags = { some: { id: tagId } };
+  }
+
   const transactions = await prisma.transaction.findMany({
     where,
     include: { tags: { select: { id: true, name: true, color: true } } },
