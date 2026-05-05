@@ -100,7 +100,7 @@ Cada task = entregável testável. Marque `[x]` quando done.
 - [x] `src/components/saldos/saldo-cell.tsx` — célula colorida (green/amber/red/zero)
 - [x] Filtro dropdown por categoria (Todas, Entradas, Saídas, Diário, Cartão, Guardado)
 - [x] Scroll automático para o dia atual
-- [ ] Clique em célula → abre detail ou add modal (stub — aguarda T8/T12)
+- [x] Clique em célula → abre detail ou add modal (integrado com DayDetail T12)
 
 **Verificação**: Ver grid de saldos do mês. Filtrar por "Entradas". Scroll para hoje.
 

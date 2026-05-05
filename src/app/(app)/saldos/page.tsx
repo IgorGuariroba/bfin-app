@@ -31,19 +31,28 @@ export default function SaldosPage() {
     <div className="flex flex-col">
       <MonthHeader month={label} onPrev={prev} onNext={next} />
 
-      <div className="px-4 py-2 border-b border-[var(--color-hairline-soft)] bg-canvas">
-        <Select value={filter} onValueChange={setFilter}>
-          <SelectTrigger className="w-36 h-8 text-sm">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {FILTER_OPTIONS.map((opt) => (
-              <SelectItem key={opt.value} value={opt.value}>
-                {opt.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+      {/* Column header: Dia | Filter | Saldos */}
+      <div className="flex items-center px-4 py-2 border-b border-[var(--color-hairline-soft)] bg-canvas">
+        <span className="w-8 text-xs font-medium text-[var(--color-muted)] shrink-0">
+          Dia
+        </span>
+        <div className="flex-1">
+          <Select value={filter} onValueChange={setFilter}>
+            <SelectTrigger className="w-28 h-7 text-xs border-[var(--color-hairline)] bg-[var(--color-surface-soft)]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {FILTER_OPTIONS.map((opt) => (
+                <SelectItem key={opt.value} value={opt.value}>
+                  {opt.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <span className="w-[100px] text-xs font-medium text-[var(--color-muted)] text-right pr-3 shrink-0">
+          Saldos
+        </span>
       </div>
 
       <SaldosGrid

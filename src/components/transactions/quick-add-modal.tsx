@@ -1,8 +1,18 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { toast } from "sonner";
-import { Delete, Check, Minus, Plus } from "lucide-react";
+import {
+  X,
+  Pencil,
+  CalendarDays,
+  CalendarClock,
+  RefreshCw,
+  Tag,
+  Minus,
+  Plus,
+  ChevronDown,
+} from "lucide-react";
 import {
   Sheet,
   SheetContent,
@@ -17,19 +27,31 @@ const todayStr = () => {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 };
 
-const fmtCentavos = (c: number) =>
-  new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(c / 100);
+const fmtCurrency = (val: number) =>
+  new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(val / 100);
+
+const fmtDateDisplay = (dateStr: string) => {
+  const [y, m, d] = dateStr.split("-");
+  return `${parseInt(d, 10)}/${parseInt(m, 10)}/${y}`;
+};
 
 const REPEAT_OPTS = [
-  { value: "none", label: "Não" },
-  { value: "monthly", label: "Todo mês" },
-  { value: "weekly", label: "Toda semana" },
-  { value: "daily", label: "Todo dia" },
+  { value: "none", label: "Não repete" },
+  { value: "monthly", label: "Repete todo mês" },
+  { value: "weekly", label: "Repete toda semana" },
+  { value: "daily", label: "Repete todo dia" },
 ] as const;
 
-const NUMPAD = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "⌫", "0", "✓"] as const;
+type TagItem = { id: string; name: string; color: string };
 
-type Tag = { id: string; name: string; color: string };
+/* ── Category initial circle ─────────────────── */
+const CAT_INITIALS: Record<Category, string> = {
+  entrada: "E",
+  saida: "S",
+  diario: "D",
+  cartao: "C",
+  economia: "G",
+};
 
 export function QuickAddModal() {
   const { open, setOpen } = useAddModal();
@@ -39,11 +61,17 @@ export function QuickAddModal() {
   const [description, setDescription] = useState("");
   const [date, setDate] = useState(todayStr());
   const [repeat, setRepeat] = useState("none");
-  const [repeatEnd, setRepeatEnd] = useState("forever");
-  const [repeatCount, setRepeatCount] = useState(2);
-  const [tags, setTags] = useState<Tag[]>([]);
+  const [repeatCount, setRepeatCount] = useState(6);
+  const [tags, setTags] = useState<TagItem[]>([]);
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
+
+  /* dropdowns */
+  const [typeOpen, setTypeOpen] = useState(false);
+  const [repeatOpen, setRepeatOpen] = useState(false);
+
+  const dateRef = useRef<HTMLInputElement>(null);
+  const valueRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -59,9 +87,10 @@ export function QuickAddModal() {
     setDescription("");
     setDate(todayStr());
     setRepeat("none");
-    setRepeatEnd("forever");
-    setRepeatCount(2);
+    setRepeatCount(6);
     setSelectedTagIds([]);
+    setTypeOpen(false);
+    setRepeatOpen(false);
   }, []);
 
   const handleClose = useCallback(() => {
@@ -71,20 +100,19 @@ export function QuickAddModal() {
 
   const handleSubmit = useCallback(async () => {
     if (centavos === 0) { toast.error("Informe um valor"); return; }
-    if (!description.trim()) { toast.error("Informe uma descrição"); return; }
     setSubmitting(true);
     try {
       const body: Record<string, unknown> = {
         type,
-        description: description.trim(),
+        description: description.trim() || CAT_LABELS[type],
         amount: centavos / 100,
         date,
         tagIds: selectedTagIds,
       };
       if (repeat !== "none") {
         body.repeat = repeat;
-        body.repeatEnd = repeatEnd;
-        if (repeatEnd === "count") body.repeatCount = repeatCount;
+        body.repeatEnd = "count";
+        body.repeatCount = repeatCount;
       }
       const res = await fetch("/api/transactions", {
         method: "POST",
@@ -103,23 +131,17 @@ export function QuickAddModal() {
     } finally {
       setSubmitting(false);
     }
-  }, [centavos, description, type, date, repeat, repeatEnd, repeatCount, selectedTagIds, handleClose]);
+  }, [centavos, description, type, date, repeat, repeatCount, selectedTagIds, handleClose]);
 
-  const handleNumpad = useCallback(
-    (key: string) => {
-      if (key === "⌫") {
-        setCentavos((c) => Math.floor(c / 10));
-      } else if (key === "✓") {
-        handleSubmit();
-      } else {
-        setCentavos((c) => {
-          const next = c * 10 + parseInt(key, 10);
-          return next > 99999999 ? c : next;
-        });
-      }
-    },
-    [handleSubmit]
-  );
+  /* Handle raw value input – user types digits, we track centavos */
+  const handleValueChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value.replace(/\D/g, "");
+    const num = parseInt(raw || "0", 10);
+    setCentavos(num > 99999999 ? centavos : num);
+  };
+
+  /* Display value for the input */
+  const displayValue = centavos === 0 ? "" : (centavos / 100).toFixed(2).replace(".", ",");
 
   const toggleTag = (id: string) =>
     setSelectedTagIds((prev) =>
@@ -127,142 +149,195 @@ export function QuickAddModal() {
     );
 
   const accent = CAT_COLORS[type];
+  const repeatLabel = REPEAT_OPTS.find((o) => o.value === repeat)?.label ?? "Não repete";
 
   return (
     <Sheet open={open} onOpenChange={(v) => !v && handleClose()}>
       <SheetContent
         side="bottom"
         showCloseButton={false}
-        className="p-0 rounded-t-2xl max-h-[92dvh] flex flex-col gap-0"
+        className="p-0 rounded-t-2xl max-h-[85dvh] flex flex-col gap-0"
       >
         <SheetTitle className="sr-only">Adicionar Transação</SheetTitle>
-        {/* drag handle */}
-        <div className="flex justify-center pt-3 pb-2 flex-shrink-0">
-          <div className="w-10 h-1 rounded-full bg-hairline" />
+
+        {/* ─── Value header ─── */}
+        <div className="flex items-center px-5 pt-5 pb-4">
+          <span className="text-[28px] font-bold text-muted-foreground/60 mr-1 select-none">R$</span>
+          <input
+            ref={valueRef}
+            type="text"
+            inputMode="numeric"
+            value={displayValue}
+            onChange={handleValueChange}
+            placeholder="0,00"
+            className="flex-1 text-[28px] font-bold bg-transparent outline-none placeholder:text-muted-foreground/40 caret-ink"
+            style={{ color: centavos > 0 ? "var(--ink)" : undefined }}
+            autoFocus
+          />
+          <button
+            onClick={handleClose}
+            className="w-8 h-8 flex items-center justify-center rounded-full text-muted-foreground hover:bg-surface-soft transition-colors"
+          >
+            <X size={18} />
+          </button>
         </div>
 
-        {/* type pills */}
-        <div className="flex gap-2 px-4 pb-3 overflow-x-auto flex-shrink-0 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-          {CATEGORIES.map((cat) => (
+        {/* ─── Form rows ─── */}
+        <div className="flex-1 overflow-y-auto px-5 min-h-0">
+          {/* separator */}
+          <div className="border-t border-hairline-soft" />
+
+          {/* Type */}
+          <div className="relative">
             <button
-              key={cat}
-              onClick={() => setType(cat)}
-              className={cn(
-                "flex-shrink-0 px-4 py-1.5 rounded-full text-sm font-medium transition-all",
-                type === cat ? "text-white" : "text-muted-foreground bg-surface-soft"
-              )}
-              style={type === cat ? { backgroundColor: accent } : undefined}
+              onClick={() => { setTypeOpen(!typeOpen); setRepeatOpen(false); }}
+              className="flex items-center gap-3.5 w-full py-4 text-left"
             >
-              {CAT_LABELS[cat]}
+              <span
+                className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-semibold flex-shrink-0"
+                style={{ backgroundColor: accent }}
+              >
+                {CAT_INITIALS[type]}
+              </span>
+              <span className="flex-1 text-[15px] text-ink font-medium">{CAT_LABELS[type]}</span>
+              <ChevronDown size={16} className="text-muted-foreground" />
             </button>
-          ))}
-        </div>
-
-        {/* scrollable middle */}
-        <div className="flex-1 overflow-y-auto px-4 space-y-3 pb-3 min-h-0">
-          {/* value */}
-          <div className="text-4xl font-bold text-center py-3" style={{ color: accent }}>
-            {fmtCentavos(centavos)}
+            {typeOpen && (
+              <div className="absolute left-0 right-0 top-full z-10 bg-white rounded-xl shadow-lg border border-hairline-soft overflow-hidden -mt-1">
+                {CATEGORIES.map((cat) => (
+                  <button
+                    key={cat}
+                    onClick={() => { setType(cat); setTypeOpen(false); }}
+                    className={cn(
+                      "flex items-center gap-3 w-full px-4 py-3 text-left hover:bg-surface-soft transition-colors",
+                      type === cat && "bg-surface-soft"
+                    )}
+                  >
+                    <span
+                      className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-semibold"
+                      style={{ backgroundColor: CAT_COLORS[cat] }}
+                    >
+                      {CAT_INITIALS[cat]}
+                    </span>
+                    <span className="text-sm text-ink">{CAT_LABELS[cat]}</span>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
-          {/* description */}
-          <input
-            type="text"
-            placeholder="Descrição..."
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            className="w-full bg-surface-soft rounded-lg px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-ring/30 placeholder:text-muted-foreground"
-          />
+          <div className="border-t border-hairline-soft" />
 
-          {/* date */}
-          <div className="flex items-center gap-3">
-            <span className="text-sm text-muted-foreground w-16 flex-shrink-0">Data</span>
+          {/* Description */}
+          <div className="flex items-center gap-3.5 py-4">
+            <Pencil size={18} className="text-muted-foreground flex-shrink-0" />
             <input
-              type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              className="flex-1 bg-surface-soft rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-ring/30"
+              type="text"
+              placeholder="Descrição"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              className="flex-1 text-[15px] bg-transparent outline-none placeholder:text-muted-foreground/50"
             />
           </div>
 
-          {/* repeat */}
-          <div className="flex items-start gap-3">
-            <span className="text-sm text-muted-foreground w-16 flex-shrink-0 pt-1.5">Repetir</span>
-            <div className="flex gap-1.5 flex-wrap">
-              {REPEAT_OPTS.map((opt) => (
-                <button
-                  key={opt.value}
-                  onClick={() => setRepeat(opt.value)}
-                  className={cn(
-                    "px-3 py-1.5 rounded-lg text-xs font-medium transition-colors",
-                    repeat === opt.value ? "bg-ink text-white" : "bg-surface-soft text-muted-foreground"
-                  )}
-                >
-                  {opt.label}
-                </button>
-              ))}
-            </div>
+          <div className="border-t border-hairline-soft" />
+
+          {/* Date */}
+          <button
+            onClick={() => dateRef.current?.showPicker?.()}
+            className="flex items-center gap-3.5 w-full py-4 text-left"
+          >
+            <CalendarDays size={18} className="text-muted-foreground flex-shrink-0" />
+            <span className="flex-1 text-[15px] text-ink">Data</span>
+            <span className="text-[15px] text-muted-foreground">{fmtDateDisplay(date)}</span>
+            <ChevronDown size={14} className="text-muted-foreground ml-0.5" />
+            <input
+              ref={dateRef}
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              className="sr-only"
+              tabIndex={-1}
+            />
+          </button>
+
+          <div className="border-t border-hairline-soft" />
+
+          {/* Repeat */}
+          <div className="relative">
+            <button
+              onClick={() => { setRepeatOpen(!repeatOpen); setTypeOpen(false); }}
+              className="flex items-center gap-3.5 w-full py-4 text-left"
+            >
+              <CalendarClock size={18} className="text-muted-foreground flex-shrink-0" />
+              <span className="flex-1 text-[15px] text-ink">{repeatLabel}</span>
+              <ChevronDown size={14} className="text-muted-foreground" />
+            </button>
+            {repeatOpen && (
+              <div className="absolute left-0 right-0 top-full z-10 bg-white rounded-xl shadow-lg border border-hairline-soft overflow-hidden -mt-1">
+                {REPEAT_OPTS.map((opt) => (
+                  <button
+                    key={opt.value}
+                    onClick={() => { setRepeat(opt.value); setRepeatOpen(false); }}
+                    className={cn(
+                      "flex items-center w-full px-4 py-3 text-left text-sm hover:bg-surface-soft transition-colors",
+                      repeat === opt.value && "bg-surface-soft font-medium"
+                    )}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
-          {/* until when */}
+          {/* Repetitions (only when repeat != none) */}
           {repeat !== "none" && (
-            <div className="flex items-start gap-3">
-              <span className="text-sm text-muted-foreground w-16 flex-shrink-0 pt-1.5">Até</span>
-              <div className="flex-1 space-y-2">
-                <div className="flex gap-2">
+            <>
+              <div className="border-t border-hairline-soft" />
+              <div className="flex items-center gap-3.5 py-4">
+                <RefreshCw size={18} className="text-muted-foreground flex-shrink-0" />
+                <span className="flex-1 text-[15px] text-ink">
+                  Repetições
+                  <ChevronDown size={12} className="inline ml-1 text-muted-foreground" />
+                </span>
+                <div className="flex items-center gap-0">
                   <button
-                    onClick={() => setRepeatEnd("forever")}
-                    className={cn(
-                      "flex-1 py-2 rounded-lg text-xs font-medium transition-colors",
-                      repeatEnd === "forever" ? "bg-ink text-white" : "bg-surface-soft text-muted-foreground"
-                    )}
+                    onClick={() => setRepeatCount((n) => Math.max(2, n - 1))}
+                    className="w-9 h-9 flex items-center justify-center rounded-lg border border-hairline text-muted-foreground active:bg-surface-soft transition-colors"
                   >
-                    A perder de vista
+                    <Minus size={14} />
                   </button>
+                  <span className="w-10 text-center text-[15px] font-semibold text-ink">{repeatCount}</span>
                   <button
-                    onClick={() => setRepeatEnd("count")}
-                    className={cn(
-                      "flex-1 py-2 rounded-lg text-xs font-medium transition-colors",
-                      repeatEnd === "count" ? "bg-ink text-white" : "bg-surface-soft text-muted-foreground"
-                    )}
+                    onClick={() => setRepeatCount((n) => Math.min(60, n + 1))}
+                    className="w-9 h-9 flex items-center justify-center rounded-lg border border-hairline text-muted-foreground active:bg-surface-soft transition-colors"
                   >
-                    Nº de vezes
+                    <Plus size={14} />
                   </button>
                 </div>
-                {repeatEnd === "count" && (
-                  <div className="flex items-center justify-center gap-5 bg-surface-soft rounded-lg py-2.5">
-                    <button
-                      onClick={() => setRepeatCount((n) => Math.max(2, n - 1))}
-                      className="p-1 text-muted-foreground active:text-ink"
-                    >
-                      <Minus size={16} />
-                    </button>
-                    <span className="text-sm font-semibold w-10 text-center">{repeatCount}×</span>
-                    <button
-                      onClick={() => setRepeatCount((n) => Math.min(60, n + 1))}
-                      className="p-1 text-muted-foreground active:text-ink"
-                    >
-                      <Plus size={16} />
-                    </button>
-                  </div>
-                )}
               </div>
-            </div>
+            </>
           )}
 
-          {/* tags */}
-          {tags.length > 0 && (
-            <div className="flex items-start gap-3">
-              <span className="text-sm text-muted-foreground w-16 flex-shrink-0 pt-1.5">Tags</span>
-              <div className="flex flex-wrap gap-1.5">
+          <div className="border-t border-hairline-soft" />
+
+          {/* Tags */}
+          <div className="py-4">
+            <div className="flex items-center gap-3.5">
+              <Tag size={18} className="text-muted-foreground flex-shrink-0" />
+              <span className="text-[15px] text-muted-foreground/60">Tags</span>
+            </div>
+            {tags.length > 0 && (
+              <div className="flex flex-wrap gap-2 mt-3 pl-[30px]">
                 {tags.map((tag) => (
                   <button
                     key={tag.id}
                     onClick={() => toggleTag(tag.id)}
                     className={cn(
-                      "px-3 py-1 rounded-full text-xs font-medium transition-colors",
+                      "px-3 py-1 rounded-full text-xs font-medium transition-all",
                       selectedTagIds.includes(tag.id)
-                        ? "text-white"
+                        ? "text-white shadow-sm"
                         : "bg-surface-soft text-muted-foreground"
                     )}
                     style={selectedTagIds.includes(tag.id) ? { backgroundColor: tag.color } : undefined}
@@ -271,37 +346,22 @@ export function QuickAddModal() {
                   </button>
                 ))}
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
 
-        {/* numpad */}
-        <div className="grid grid-cols-3 border-t border-hairline flex-shrink-0 pb-safe">
-          {NUMPAD.map((key) => (
-            <button
-              key={key}
-              onClick={() => handleNumpad(key)}
-              disabled={submitting && key === "✓"}
-              className={cn(
-                "h-14 flex items-center justify-center text-xl font-medium select-none transition-colors",
-                "active:bg-surface-strong",
-                key === "✓" ? "text-white" : key === "⌫" ? "text-muted-foreground" : "text-ink"
-              )}
-              style={key === "✓" ? { backgroundColor: accent } : undefined}
-            >
-              {key === "⌫" ? (
-                <Delete size={20} />
-              ) : key === "✓" ? (
-                submitting ? (
-                  <span className="text-sm">...</span>
-                ) : (
-                  <Check size={20} />
-                )
-              ) : (
-                key
-              )}
-            </button>
-          ))}
+        {/* ─── Submit button ─── */}
+        <div className="px-5 pt-3 pb-6 flex-shrink-0">
+          <button
+            onClick={handleSubmit}
+            disabled={submitting}
+            className="w-full py-4 rounded-full text-white font-semibold text-[15px] transition-all active:scale-[0.98] disabled:opacity-60"
+            style={{ backgroundColor: accent }}
+          >
+            {submitting
+              ? "Salvando..."
+              : `Adicionar ${CAT_LABELS[type].toLowerCase()}`}
+          </button>
         </div>
       </SheetContent>
     </Sheet>
