@@ -53,7 +53,7 @@ export default function TagsPage() {
         {loading && tags.length === 0 ? (
           <div className="space-y-3">
             {[1, 2, 3].map(i => (
-              <Skeleton key={i} className="h-16 w-full rounded-2xl" />
+              <div key={i} className="h-16 w-full rounded-2xl bg-surface-soft animate-pulse" />
             ))}
           </div>
         ) : tags.length === 0 ? (

@@ -71,7 +71,7 @@ export default function PrevisaoPage() {
 
   return (
     <div className="flex flex-col h-[100dvh] bg-[var(--color-surface-soft)] relative">
-      <BackHeader title="Previsão de diário" rightAction={<button className="text-xl px-2 text-[var(--color-muted)]" onClick={openNew}>+</button>} />
+      <BackHeader title="Previsão de diário" action={<button className="text-xl px-2 text-[var(--color-muted)]" onClick={openNew}>+</button>} />
 
       <div className="flex-1 overflow-y-auto flex flex-col bg-[var(--color-surface-soft)]">
         {loading ? (

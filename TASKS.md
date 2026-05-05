@@ -243,15 +243,15 @@ Cada task = entregável testável. Marque `[x]` quando done.
 
 ---
 
-## T17 — PWA
+## T17 — PWA [DONE]
 
 **Entregável**: App instalável no mobile, funcionando offline básico.
 
-- [ ] `src/app/manifest.ts` — name, icons, theme_color, display standalone
-- [ ] Icons PWA (192px, 512px) em `public/icons/`
-- [ ] Service worker básico para cache de assets
-- [ ] Meta tags no layout (viewport, theme-color, apple-touch-icon)
-- [ ] `next.config.js` com headers para service worker
+- [x] `src/app/manifest.ts` — name, icons, theme_color, display standalone
+- [x] Icons PWA (192px, 512px) em `public/icons/`
+- [x] Service worker básico para cache de assets
+- [x] Meta tags no layout (viewport, theme-color, apple-touch-icon)
+- [x] `next.config.ts` com headers para service worker
 
 **Verificação**: No Chrome mobile → "Add to Home Screen". App abre standalone. Offline → cache funciona.
 

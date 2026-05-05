@@ -4,10 +4,12 @@ import type { NextRequest } from "next/server";
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await auth();
   if (!session?.user?.id) return Response.json({ error: "Unauthorized" }, { status: 401 });
+
+  const { id } = await params;
 
   try {
     const data = await request.json();
@@ -15,7 +17,7 @@ export async function PUT(
 
     // Check if it belongs to user
     const existing = await prisma.previsao.findUnique({
-      where: { id: params.id },
+      where: { id },
     });
 
     if (!existing || existing.userId !== session.user.id) {
@@ -23,7 +25,7 @@ export async function PUT(
     }
 
     const updated = await prisma.previsao.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         ...(name !== undefined && { name }),
         ...(amount !== undefined && { amount }),
@@ -38,15 +40,17 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await auth();
   if (!session?.user?.id) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
+  const { id } = await params;
+
   try {
     // Check if it belongs to user
     const existing = await prisma.previsao.findUnique({
-      where: { id: params.id },
+      where: { id },
     });
 
     if (!existing || existing.userId !== session.user.id) {
@@ -54,7 +58,7 @@ export async function DELETE(
     }
 
     await prisma.previsao.delete({
-      where: { id: params.id },
+      where: { id },
     });
 
     return Response.json({ success: true });
