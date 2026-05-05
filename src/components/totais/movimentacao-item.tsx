@@ -1,8 +1,16 @@
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
-import { CAT_COLORS, CAT_LABELS, TYPE_LABELS_FULL } from "@/lib/constants";
+import { CAT_COLORS, CAT_LABELS } from "@/lib/constants";
 import { fmt } from "@/lib/utils";
 import type { Category } from "@/lib/constants";
+
+const CAT_INITIALS: Record<string, string> = {
+  entrada: "E",
+  saida: "S",
+  diario: "D",
+  cartao: "C",
+  economia: "G",
+};
 
 interface MovimentacaoItemProps {
   tipo: Category;
@@ -12,24 +20,25 @@ interface MovimentacaoItemProps {
 
 export function MovimentacaoItem({ tipo, total, month }: MovimentacaoItemProps) {
   const color = CAT_COLORS[tipo];
-  const label = TYPE_LABELS_FULL[tipo];
-  const shortLabel = CAT_LABELS[tipo];
+  const label = CAT_LABELS[tipo] === "Guardado" ? "Economias" : `${CAT_LABELS[tipo]}s`;
+  const initial = CAT_INITIALS[tipo] ?? "?";
 
   return (
     <Link
       href={`/movimentacoes/${tipo}?month=${month}`}
-      className="flex items-center gap-3 px-4 py-3 border-b border-[var(--color-hairline-soft)] bg-canvas hover:bg-[var(--color-surface-soft)]/60 transition-colors"
+      className="flex items-center gap-3.5 px-4 py-4 border-b border-hairline-soft hover:bg-surface-soft/60 transition-colors"
     >
       <span
-        className="w-3 h-3 rounded-full shrink-0"
+        className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-semibold shrink-0"
         style={{ backgroundColor: color }}
-        aria-label={shortLabel}
-      />
-      <span className="flex-1 text-sm text-[var(--color-body-text)]">{label}</span>
-      <span className="text-sm font-semibold tabular-nums text-[var(--color-ink)]">
+      >
+        {initial}
+      </span>
+      <span className="flex-1 text-[15px] text-ink font-medium">{label}</span>
+      <span className="text-[15px] font-semibold tabular-nums text-ink">
         {fmt(total)}
       </span>
-      <ChevronRight size={16} className="text-[var(--color-muted)] shrink-0" />
+      <ChevronRight size={16} className="text-muted-foreground shrink-0" />
     </Link>
   );
 }

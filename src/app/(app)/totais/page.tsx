@@ -1,17 +1,36 @@
 "use client";
 
 import { MonthHeader } from "@/components/layout/month-header";
-import { MetricRow } from "@/components/totais/metric-row";
 import { MovimentacaoItem } from "@/components/totais/movimentacao-item";
 import { useMonth } from "@/hooks/use-month";
 import { useTotais } from "@/hooks/use-totais";
-import { Progress } from "@/components/ui/progress";
 import { fmt } from "@/lib/utils";
-import { CATEGORIES } from "@/lib/constants";
-import type { Category } from "@/lib/constants";
-import Link from "next/link";
+import { CAT_COLORS } from "@/lib/constants";
 
-const OUTFLOW: Category[] = ["saida", "diario", "cartao", "economia"];
+/* ── Tiny colored circle for formulas ─── */
+function Dot({ cat, size = 20 }: { cat: string; size?: number }) {
+  const initials: Record<string, string> = {
+    entrada: "E", saida: "S", diario: "D", cartao: "C", economia: "G",
+  };
+  return (
+    <span
+      className="inline-flex items-center justify-center rounded-full text-white font-bold shrink-0"
+      style={{
+        backgroundColor: CAT_COLORS[cat as keyof typeof CAT_COLORS] ?? "#999",
+        width: size,
+        height: size,
+        fontSize: size * 0.5,
+        lineHeight: 1,
+      }}
+    >
+      {initials[cat] ?? "?"}
+    </span>
+  );
+}
+
+function Operator({ children }: { children: React.ReactNode }) {
+  return <span className="text-xs text-muted-foreground font-medium mx-0.5">{children}</span>;
+}
 
 export default function TotaisPage() {
   const { month, prev, next, label } = useMonth();
@@ -22,135 +41,154 @@ export default function TotaisPage() {
       ? Math.min(100, Math.round((data.economia / data.entradas) * 100))
       : 0;
 
+  const perfLabel =
+    data
+      ? data.performance >= 0
+        ? "Sobrou dinheiro"
+        : "Faltou dinheiro"
+      : "";
+
+  const econLabel =
+    data
+      ? data.economia > 0
+        ? `${economiaPct}% da renda`
+        : "Nada guardado"
+      : "";
+
+  const custoLabel =
+    data
+      ? data.custoVida <= data.entradas
+        ? "Abaixo da renda"
+        : "Acima da renda"
+      : "";
+
   return (
-    <div className="flex flex-col">
+    <div className="flex flex-col pb-20">
       <MonthHeader month={label} onPrev={prev} onNext={next} />
 
       {loading && (
-        <div className="flex items-center justify-center py-16 text-sm text-[var(--color-muted)]">
+        <div className="flex items-center justify-center py-16 text-sm text-muted-foreground">
           Carregando...
         </div>
       )}
 
       {!loading && data && (
         <>
-          {/* Performance */}
-          <section className="px-4 pt-4 pb-2 border-b border-[var(--color-hairline-soft)]">
-            <p className="text-xs font-semibold uppercase tracking-wider text-[var(--color-muted)] mb-1">
-              Performance
-            </p>
-            <MetricRow
-              label="Entradas"
-              value={data.entradas}
-              valueColor="text-[#2db55d]"
-              large
-            />
-            <MetricRow
-              label="Custo de vida"
-              value={-data.custoVida}
-              valueColor="text-[var(--color-rausch)]"
-              large
-            />
-            <div className="flex items-center justify-between py-3 border-t border-[var(--color-hairline-soft)] mt-1">
-              <span className="text-sm font-bold text-[var(--color-ink)]">Resultado</span>
-              <span
-                className={`text-base font-bold tabular-nums ${
-                  data.performance >= 0
-                    ? "text-[#2db55d]"
-                    : "text-[var(--color-rausch)]"
-                }`}
-              >
-                {fmt(data.performance)}
-              </span>
+          {/* ═══ Cálculos do mês ═══ */}
+          <p className="px-4 pt-4 pb-2 text-xs text-muted-foreground">
+            Cálculos do mês
+          </p>
+
+          {/* ── Performance ── */}
+          <section className="px-4 py-4 border-b border-hairline-soft">
+            <div className="flex items-start justify-between">
+              <span className="text-[15px] font-bold text-ink">Performance</span>
+              <div className="text-right">
+                <p
+                  className="text-[15px] font-bold tabular-nums"
+                  style={{ color: data.performance >= 0 ? "#2db55d" : "var(--rausch)" }}
+                >
+                  {data.performance < 0 ? "– " : ""}{fmt(Math.abs(data.performance))}
+                </p>
+                <p className="text-xs text-muted-foreground mt-0.5">{perfLabel}</p>
+              </div>
+            </div>
+            {/* Formula: E - S - D - G - C = D */}
+            <div className="flex items-center gap-0.5 mt-3">
+              <Dot cat="entrada" />
+              <Operator>–</Operator>
+              <Dot cat="saida" />
+              <Operator>–</Operator>
+              <Dot cat="diario" />
+              <Operator>–</Operator>
+              <Dot cat="economia" />
+              <Operator>–</Operator>
+              <Dot cat="cartao" />
+              <Operator>=</Operator>
+              <Dot cat="diario" size={18} />
             </div>
           </section>
 
-          {/* Economizado */}
-          <section className="px-4 py-3 border-b border-[var(--color-hairline-soft)]">
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-xs font-semibold uppercase tracking-wider text-[var(--color-muted)]">
-                Economizado
-              </p>
-              <span className="text-xs text-[var(--color-muted)]">{economiaPct}%</span>
+          {/* ── Economizado ── */}
+          <section className="px-4 py-4 border-b border-hairline-soft">
+            <div className="flex items-start justify-between">
+              <span className="text-[15px] font-bold text-ink">Economizado</span>
+              <div className="text-right">
+                <p className="text-[15px] font-bold tabular-nums text-ink">{economiaPct}%</p>
+                <p className="text-xs text-muted-foreground mt-0.5">{econLabel}</p>
+              </div>
             </div>
-            <Progress value={economiaPct} className="h-2 mb-2" />
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-[var(--color-body-text)]">Guardado</span>
-              <span className="text-sm font-semibold tabular-nums text-[#2db55d]">
-                {fmt(data.economia)}
-              </span>
-            </div>
-          </section>
-
-          {/* Custo de vida breakdown */}
-          <section className="px-4 py-3 border-b border-[var(--color-hairline-soft)]">
-            <p className="text-xs font-semibold uppercase tracking-wider text-[var(--color-muted)] mb-1">
-              Custo de vida
-            </p>
-            <MetricRow label="Saídas" value={data.saidas} />
-            <MetricRow label="Cartão" value={data.cartao} />
-            <MetricRow label="Diário" value={data.diarios} />
-            <div className="flex items-center justify-between py-2 border-t border-[var(--color-hairline-soft)] mt-1">
-              <span className="text-sm font-semibold text-[var(--color-ink)]">Total</span>
-              <span className="text-sm font-bold tabular-nums text-[var(--color-ink)]">
-                {fmt(data.custoVida)}
-              </span>
+            {/* Progress bar */}
+            <div className="flex items-center gap-2 mt-3">
+              <Dot cat="economia" />
+              <div className="flex-1 h-2 bg-surface-strong rounded-full overflow-hidden">
+                <div
+                  className="h-full rounded-full transition-all"
+                  style={{
+                    width: `${economiaPct}%`,
+                    backgroundColor: "#2db55d",
+                  }}
+                />
+              </div>
+              <Dot cat="economia" />
             </div>
           </section>
 
-          {/* Diário médio */}
-          <section className="px-4 py-3 border-b border-[var(--color-hairline-soft)]">
-            <p className="text-xs font-semibold uppercase tracking-wider text-[var(--color-muted)] mb-1">
-              Diário médio
-            </p>
-            <MetricRow
-              label="Realizado"
-              value={data.diarioMedio}
-              sublabel={`${data.daysElapsed} dias`}
-            />
-            <MetricRow
-              label="Previsto"
-              value={data.diarioPrev}
-              sublabel={`${data.daysInMonth} dias`}
-              valueColor={
-                data.diarioPrev > 0 && data.diarioMedio > data.diarioPrev
-                  ? "text-[var(--color-rausch)]"
-                  : undefined
-              }
-            />
+          {/* ── Custo de vida ── */}
+          <section className="px-4 py-4 border-b border-hairline-soft">
+            <div className="flex items-start justify-between">
+              <span className="text-[15px] font-bold text-ink">Custo de vida</span>
+              <div className="text-right">
+                <p className="text-[15px] font-bold tabular-nums text-ink">{fmt(data.custoVida)}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">{custoLabel}</p>
+              </div>
+            </div>
+            {/* Formula: S + D + C + D */}
+            <div className="flex items-center gap-0.5 mt-3">
+              <Dot cat="saida" />
+              <Operator>+</Operator>
+              <Dot cat="diario" />
+              <Operator>+</Operator>
+              <Dot cat="cartao" />
+              <Operator>+</Operator>
+              <Dot cat="diario" size={18} />
+            </div>
           </section>
 
-          {/* Movimentações */}
-          <section className="pt-3">
-            <p className="px-4 text-xs font-semibold uppercase tracking-wider text-[var(--color-muted)] mb-1">
-              Movimentações
-            </p>
-            <MovimentacaoItem tipo="entrada" total={data.entradas} month={month} />
-            {OUTFLOW.map((tipo) => {
-              const val =
-                tipo === "saida"
-                  ? data.saidas
-                  : tipo === "diario"
-                  ? data.diarios
-                  : tipo === "cartao"
-                  ? data.cartao
-                  : data.economia;
-              return (
-                <MovimentacaoItem key={tipo} tipo={tipo} total={val} month={month} />
-              );
-            })}
-            <Link
-              href={`/movimentacoes/all?month=${month}`}
-              className="flex items-center justify-center py-3 text-sm text-[var(--color-muted)] hover:text-[var(--color-ink)] transition-colors"
-            >
-              Ver todas
-            </Link>
+          {/* ── Diário médio ── */}
+          <section className="px-4 py-4 border-b border-hairline-soft">
+            <div className="flex items-start justify-between">
+              <span className="text-[15px] font-bold text-ink">Diário médio</span>
+              <div className="text-right">
+                <p className="text-[15px] font-bold tabular-nums text-ink">{fmt(data.diarioMedio)}</p>
+                <p className="text-xs text-muted-foreground mt-0.5 flex items-center justify-end gap-1">
+                  <span className="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full border border-muted-foreground text-[8px] text-muted-foreground">⊙</span>
+                  {fmt(data.diarioPrev)}
+                </p>
+              </div>
+            </div>
+            {/* Formula: D / 0 */}
+            <div className="flex items-center gap-0.5 mt-3">
+              <Dot cat="diario" />
+              <Operator>/</Operator>
+              <span className="text-xs text-muted-foreground font-medium">{data.daysElapsed}</span>
+            </div>
           </section>
+
+          {/* ═══ Movimentações do mês ═══ */}
+          <p className="px-4 pt-5 pb-2 text-xs text-muted-foreground">
+            Movimentações do mês
+          </p>
+
+          <MovimentacaoItem tipo="entrada" total={data.entradas} month={month} />
+          <MovimentacaoItem tipo="saida" total={data.saidas} month={month} />
+          <MovimentacaoItem tipo="diario" total={data.diarios} month={month} />
+          <MovimentacaoItem tipo="economia" total={data.economia} month={month} />
         </>
       )}
 
       {!loading && !data && (
-        <div className="flex items-center justify-center py-16 text-sm text-[var(--color-muted)]">
+        <div className="flex items-center justify-center py-16 text-sm text-muted-foreground">
           Sem dados para este mês.
         </div>
       )}
