@@ -213,15 +213,15 @@ Cada task = entregável testável. Marque `[x]` quando done.
 
 ---
 
-## T15 — Menu + Perfil
+## T15 — Menu + Perfil [DONE]
 
 **Entregável**: Tela de menu com perfil e links.
 
-- [ ] `src/app/(app)/menu/page.tsx`
-- [ ] Card de perfil (nome, email, badge "Assinatura ativa")
-- [ ] Lista de opções: Editar perfil, Previsão de diário, Configurações, Sugestões, Ajuda
-- [ ] Logout
-- [ ] Link para Previsão de Diário funcional
+- [x] `src/app/(app)/menu/page.tsx`
+- [x] Card de perfil (nome, email, badge "Assinatura ativa")
+- [x] Lista de opções: Editar perfil, Previsão de diário, Configurações, Sugestões, Ajuda
+- [x] Logout
+- [x] Link para Previsão de Diário funcional
 
 **Verificação**: Menu → ver perfil. Clicar "Previsão de diário" → navega. Logout → volta login.
 
