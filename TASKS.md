@@ -65,12 +65,12 @@ Cada task = entregável testável. Marque `[x]` quando done.
 
 **Entregável**: Layout do app com navegação entre abas funcionando.
 
-- [ ] `src/app/(app)/layout.tsx` — layout com bottom nav fixa
-- [ ] `src/components/layout/bottom-nav.tsx` — 5 itens (Saldos, Totais, FAB+, Tags, Menu), active state com accent
-- [ ] `src/components/layout/month-header.tsx` — ícone calendário, mês com arrows, grid icon
-- [ ] `src/components/layout/back-header.tsx` — botão voltar + título + action
-- [ ] `src/lib/constants.ts` — categorias, cores, labels (CAT_COLORS, CAT_LABELS, TYPE_LABELS_FULL)
-- [ ] `src/lib/utils.ts` — formatadores (`fmt`, `fmtK`, `fmtH`)
+- [x] `src/app/(app)/layout.tsx` — layout com bottom nav fixa
+- [x] `src/components/layout/bottom-nav.tsx` — 5 itens (Saldos, Totais, FAB+, Tags, Menu), active state com accent
+- [x] `src/components/layout/month-header.tsx` — ícone calendário, mês com arrows, grid icon
+- [x] `src/components/layout/back-header.tsx` — botão voltar + título + action
+- [x] `src/lib/constants.ts` — categorias, cores, labels (CAT_COLORS, CAT_LABELS, TYPE_LABELS_FULL)
+- [x] `src/lib/utils.ts` — formatadores (`fmt`, `fmtK`, `fmtH`)
 
 **Verificação**: Navegar entre Saldos/Totais/Tags/Menu via bottom nav. FAB abre modal vazio.
 

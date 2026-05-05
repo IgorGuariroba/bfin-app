@@ -4,8 +4,8 @@ import type { NextRequest } from "next/server";
 const publicRoutes = ["/login"];
 const SESSION_COOKIE =
   process.env.NODE_ENV === "production"
-    ? "__Secure-next-auth.session-token"
-    : "next-auth.session-token";
+    ? "__Secure-authjs.session-token"
+    : "authjs.session-token";
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;

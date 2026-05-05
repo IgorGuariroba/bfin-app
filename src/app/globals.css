@@ -107,7 +107,7 @@
   --secondary: var(--canvas);
   --secondary-foreground: var(--ink);
   --muted: var(--surface-soft);
-  --muted-foreground: var(--muted);
+  --muted-foreground: #6a6a6a;
   --accent: var(--surface-strong);
   --accent-foreground: var(--ink);
   --destructive: var(--error);
