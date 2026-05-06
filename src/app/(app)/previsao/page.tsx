@@ -91,7 +91,7 @@ export default function PrevisaoPage() {
 
   return (
     <div className="flex flex-col h-[100dvh] bg-[var(--color-surface-soft)] relative">
-      <BackHeader title="Previsão de diário" action={<button className="flex items-center justify-center w-10 h-10 text-muted-foreground hover:bg-surface-soft rounded-full transition-colors" onClick={openNew}><Plus size={24} /></button>} />
+      <BackHeader title="Previsão de diário" action={<button className="flex items-center justify-center w-8 h-8 bg-[#f2f2f2] hover:bg-[#e8e8e8] rounded-full transition-colors text-[#222222]" onClick={openNew}><Plus size={18} strokeWidth={2} /></button>} />
 
       <div className="flex-1 overflow-y-auto flex flex-col bg-[var(--color-surface-soft)]">
         {loading ? (
@@ -129,16 +129,16 @@ export default function PrevisaoPage() {
         {/* Footer — always visible */}
         <div className="bg-[var(--color-canvas)] mt-auto">
           <div className="p-4 pt-4 px-4 pb-0">
-            <div className="flex justify-between items-center py-1.5 text-sm">
-              <span className="text-[var(--color-ink)]">Total mensal</span>
-              <span className="font-semibold text-[var(--color-ink)] tabular-nums">{fmt(totalPrevisao)}</span>
+            <div className="flex justify-between items-center py-1.5">
+              <span className="text-[14px] text-[#6a6a6a]">Total mensal</span>
+              <span className="text-[14px] font-[600] text-[#222222] tabular-nums">{fmt(totalPrevisao)}</span>
             </div>
-            <div className="flex justify-between items-center py-1.5 text-sm">
-              <span className="text-[var(--color-ink)]">Dividido por</span>
+            <div className="flex justify-between items-center py-1.5">
+              <span className="text-[14px] text-[#6a6a6a]">Dividido por</span>
               <div className="relative inline-flex items-center">
-                <div className="flex items-center gap-1 px-2.5 py-1 rounded-full border border-[var(--color-hairline)] bg-[var(--color-surface-soft)] text-sm font-medium text-[var(--color-ink)] pointer-events-none select-none">
+                <div className="flex items-center gap-1 px-3 py-1.5 rounded-full border border-[#dddddd] bg-[#f7f7f7] text-[14px] font-[500] text-[#222222] pointer-events-none select-none">
                   <span>{days} dias</span>
-                  <ChevronDown size={13} strokeWidth={2} className="text-[var(--color-muted)]" />
+                  <ChevronDown size={13} strokeWidth={2} className="text-[#6a6a6a]" />
                 </div>
                 <select
                   value={days}
@@ -151,15 +151,15 @@ export default function PrevisaoPage() {
                 </select>
               </div>
             </div>
-            <div className="h-[1px] bg-[var(--color-hairline-soft)] my-3" />
-            <div className="flex justify-between items-center py-1 text-base font-bold">
+            <div className="h-[1px] bg-[#ebebeb] my-3" />
+            <div className="flex justify-between items-center py-1">
               <span></span>
-              <span className="text-[var(--color-ink)] tabular-nums">{fmt(diarioDisponivel)}</span>
+              <span className="text-[22px] font-[500] tracking-[-0.44px] text-[#222222] tabular-nums">{fmt(diarioDisponivel)}</span>
             </div>
-            <button 
+            <button
               onClick={handleApplyPrevisao}
               disabled={applying}
-              className="w-full mt-4 py-3.5 rounded-full text-white font-semibold transition-colors disabled:opacity-70 bg-[#a65df5] active:scale-[0.98] shadow-sm flex items-center justify-center gap-2"
+              className="w-full mt-4 h-12 rounded-[8px] text-white font-[500] text-base transition-colors disabled:opacity-70 bg-[#ff385c] active:bg-[#e00b41] flex items-center justify-center gap-2"
             >
               {applying ? "Aplicando..." : "Lançar nos saldos do mês"}
             </button>
