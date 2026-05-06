@@ -41,12 +41,13 @@ export default function TagsPage() {
 
   return (
     <div className="flex flex-col min-h-full bg-canvas pb-24">
-      <BackHeader 
-        title="Tags" 
+      <BackHeader
+        title="Tags"
         action={
-          <button 
+          <button
             onClick={handleOpenAdd}
-            className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+            className="flex h-8 w-8 items-center justify-center rounded-full bg-surface-strong text-ink hover:bg-surface-strong/80 transition-colors"
+            aria-label="Adicionar tag"
           >
             <Plus size={20} />
           </button>
@@ -57,7 +58,7 @@ export default function TagsPage() {
         {loading && tags.length === 0 ? (
           <div className="space-y-3">
             {[1, 2, 3].map(i => (
-              <div key={i} className="h-16 w-full rounded-2xl bg-surface-soft animate-pulse" />
+              <div key={i} className="h-16 w-full rounded-xl bg-surface-soft animate-pulse" />
             ))}
           </div>
         ) : (
@@ -65,28 +66,28 @@ export default function TagsPage() {
             {/* ── Tags do sistema ── */}
             {systemTags.length > 0 && (
               <div className="mb-6">
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 px-1">
+                <p className="text-[11px] font-bold text-ink uppercase tracking-[0.32px] mb-3 px-1">
                   Padrão do sistema
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {systemTags.map((tag) => (
                     <div
                       key={tag.id}
-                      className="flex items-center gap-4 bg-surface p-4 rounded-2xl shadow-sm opacity-90"
+                      className="flex items-center gap-4 bg-canvas p-4 rounded-xl border border-hairline-soft opacity-90"
                     >
-                      <div 
+                      <div
                         className="w-10 h-10 rounded-full flex items-center justify-center shrink-0"
-                        style={{ backgroundColor: `${tag.color}20`, color: tag.color }} 
+                        style={{ backgroundColor: `${tag.color}20`, color: tag.color }}
                       >
-                        <div 
+                        <div
                           className="w-4 h-4 rounded-full"
                           style={{ backgroundColor: tag.color }}
                         />
                       </div>
-                      <span className="flex-1 font-semibold text-ink text-base truncate">
+                      <span className="flex-1 text-base font-semibold text-ink truncate">
                         {tag.name}
                       </span>
-                      <Lock size={14} className="text-muted-foreground/50 shrink-0" />
+                      <Lock size={14} className="text-muted-soft shrink-0" />
                     </div>
                   ))}
                 </div>
@@ -97,7 +98,7 @@ export default function TagsPage() {
             {userTags.length > 0 && (
               <div>
                 {systemTags.length > 0 && (
-                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 px-1">
+                  <p className="text-[11px] font-bold text-ink uppercase tracking-[0.32px] mb-3 px-1">
                     Minhas tags
                   </p>
                 )}
@@ -106,18 +107,18 @@ export default function TagsPage() {
                     <button
                       key={tag.id}
                       onClick={() => handleOpenEdit(tag)}
-                      className="flex items-center gap-4 bg-surface p-4 rounded-2xl shadow-sm text-left active:scale-95 transition-transform"
+                      className="flex items-center gap-4 bg-canvas p-4 rounded-xl border border-hairline-soft text-left active:scale-95 transition-transform hover:border-hairline"
                     >
-                      <div 
+                      <div
                         className="w-10 h-10 rounded-full flex items-center justify-center shrink-0"
-                        style={{ backgroundColor: `${tag.color}20`, color: tag.color }} 
+                        style={{ backgroundColor: `${tag.color}20`, color: tag.color }}
                       >
-                        <div 
+                        <div
                           className="w-4 h-4 rounded-full"
                           style={{ backgroundColor: tag.color }}
                         />
                       </div>
-                      <span className="flex-1 font-semibold text-ink text-base truncate">
+                      <span className="flex-1 text-base font-semibold text-ink truncate">
                         {tag.name}
                       </span>
                     </button>
@@ -129,12 +130,12 @@ export default function TagsPage() {
             {/* ── Empty state (só para tags do usuário) ── */}
             {userTags.length === 0 && systemTags.length > 0 && (
               <div className="flex flex-col items-center justify-center py-12 text-center px-4">
-                <p className="text-muted-foreground mb-4">
+                <p className="text-sm text-ink mb-4">
                   Crie suas próprias tags para organizar melhor.
                 </p>
                 <button
                   onClick={handleOpenAdd}
-                  className="h-12 px-6 rounded-full bg-primary text-white font-semibold flex items-center gap-2 shadow-lg shadow-primary/20 active:scale-95 transition-transform"
+                  className="h-12 px-5 rounded-full bg-primary text-on-primary text-sm font-medium flex items-center gap-2 active:scale-95 transition-transform"
                 >
                   <Plus size={20} />
                   Criar Tag
@@ -145,16 +146,16 @@ export default function TagsPage() {
             {/* ── Empty state total ── */}
             {tags.length === 0 && (
               <div className="flex flex-col items-center justify-center h-[50vh] text-center px-4">
-                <div className="w-16 h-16 rounded-full bg-surface-soft flex items-center justify-center text-muted-foreground mb-4">
+                <div className="w-16 h-16 rounded-full bg-surface-strong flex items-center justify-center text-ink mb-4">
                   <Plus size={32} />
                 </div>
-                <h2 className="text-xl font-bold text-ink mb-2">Nenhuma tag</h2>
-                <p className="text-muted-foreground mb-6">
+                <h2 className="text-xl font-semibold text-ink mb-2">Nenhuma tag</h2>
+                <p className="text-sm text-muted mb-6">
                   Crie tags para organizar e classificar melhor suas movimentações.
                 </p>
                 <button
                   onClick={handleOpenAdd}
-                  className="h-12 px-6 rounded-full bg-primary text-white font-semibold flex items-center gap-2 shadow-lg shadow-primary/20 active:scale-95 transition-transform"
+                  className="h-12 px-5 rounded-full bg-primary text-on-primary text-sm font-medium flex items-center gap-2 active:scale-95 transition-transform"
                 >
                   <Plus size={20} />
                   Criar Tag

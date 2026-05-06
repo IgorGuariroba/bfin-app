@@ -82,38 +82,38 @@ export function TagFormModal({ open, onOpenChange, tag, onSave, onDelete }: TagF
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="bottom" className="h-[auto] max-h-[90vh] rounded-t-3xl pt-8 px-4 pb-safe bg-canvas border-t-0">
         <SheetHeader className="mb-6">
-          <SheetTitle className="text-xl font-bold text-ink">
+          <SheetTitle className="text-xl font-semibold text-ink">
             {tag ? "Editar Tag" : "Nova Tag"}
           </SheetTitle>
         </SheetHeader>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-6">
           <div className="space-y-2">
-            <Label htmlFor="name" className="text-sm font-semibold text-ink">Nome</Label>
+            <Label htmlFor="name" className="text-sm font-medium text-ink">Nome</Label>
             <Input
               id="name"
               placeholder="Ex: Viagem, Mercado"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="h-14 rounded-2xl bg-surface border-0 px-4 text-base shadow-sm focus-visible:ring-1 focus-visible:ring-primary"
+              className="h-14 rounded-lg bg-canvas border border-hairline px-4 text-base focus-visible:border-ink focus-visible:ring-0"
               required
             />
           </div>
 
           <div className="space-y-3">
-            <Label className="text-sm font-semibold text-ink">Cor</Label>
+            <Label className="text-sm font-medium text-ink">Cor</Label>
             <div className="flex flex-wrap gap-3">
               {PRESET_COLORS.map((c) => (
                 <button
                   key={c}
                   type="button"
                   onClick={() => setColor(c)}
-                  className="w-12 h-12 rounded-full flex items-center justify-center transition-transform active:scale-90 shadow-sm"
+                  className="w-12 h-12 rounded-full flex items-center justify-center transition-transform active:scale-90"
                   style={{ backgroundColor: c }}
                   aria-label={`Cor ${c}`}
                 >
                   {color === c && (
-                    <div className="w-4 h-4 rounded-full bg-white shadow-sm" />
+                    <div className="w-4 h-4 rounded-full bg-on-primary" />
                   )}
                 </button>
               ))}
@@ -124,18 +124,18 @@ export function TagFormModal({ open, onOpenChange, tag, onSave, onDelete }: TagF
             <Button
               type="submit"
               disabled={loading || !name.trim()}
-              className="h-14 rounded-2xl bg-primary text-white text-base font-bold shadow-lg shadow-primary/20 hover:bg-primary/90"
+              className="h-12 rounded-lg bg-primary text-on-primary text-base font-medium hover:bg-rausch-active"
             >
               {loading ? "Salvando..." : "Salvar Tag"}
             </Button>
-            
+
             {tag && onDelete && (
               <Button
                 type="button"
                 variant="ghost"
                 onClick={handleDelete}
                 disabled={loading}
-                className="h-14 rounded-2xl text-red hover:bg-red/10 text-base font-semibold"
+                className="h-12 rounded-lg text-error hover:bg-error/10 text-base font-medium"
               >
                 Excluir Tag
               </Button>

@@ -122,9 +122,9 @@ export function HorizonteGrid({
             <div
               key={m}
               className={cn(
-                "py-2.5 text-center text-xs font-bold tracking-wide",
+                "py-2.5 text-center text-xs font-semibold tracking-[0.32px] uppercase",
                 i < 2 && "border-r border-hairline",
-                isCurrent ? "bg-ink text-canvas" : "text-ink"
+                isCurrent ? "bg-ink text-on-primary" : "text-ink"
               )}
             >
               {monthLabel(m)}
@@ -134,7 +134,7 @@ export function HorizonteGrid({
       </div>
 
       {loading && (
-        <div className="flex items-center justify-center py-16 text-sm text-muted-foreground">
+        <div className="flex items-center justify-center py-16 text-sm text-muted">
           Carregando...
         </div>
       )}
@@ -170,13 +170,13 @@ export function HorizonteGrid({
                     <div className="flex flex-col items-center justify-center w-8 shrink-0">
                       <span className={cn(
                         "text-[11px] tabular-nums leading-none",
-                        isToday ? "font-bold text-canvas" : "font-medium text-ink"
+                        isToday ? "font-semibold text-on-primary" : "font-medium text-ink"
                       )}>
                         {day}
                       </span>
                       <span className={cn(
-                        "text-[8px] uppercase leading-none mt-0.5",
-                        isToday ? "text-canvas/60" : "text-[var(--color-muted-soft)]"
+                        "text-[8px] font-medium uppercase tracking-[0.24px] leading-none mt-0.5",
+                        isToday ? "text-on-primary/60" : "text-muted-soft"
                       )}>
                         {weekdayAbbr(m, day)}
                       </span>
@@ -190,7 +190,7 @@ export function HorizonteGrid({
                         : { backgroundColor: colors.bg, color: colors.text }
                       }
                     >
-                      <span style={isToday ? { color: "var(--color-canvas)" } : undefined}>
+                      <span className={isToday ? "text-on-primary" : undefined}>
                         {fmtCompact(saldo)}
                       </span>
                     </div>

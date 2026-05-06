@@ -14,7 +14,7 @@ function Dot({ cat, size = 20 }: { cat: string; size?: number }) {
   };
   return (
     <span
-      className="inline-flex items-center justify-center rounded-full text-white font-bold shrink-0"
+      className="inline-flex items-center justify-center rounded-full text-on-primary font-bold shrink-0"
       style={{
         backgroundColor: CAT_COLORS[cat as keyof typeof CAT_COLORS] ?? "#999",
         width: size,
@@ -28,8 +28,10 @@ function Dot({ cat, size = 20 }: { cat: string; size?: number }) {
   );
 }
 
+const POSITIVE = "#2db55d";
+
 function Operator({ children }: { children: React.ReactNode }) {
-  return <span className="text-xs text-muted-foreground font-medium mx-0.5">{children}</span>;
+  return <span className="text-xs font-medium text-muted mx-0.5">{children}</span>;
 }
 
 export default function TotaisPage() {
@@ -75,22 +77,22 @@ export default function TotaisPage() {
       {!loading && data && (
         <>
           {/* ═══ Cálculos do mês ═══ */}
-          <p className="px-4 pt-4 pb-2 text-xs text-muted-foreground">
+          <p className="px-4 pt-4 pb-2 text-xs font-medium text-muted">
             Cálculos do mês
           </p>
 
           {/* ── Performance ── */}
           <section className="px-4 py-4 border-b border-hairline-soft">
             <div className="flex items-start justify-between">
-              <span className="text-[15px] font-bold text-ink">Performance</span>
+              <span className="text-base font-semibold text-ink">Performance</span>
               <div className="text-right">
                 <p
-                  className="text-[15px] font-bold tabular-nums"
-                  style={{ color: data.saldoAtual >= 0 ? "#2db55d" : "var(--rausch)" }}
+                  className="text-base font-semibold tabular-nums"
+                  style={{ color: data.saldoAtual >= 0 ? POSITIVE : "var(--color-rausch)" }}
                 >
                   {data.saldoAtual < 0 ? "– " : ""}{fmt(Math.abs(data.saldoAtual))}
                 </p>
-                <p className="text-xs text-muted-foreground mt-0.5">{perfLabel}</p>
+                <p className="text-xs text-muted mt-0.5">{perfLabel}</p>
               </div>
             </div>
             {/* Formula: E - S - D - G - C = D */}
@@ -112,10 +114,10 @@ export default function TotaisPage() {
           {/* ── Economizado ── */}
           <section className="px-4 py-4 border-b border-hairline-soft">
             <div className="flex items-start justify-between">
-              <span className="text-[15px] font-bold text-ink">Economizado</span>
+              <span className="text-base font-semibold text-ink">Economizado</span>
               <div className="text-right">
-                <p className="text-[15px] font-bold tabular-nums text-ink">{economiaPct}%</p>
-                <p className="text-xs text-muted-foreground mt-0.5">{econLabel}</p>
+                <p className="text-base font-semibold tabular-nums text-ink">{economiaPct}%</p>
+                <p className="text-xs text-muted mt-0.5">{econLabel}</p>
               </div>
             </div>
             {/* Progress bar */}
@@ -126,7 +128,7 @@ export default function TotaisPage() {
                   className="h-full rounded-full transition-all"
                   style={{
                     width: `${economiaPct}%`,
-                    backgroundColor: "#2db55d",
+                    backgroundColor: POSITIVE,
                   }}
                 />
               </div>
@@ -137,10 +139,10 @@ export default function TotaisPage() {
           {/* ── Custo de vida ── */}
           <section className="px-4 py-4 border-b border-hairline-soft">
             <div className="flex items-start justify-between">
-              <span className="text-[15px] font-bold text-ink">Custo de vida</span>
+              <span className="text-base font-semibold text-ink">Custo de vida</span>
               <div className="text-right">
-                <p className="text-[15px] font-bold tabular-nums text-ink">{fmt(data.custoVida)}</p>
-                <p className="text-xs text-muted-foreground mt-0.5">{custoLabel}</p>
+                <p className="text-base font-semibold tabular-nums text-ink">{fmt(data.custoVida)}</p>
+                <p className="text-xs text-muted mt-0.5">{custoLabel}</p>
               </div>
             </div>
             {/* Formula: S + D + C + D */}
@@ -158,11 +160,11 @@ export default function TotaisPage() {
           {/* ── Diário médio ── */}
           <section className="px-4 py-4 border-b border-hairline-soft">
             <div className="flex items-start justify-between">
-              <span className="text-[15px] font-bold text-ink">Diário médio</span>
+              <span className="text-base font-semibold text-ink">Diário médio</span>
               <div className="text-right">
-                <p className="text-[15px] font-bold tabular-nums text-ink">{fmt(data.diarioMedio)}</p>
-                <p className="text-xs text-muted-foreground mt-0.5 flex items-center justify-end gap-1">
-                  <span className="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full border border-muted-foreground text-[8px] text-muted-foreground">⊙</span>
+                <p className="text-base font-semibold tabular-nums text-ink">{fmt(data.diarioMedio)}</p>
+                <p className="text-xs text-muted mt-0.5 flex items-center justify-end gap-1">
+                  <span className="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full border border-muted text-[8px] text-muted">⊙</span>
                   {fmt(data.diarioPrev)}
                 </p>
               </div>
@@ -171,12 +173,12 @@ export default function TotaisPage() {
             <div className="flex items-center gap-0.5 mt-3">
               <Dot cat="diario" />
               <Operator>/</Operator>
-              <span className="text-xs text-muted-foreground font-medium">{data.daysElapsed}</span>
+              <span className="text-xs font-medium text-muted">{data.daysElapsed}</span>
             </div>
           </section>
 
           {/* ═══ Movimentações do mês ═══ */}
-          <p className="px-4 pt-5 pb-2 text-xs text-muted-foreground">
+          <p className="px-4 pt-5 pb-2 text-xs font-medium text-muted">
             Movimentações do mês
           </p>
 
