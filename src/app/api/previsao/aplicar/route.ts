@@ -11,51 +11,39 @@ export async function POST(request: NextRequest) {
 
   const userId = await getEffectiveUserId(session.user.id);
   const body = await request.json();
-  const { amount, monthStr } = body;
+  const { amount } = body;
 
-  if (amount == null || !monthStr) {
+  if (amount == null) {
     return Response.json({ error: "Invalid parameters" }, { status: 400 });
   }
 
-  const [year, mon] = monthStr.split("-").map(Number);
-  const daysInMonth = new Date(year, mon, 0).getDate();
-  const startOfMonth = new Date(year, mon - 1, 1);
-  const endOfMonth = new Date(year, mon, 1);
+  const now = new Date();
+  const startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+  const endDate = new Date(now.getFullYear(), now.getMonth() + 12, now.getDate(), 0, 0, 0);
 
-  // Find days that already have a "diario" transaction
-  const existing = await prisma.transaction.findMany({
+  // Delete existing diario transactions in the 12-month window
+  await prisma.transaction.deleteMany({
     where: {
       userId,
       type: "diario",
-      date: { gte: startOfMonth, lt: endOfMonth },
+      date: { gte: startDate, lt: endDate },
     },
-    select: { date: true },
   });
 
-  const existingDays = new Set(existing.map((t) => t.date.getDate()));
-
-  const now = new Date();
-  let startDay = 1;
-  if (now.getFullYear() === year && now.getMonth() + 1 === mon) {
-    startDay = now.getDate();
-  }
-
   const toCreate = [];
-  for (let d = startDay; d <= daysInMonth; d++) {
-    if (!existingDays.has(d)) {
-      toCreate.push({
-        userId,
-        type: "diario",
-        description: "Previsão Diária",
-        amount: Math.abs(amount),
-        date: new Date(year, mon - 1, d, 12, 0, 0), // noon to avoid timezone shift
-      });
-    }
+  const cursor = new Date(startDate);
+  while (cursor < endDate) {
+    toCreate.push({
+      userId,
+      type: "diario",
+      description: "Previsão Diária",
+      amount: Math.abs(amount),
+      date: new Date(cursor.getFullYear(), cursor.getMonth(), cursor.getDate(), 12, 0, 0),
+    });
+    cursor.setDate(cursor.getDate() + 1);
   }
 
-  if (toCreate.length > 0) {
-    await prisma.transaction.createMany({ data: toCreate });
-  }
+  await prisma.transaction.createMany({ data: toCreate });
 
   return Response.json({ count: toCreate.length });
 }

@@ -66,11 +66,11 @@ export default function PrevisaoPage() {
       const res = await fetch("/api/previsao/aplicar", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount: diarioDisponivel, monthStr: month }),
+        body: JSON.stringify({ amount: diarioDisponivel }),
       });
       if (!res.ok) throw new Error(await res.text());
       const data = await res.json();
-      toast.success(`Previsão aplicada! ${data.count} dias preenchidos.`);
+      toast.success(`Previsão aplicada! ${data.count} dias preenchidos nos próximos 12 meses.`);
       window.dispatchEvent(new CustomEvent("bfin:transaction-created"));
     } catch (e: any) {
       toast.error(e.message || "Erro ao aplicar previsão");
