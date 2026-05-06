@@ -123,6 +123,7 @@ jobs:
             }
             CADDYEOF
 
+            docker system prune -f
             cd /opt/bfin-app
             export IMAGE_TAG=${{ github.sha }}
             docker compose -f docker-compose.prod.yml pull
