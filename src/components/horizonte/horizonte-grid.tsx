@@ -89,9 +89,9 @@ export function HorizonteGrid({
   const maxDays = Math.max(...daysInMonth);
 
   return (
-    <div className="flex flex-col flex-1 overflow-hidden">
+    <div className="flex flex-col">
       {/* ── Month headers ── */}
-      <div className="grid grid-cols-3 border-b border-hairline sticky top-0 z-10 bg-canvas">
+      <div className="grid grid-cols-3 border-b border-hairline sticky top-[60px] z-20 bg-canvas">
         {months.map((m, i) => {
           const isCurrent = m === TODAY_MONTH;
           return (
@@ -116,7 +116,7 @@ export function HorizonteGrid({
       )}
 
       {!loading && (
-        <div className="overflow-y-auto flex-1">
+        <div>
           {Array.from({ length: maxDays }, (_, i) => i + 1).map((day) => (
             <div key={day} className="grid grid-cols-3 border-b border-hairline-soft">
               {months.map((m, idx) => {

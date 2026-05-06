@@ -55,9 +55,9 @@ export default function HorizontePage() {
   }, []);
 
   return (
-    <div className="flex flex-col h-[100dvh]">
+    <div className="flex flex-col">
       {/* ── Header: ← Horizonte de saldos + ── */}
-      <header className="sticky top-0 z-30 flex items-center justify-between px-3 py-3 bg-canvas shrink-0">
+      <header className="sticky top-0 z-30 flex items-center justify-between px-3 py-3 bg-canvas">
         <button
           onClick={() => router.back()}
           className="w-9 h-9 flex items-center justify-center rounded-full text-ink hover:bg-hairline-soft transition-colors"
