@@ -123,15 +123,6 @@ export default function PrevisaoPage() {
                 onEdit={() => openEdit(item)}
               />
             ))}
-            <button
-              onClick={openNew}
-              className="flex items-center gap-3 w-full p-4 text-left hover:bg-[var(--color-surface-soft)] transition-colors border-t border-[var(--color-hairline-soft)]"
-            >
-              <div className="w-10 h-10 rounded-full bg-[var(--color-surface-soft)] flex items-center justify-center shrink-0">
-                <Plus size={18} className="text-muted-foreground" />
-              </div>
-              <span className="text-[15px] font-medium text-[var(--color-ink)]">Adicionar novo gasto</span>
-            </button>
           </div>
         )}
 
