@@ -15,7 +15,7 @@ export default async function MenuPage() {
   const user = session.user;
 
   const menuItems = [
-    { icon: User,        label: "Editar perfil",      href: "#" },
+    { icon: User,        label: "Editar perfil",      href: "/perfil" },
     { icon: CalendarClock, label: "Previsão de diário", href: "/previsao" },
     { icon: Settings,    label: "Configurações",       href: "/configuracoes" },
     { icon: Lightbulb,   label: "Sugestões",           href: "#" },
@@ -38,13 +38,13 @@ export default async function MenuPage() {
         </div>
         {/* display-sm: 20px/600 */}
         <h2 className="text-[20px] font-semibold leading-[1.20] tracking-[-0.18px] text-ink">{user.name || "Usuário"}</h2>
-        {/* body-sm: 14px/400 */}
-        <p className="text-[14px] font-normal leading-[1.43] text-muted mt-1 mb-4">{user.email}</p>
+        {/* body-sm: 14px/400, muted #6a6a6a */}
+        <p className="text-[14px] font-normal leading-[1.43] text-[#6a6a6a] mt-1 mb-4">{user.email}</p>
 
-        {/* badge: 11px/600, rounded-full, button-pill-rausch palette */}
+        {/* badge: 11px/600, rounded-full, primary #ff385c */}
         <Badge
           variant="secondary"
-          className="rounded-full bg-primary/10 text-primary hover:bg-primary/20 border-0 text-[11px] font-semibold leading-[1.18] px-[10px] py-[4px]"
+          className="rounded-full bg-green-100 text-green-700 hover:bg-green-200 border-0 text-[11px] font-semibold leading-[1.18] px-[10px] py-[4px]"
         >
           Assinatura ativa
         </Badge>
