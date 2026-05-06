@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
   const end = new Date(year, mon, 1);
   const daysInMonth = new Date(year, mon, 0).getDate();
 
-  const [transactions, previsoes] = await Promise.all([
+  const [transactions, previsoes, prevAgg] = await Promise.all([
     prisma.transaction.findMany({
       where: { userId, date: { gte: start, lt: end } },
       select: { type: true, amount: true },
@@ -30,6 +30,11 @@ export async function GET(request: NextRequest) {
     prisma.previsao.findMany({
       where: { userId },
       select: { amount: true },
+    }),
+    prisma.transaction.groupBy({
+      by: ["type"],
+      where: { userId, date: { lt: start } },
+      _sum: { amount: true },
     }),
   ]);
 
@@ -46,6 +51,14 @@ export async function GET(request: NextRequest) {
   }
 
   const previsaoTotal = previsoes.reduce((s, p) => s + p.amount, 0);
+
+  const prevByType: Record<string, number> = {};
+  for (const g of prevAgg) prevByType[g.type] = g._sum.amount ?? 0;
+  const saldoAnterior =
+    (prevByType.entrada ?? 0) -
+    (prevByType.saida ?? 0) -
+    (prevByType.diario ?? 0) -
+    (prevByType.cartao ?? 0);
 
   const custoVida = totals.saida + totals.cartao + totals.diario;
   const performance = totals.entrada - custoVida;
@@ -66,6 +79,8 @@ export async function GET(request: NextRequest) {
     economia: totals.economia,
     custoVida,
     performance,
+    saldoAnterior,
+    saldoAtual: saldoAnterior + performance,
     diarioMedio,
     diarioPrev,
     previsaoTotal,

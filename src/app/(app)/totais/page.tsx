@@ -43,7 +43,7 @@ export default function TotaisPage() {
 
   const perfLabel =
     data
-      ? data.performance >= 0
+      ? data.saldoAtual >= 0
         ? "Sobrou dinheiro"
         : "Faltou dinheiro"
       : "";
@@ -86,9 +86,9 @@ export default function TotaisPage() {
               <div className="text-right">
                 <p
                   className="text-[15px] font-bold tabular-nums"
-                  style={{ color: data.performance >= 0 ? "#2db55d" : "var(--rausch)" }}
+                  style={{ color: data.saldoAtual >= 0 ? "#2db55d" : "var(--rausch)" }}
                 >
-                  {data.performance < 0 ? "– " : ""}{fmt(Math.abs(data.performance))}
+                  {data.saldoAtual < 0 ? "– " : ""}{fmt(Math.abs(data.saldoAtual))}
                 </p>
                 <p className="text-xs text-muted-foreground mt-0.5">{perfLabel}</p>
               </div>
