@@ -27,8 +27,10 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://bfincont.com.br"),
   title: "bfin",
   description: "Controle financeiro pessoal",
+  applicationName: "bfin",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
@@ -36,6 +38,28 @@ export const metadata: Metadata = {
   },
   icons: {
     apple: "/icons/apple-touch-icon.png",
+  },
+  openGraph: {
+    type: "website",
+    siteName: "bfin",
+    title: "bfin",
+    description: "Controle financeiro pessoal",
+    url: "/",
+    locale: "pt_BR",
+    images: [
+      {
+        url: "/og.png",
+        width: 1200,
+        height: 630,
+        alt: "bfin — Controle financeiro pessoal",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "bfin",
+    description: "Controle financeiro pessoal",
+    images: ["/og.png"],
   },
   other: {
     "mobile-web-app-capable": "yes",
