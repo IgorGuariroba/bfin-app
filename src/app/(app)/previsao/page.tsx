@@ -18,6 +18,7 @@ export default function PrevisaoPage() {
   const [formOpen, setFormOpen] = useState(false);
   const [editItem, setEditItem] = useState<PrevisaoItem | null>(null);
   const [days, setDays] = useState<number>(30); // Default to 30
+  const [applying, setApplying] = useState(false);
 
   const { month } = useMonth();
   const { data: totaisData } = useTotais(month); // To get entradas if needed
@@ -46,7 +47,7 @@ export default function PrevisaoPage() {
   const diarioDisponivel = useMemo(() => {
     const entradas = totaisData?.entradas ?? 0;
     const available = entradas - totalPrevisao;
-    return available > 0 ? available / days : 0;
+    return available / days;
   }, [totaisData?.entradas, totalPrevisao, days]);
 
   const handleDelete = async (id: string) => {
@@ -56,6 +57,25 @@ export default function PrevisaoPage() {
       setItems((prev) => prev.filter((i) => i.id !== id));
     } catch (e: any) {
       toast.error(e.message);
+    }
+  };
+
+  const handleApplyPrevisao = async () => {
+    setApplying(true);
+    try {
+      const res = await fetch("/api/previsao/aplicar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amount: diarioDisponivel, monthStr: month }),
+      });
+      if (!res.ok) throw new Error(await res.text());
+      const data = await res.json();
+      toast.success(`Previsão aplicada! ${data.count} dias preenchidos.`);
+      window.dispatchEvent(new CustomEvent("bfin:transaction-created"));
+    } catch (e: any) {
+      toast.error(e.message || "Erro ao aplicar previsão");
+    } finally {
+      setApplying(false);
     }
   };
 
@@ -145,6 +165,13 @@ export default function PrevisaoPage() {
               <span></span>
               <span className="text-[var(--color-ink)] tabular-nums">{fmt(diarioDisponivel)}</span>
             </div>
+            <button 
+              onClick={handleApplyPrevisao}
+              disabled={applying}
+              className="w-full mt-4 py-3.5 rounded-full text-white font-semibold transition-colors disabled:opacity-70 bg-[#a65df5] active:scale-[0.98] shadow-sm flex items-center justify-center gap-2"
+            >
+              {applying ? "Aplicando..." : "Lançar nos saldos do mês"}
+            </button>
           </div>
           <div className="h-6 pb-safe" />
         </div>
