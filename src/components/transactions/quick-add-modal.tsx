@@ -161,7 +161,7 @@ export function QuickAddModal() {
       <SheetContent
         side="bottom"
         showCloseButton={false}
-        className="p-0 rounded-t-2xl max-h-[85dvh] flex flex-col gap-0"
+        className="p-0 !h-[100dvh] !max-h-[100dvh] flex flex-col gap-0"
       >
         <SheetTitle className="sr-only">Adicionar Transação</SheetTitle>
 
