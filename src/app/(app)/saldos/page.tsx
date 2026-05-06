@@ -40,13 +40,13 @@ export default function SaldosPage() {
       />
 
       {/* Column header: Dia | Filter | Saldos */}
-      <div className="sticky top-[61px] z-20 flex items-center px-4 py-2 border-b border-[var(--color-hairline-soft)] bg-canvas">
-        <span className="w-12 text-xs font-semibold text-[var(--color-ink)] shrink-0">
+      <div className="sticky top-[61px] z-20 flex items-center px-4 py-2 border-b border-hairline-soft bg-canvas">
+        <span className="w-12 shrink-0 text-[11px] font-bold uppercase tracking-[0.32px] text-muted-foreground">
           Dia
         </span>
         <div className="flex-1">
           <Select value={filter} onValueChange={setFilter}>
-            <SelectTrigger className="w-28 h-7 text-xs border-[var(--color-hairline)] bg-[var(--color-surface-soft)]">
+            <SelectTrigger className="w-28 h-8 text-sm font-medium rounded-lg border-hairline bg-canvas text-ink focus:border-ink focus:ring-0">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -58,7 +58,7 @@ export default function SaldosPage() {
             </SelectContent>
           </Select>
         </div>
-        <span className="w-[140px] text-xs font-semibold text-[var(--color-ink)] text-right pr-3 shrink-0">
+        <span className="w-[140px] shrink-0 pr-3 text-right text-[11px] font-bold uppercase tracking-[0.32px] text-muted-foreground">
           Saldos
         </span>
       </div>

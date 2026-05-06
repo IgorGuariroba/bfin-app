@@ -73,7 +73,7 @@ export function SaldosGrid({ month, filter, onDayClick }: SaldosGridProps) {
 
   if (loading || !apiData) {
     return (
-      <div className="flex items-center justify-center py-16 text-sm text-[var(--color-muted)]">
+      <div className="flex items-center justify-center py-16 text-sm text-muted-foreground">
         Carregando...
       </div>
     );

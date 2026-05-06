@@ -35,16 +35,22 @@ const CAT_INITIALS: Record<string, string> = {
   economia: "G",
 };
 
+const POSITIVE = "#2db55d";
+const POSITIVE_BG = "rgba(45, 181, 93, 0.10)";
+const NEGATIVE_BG = "rgba(255, 56, 92, 0.10)";
+const ZERO_BG = "rgba(245, 195, 50, 0.18)";
+const ZERO_FG = "#92640a";
+
 function saldoColor(value: number): string {
-  if (value > 0) return "#2db55d";
-  if (value < 0) return "#ff385c";
-  return "#92640a";
+  if (value > 0) return POSITIVE;
+  if (value < 0) return "var(--color-rausch)";
+  return ZERO_FG;
 }
 
 function saldoBg(value: number): string {
-  if (value > 0) return "rgba(45, 181, 93, 0.12)";
-  if (value < 0) return "rgba(255, 56, 92, 0.12)";
-  return "rgba(245, 195, 50, 0.25)";
+  if (value > 0) return POSITIVE_BG;
+  if (value < 0) return NEGATIVE_BG;
+  return ZERO_BG;
 }
 
 export function DayRow({ entry, filter, isToday, onClick }: DayRowProps) {
@@ -57,27 +63,21 @@ export function DayRow({ entry, filter, isToday, onClick }: DayRowProps) {
       data-today={isToday ? "true" : undefined}
       onClick={onClick}
       className={cn(
-        "flex w-full border-b border-[var(--color-hairline-soft)] text-left transition-colors",
-        isToday
-          ? "bg-canvas hover:bg-canvas"
-          : "bg-canvas hover:bg-[var(--color-surface-soft)]/60"
+        "flex w-full border-b border-hairline-soft text-left transition-colors",
+        "bg-canvas hover:bg-surface-soft/60"
       )}
     >
       {/* Day number + weekday */}
-      <div
-        className={cn(
-          "w-12 shrink-0 flex flex-col items-center justify-start pt-2 gap-0",
-          isToday ? "bg-ink" : ""
-        )}
-      >
-        <span className={cn(
-          "text-sm tabular-nums leading-tight",
-          isToday ? "font-bold text-canvas" : "font-medium text-ink"
-        )}>{day}</span>
-        <span className={cn(
-          "text-[9px] uppercase leading-tight",
-          isToday ? "text-canvas/60" : "text-[var(--color-muted-soft)]"
-        )}>
+      <div className="w-12 shrink-0 flex flex-col items-center justify-start pt-2 gap-0.5">
+        <span
+          className={cn(
+            "inline-flex items-center justify-center w-7 h-7 rounded-full text-sm tabular-nums leading-none",
+            isToday ? "bg-ink text-on-primary font-semibold" : "text-ink font-medium"
+          )}
+        >
+          {day}
+        </span>
+        <span className="text-[9px] font-medium uppercase tracking-[0.24px] leading-tight text-muted-soft">
           {getWeekdayAbbr(entry.date)}
         </span>
       </div>
@@ -92,17 +92,15 @@ export function DayRow({ entry, filter, isToday, onClick }: DayRowProps) {
           return (
             <div key={type} className="flex items-center gap-2 h-[26px] px-1">
               <span
-                className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold text-white shrink-0"
+                className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold text-on-primary shrink-0"
                 style={{ backgroundColor: color }}
               >
                 {initial}
               </span>
               <span
                 className={cn(
-                  "text-[13px] tabular-nums",
-                  value === 0
-                    ? "text-[var(--color-muted-soft)]"
-                    : "text-[var(--color-ink)] font-medium"
+                  "text-sm tabular-nums",
+                  value === 0 ? "text-muted-soft" : "text-ink font-medium"
                 )}
               >
                 {fmt(value)}
@@ -118,7 +116,7 @@ export function DayRow({ entry, filter, isToday, onClick }: DayRowProps) {
         style={{ backgroundColor: saldoBg(accSaldo) }}
       >
         <span
-          className="text-[13px] font-semibold tabular-nums"
+          className="text-sm font-semibold tabular-nums"
           style={{ color: saldoColor(accSaldo) }}
         >
           {fmt(accSaldo)}
