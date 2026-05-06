@@ -135,7 +135,7 @@ export default function MovimentacoesPage({ params }: PageProps) {
                 <div className="flex-1 min-w-0">
                   <p className="text-sm text-[var(--color-ink)] truncate">{tx.description}</p>
                   <div className="flex flex-wrap items-center gap-2 mt-0.5">
-                    <p className="text-xs text-[var(--color-muted)] capitalize">{dateLabel}</p>
+                    <p className="text-xs text-[var(--color-ink-secondary)] capitalize">{dateLabel}</p>
                     {tx.tags?.length > 0 && (
                       <div className="flex gap-1 flex-wrap">
                         {tx.tags.map((tag) => (
