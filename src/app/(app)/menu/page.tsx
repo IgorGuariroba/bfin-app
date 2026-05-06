@@ -18,7 +18,7 @@ export default async function MenuPage() {
     { icon: User,        label: "Editar perfil",      href: "/perfil" },
     { icon: CalendarClock, label: "Previsão de diário", href: "/previsao" },
     { icon: Settings,    label: "Configurações",       href: "/configuracoes" },
-    { icon: Lightbulb,   label: "Sugestões",           href: "#" },
+    { icon: Lightbulb,   label: "Sugestões",           href: "/sugestoes" },
     { icon: HelpCircle,  label: "Ajuda",               href: "#" },
   ];
 
