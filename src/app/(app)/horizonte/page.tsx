@@ -60,12 +60,12 @@ export default function HorizontePage() {
       <header className="sticky top-0 z-30 flex items-center justify-between px-3 py-3 bg-canvas shrink-0">
         <button
           onClick={() => router.back()}
-          className="w-9 h-9 flex items-center justify-center rounded-full text-muted-foreground hover:text-ink transition-colors"
+          className="w-9 h-9 flex items-center justify-center rounded-full text-muted hover:text-ink transition-colors"
           aria-label="Voltar"
         >
           <ArrowLeft size={20} />
         </button>
-        <h1 className="text-sm font-bold text-ink">Horizonte de saldos</h1>
+        <h1 className="text-base font-semibold text-ink">Horizonte de saldos</h1>
         <div className="w-9 h-9" />
       </header>
 
