@@ -24,9 +24,6 @@ export default async function MenuPage() {
 
   return (
     <div className="flex flex-col min-h-full bg-canvas px-4 pt-12 pb-24">
-      {/* display-xl: 28px/700 */}
-      <h1 className="text-[28px] font-bold leading-[1.43] text-ink mb-6">Menu</h1>
-
       {/* Profile Card — rounded-md (14px), single shadow tier, spacing.lg (24px) */}
       <div
         className="flex flex-col items-center justify-center rounded-[14px] bg-surface-card p-6 mb-8"
