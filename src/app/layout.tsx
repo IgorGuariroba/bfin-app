@@ -37,6 +37,8 @@ export const metadata: Metadata = {
     title: "bfin",
   },
   icons: {
+    icon: "/icon.png",
+    shortcut: "/icon.png",
     apple: "/icons/apple-touch-icon.png",
   },
   openGraph: {
