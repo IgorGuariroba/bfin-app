@@ -32,10 +32,10 @@ export default function HorizontePage() {
       const results = await Promise.all(
         ms.map((m) =>
           fetch(`/api/saldos?month=${m}`)
-            .then((r) => (r.ok ? r.json() : []))
-            .then((entries: { day: number; accSaldo: number }[]) => ({
+            .then((r) => (r.ok ? r.json() : { entries: [] }))
+            .then((res: { entries: { day: number; accSaldo: number }[] }) => ({
               month: m,
-              entries,
+              entries: res.entries ?? [],
             }))
         )
       );
