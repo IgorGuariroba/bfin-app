@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { X } from "lucide-react";
 
 interface PrevisaoFormProps {
   open: boolean;
@@ -73,7 +74,7 @@ export function PrevisaoForm({ open, onOpenChange, onSuccess, editItem }: Previs
   return (
     <div className="absolute inset-0 z-[100] bg-[var(--color-canvas)] flex flex-col animate-in slide-in-from-bottom-4 duration-200">
       {/* Amount row */}
-      <div className="flex items-center justify-between p-5 pb-4 border-b border-[var(--color-hairline-soft)] relative">
+      <div className="flex items-center justify-between p-5 pr-6 pb-4 border-b border-[var(--color-hairline-soft)] relative">
         <div className="flex items-baseline gap-1.5 flex-1 relative">
           <span className="text-[28px] font-extrabold text-[var(--color-ink)]">R$</span>
           
@@ -90,10 +91,10 @@ export function PrevisaoForm({ open, onOpenChange, onSuccess, editItem }: Previs
         
         <button 
           onClick={() => onOpenChange(false)}
-          className="bg-transparent border-none text-[22px] text-[var(--color-muted)] cursor-pointer px-1 leading-none self-start mt-2"
+          className="flex items-center justify-center w-9 h-9 rounded-full text-muted-foreground hover:bg-surface-soft transition-colors self-start shrink-0 mr-1"
           aria-label="Close"
         >
-          ×
+          <X size={24} />
         </button>
       </div>
 
