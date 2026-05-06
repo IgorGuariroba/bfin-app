@@ -18,48 +18,55 @@ function CardIllustration() {
   ];
 
   return (
-    <div style={{ width: 210, height: 160, position: "relative", flexShrink: 0 }}>
-      {/* Card */}
-      <div style={{
-        position: "absolute", left: 16, top: 28,
-        width: 140, height: 90, borderRadius: 14,
-        background: "linear-gradient(135deg, #ff385c 0%, #ff6b7a 100%)",
-        boxShadow: "0 8px 24px rgba(255,56,92,0.3)",
-        display: "flex", flexDirection: "column", justifyContent: "flex-end",
-        padding: "10px 14px",
-      }}>
-        {/* Chip */}
-        <div style={{
-          position: "absolute", top: 16, left: 14,
-          width: 28, height: 20, borderRadius: 4,
-          background: "linear-gradient(135deg,#e8d48a,#c8a830)",
-        }} />
-        {/* Dots */}
-        <div style={{ display: "flex", gap: 5, marginBottom: 6 }}>
-          {[0, 1, 2, 3].map(g => (
-            <div key={g} style={{ display: "flex", gap: 2 }}>
-              {[0, 1, 2, 3].map(d => (
-                <div key={d} style={{ width: 4, height: 4, borderRadius: "50%", background: "rgba(255,255,255,0.6)" }} />
+    <div className="relative shrink-0" style={{ width: 210, height: 160 }}>
+      <div
+        className="absolute flex flex-col justify-end"
+        style={{
+          left: 16, top: 28, width: 140, height: 90,
+          borderRadius: 14,
+          background: "linear-gradient(135deg, #ff385c 0%, #ff6b7a 100%)",
+          boxShadow: "0 8px 24px rgba(255,56,92,0.3)",
+          padding: "10px 14px",
+        }}
+      >
+        <div
+          className="absolute"
+          style={{
+            top: 16, left: 14, width: 28, height: 20, borderRadius: 4,
+            background: "linear-gradient(135deg,#e8d48a,#c8a830)",
+          }}
+        />
+        <div className="flex gap-[5px] mb-1.5">
+          {[0, 1, 2, 3].map((g) => (
+            <div key={g} className="flex gap-0.5">
+              {[0, 1, 2, 3].map((d) => (
+                <div
+                  key={d}
+                  className="rounded-full"
+                  style={{ width: 4, height: 4, background: "rgba(255,255,255,0.6)" }}
+                />
               ))}
             </div>
           ))}
         </div>
-        {/* Label */}
-        <div style={{
-          background: "rgba(255,255,255,0.18)", borderRadius: 4,
-          padding: "2px 7px", display: "inline-block", alignSelf: "flex-start",
-        }}>
-          <span style={{ fontSize: 8, color: "white", fontWeight: 600, letterSpacing: 0.5 }}>suas finanças</span>
+        <div
+          className="inline-block self-start"
+          style={{ background: "rgba(255,255,255,0.18)", borderRadius: 4, padding: "2px 7px" }}
+        >
+          <span className="text-white font-semibold" style={{ fontSize: 8, letterSpacing: 0.5 }}>
+            suas finanças
+          </span>
         </div>
       </div>
-      {/* Coins */}
       {coins.map((c, i) => (
-        <div key={i} style={{
-          position: "absolute", top: c.top, left: c.left,
-          width: c.w, height: c.h, borderRadius: "50%",
-          background: c.bg,
-          boxShadow: "0 3px 8px rgba(0,0,0,0.18)",
-        }} />
+        <div
+          key={i}
+          className="absolute rounded-full"
+          style={{
+            top: c.top, left: c.left, width: c.w, height: c.h,
+            background: c.bg, boxShadow: "0 3px 8px rgba(0,0,0,0.18)",
+          }}
+        />
       ))}
     </div>
   );
@@ -92,125 +99,98 @@ export default function LoginPage() {
   }
 
   return (
-    <div style={{
-      width: "100%", maxWidth: 360,
-      display: "flex", flexDirection: "column",
-      alignItems: "center", padding: "32px 28px",
-      gap: 0,
-    }}>
+    <div className="w-full max-w-[360px] flex flex-col items-center px-7 py-8">
       {/* Logo */}
-      <div style={{ fontSize: 48, fontWeight: 800, color: "#ff385c", letterSpacing: -2, marginBottom: 4 }}>
+      <div
+        className="text-rausch font-bold"
+        style={{ fontSize: 48, letterSpacing: -2, lineHeight: 1 }}
+      >
         bfin
       </div>
-      <div style={{ fontSize: 14, color: "#717171", textAlign: "center", fontWeight: 400, marginBottom: 0 }}>
+      <p className="mt-1 text-sm text-muted-foreground text-center">
         Controle financeiro simples e eficaz
-      </div>
+      </p>
 
       {/* Illustration */}
-      <div style={{ margin: "28px 0 32px" }}>
+      <div className="my-8">
         <CardIllustration />
       </div>
 
-      {/* Buttons */}
-      <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: 12 }}>
-        <button
-          onClick={handleGoogleLogin}
-          style={{
-            width: "100%", padding: "14px 16px",
-            borderRadius: 9999, border: "1.5px solid #e0e0e0",
-            display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
-            fontSize: 15, fontWeight: 500, cursor: "pointer",
-            background: "white", color: "#1a1a1a",
-            fontFamily: "inherit",
-          }}
-        >
-          <svg width="20" height="20" viewBox="0 0 48 48">
-            <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
-            <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
-            <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
-            <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.35-8.16 2.35-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
-          </svg>
-          Continuar com Google
-        </button>
-      </div>
+      {/* Google — button-secondary (white + ink outline, 8px radius, 48h) */}
+      <button
+        onClick={handleGoogleLogin}
+        className="w-full h-12 rounded-lg border border-ink bg-canvas text-ink text-base font-medium flex items-center justify-center gap-2.5 transition-colors hover:bg-surface-soft"
+      >
+        <svg width="20" height="20" viewBox="0 0 48 48" aria-hidden>
+          <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+          <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+          <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+          <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.35-8.16 2.35-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+        </svg>
+        Continuar com Google
+      </button>
 
       {/* Separator */}
-      <div style={{
-        display: "flex", alignItems: "center", gap: 12,
-        width: "100%", margin: "16px 0",
-      }}>
-        <div style={{ flex: 1, height: 1, background: "#e0e0e0" }} />
-        <span style={{ fontSize: 12, color: "#717171" }}>ou</span>
-        <div style={{ flex: 1, height: 1, background: "#e0e0e0" }} />
+      <div className="flex items-center gap-3 w-full my-4">
+        <div className="flex-1 h-px bg-hairline" />
+        <span className="text-xs text-muted-foreground">ou</span>
+        <div className="flex-1 h-px bg-hairline" />
       </div>
 
-      {/* Email button / form */}
       {!showForm ? (
         <button
           onClick={() => setShowForm(true)}
-          style={{
-            width: "100%", padding: "14px 16px",
-            borderRadius: 9999, border: "1.5px solid #ff385c",
-            fontSize: 15, fontWeight: 500, color: "#ff385c",
-            cursor: "pointer", background: "none",
-            fontFamily: "inherit",
-          }}
+          className="w-full h-12 rounded-lg bg-rausch text-on-primary text-base font-medium transition-colors hover:bg-rausch-active"
         >
           Entrar com e-mail
         </button>
       ) : (
-        <form onSubmit={handleCredentialsLogin} style={{ width: "100%", display: "flex", flexDirection: "column", gap: 12 }}>
-          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            <Label htmlFor="email" style={{ fontSize: 14, color: "#1a1a1a" }}>Email</Label>
+        <form onSubmit={handleCredentialsLogin} className="w-full flex flex-col gap-3">
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="email" className="text-sm text-ink font-medium">Email</Label>
             <Input
               id="email"
               type="email"
               placeholder="demo@bfin.app"
               value={email}
-              onChange={e => setEmail(e.target.value)}
+              onChange={(e) => setEmail(e.target.value)}
               required
-              className="h-11 border-hairline focus-visible:ring-rausch/20 focus-visible:border-rausch"
+              className="h-14 rounded-lg border-hairline focus-visible:ring-0 focus-visible:border-ink focus-visible:border-2"
             />
           </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            <Label htmlFor="password" style={{ fontSize: 14, color: "#1a1a1a" }}>Senha</Label>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="password" className="text-sm text-ink font-medium">Senha</Label>
             <Input
               id="password"
               type="password"
               placeholder="••••••"
               value={password}
-              onChange={e => setPassword(e.target.value)}
+              onChange={(e) => setPassword(e.target.value)}
               required
-              className="h-11 border-hairline focus-visible:ring-rausch/20 focus-visible:border-rausch"
+              className="h-14 rounded-lg border-hairline focus-visible:ring-0 focus-visible:border-ink focus-visible:border-2"
             />
           </div>
-          {error && <p style={{ fontSize: 14, color: "#ff385c", fontWeight: 500 }}>{error}</p>}
+          {error && <p className="text-sm text-error font-medium">{error}</p>}
           <button
             type="submit"
             disabled={loading}
-            style={{
-              width: "100%", padding: "14px 16px",
-              borderRadius: 9999, border: "none",
-              fontSize: 15, fontWeight: 500, color: "white",
-              cursor: loading ? "not-allowed" : "pointer",
-              background: "#ff385c", fontFamily: "inherit",
-              opacity: loading ? 0.7 : 1,
-            }}
+            className="w-full h-12 rounded-lg bg-rausch text-on-primary text-base font-medium transition-colors hover:bg-rausch-active disabled:bg-rausch-disabled disabled:cursor-not-allowed"
           >
             {loading ? "Entrando…" : "Entrar"}
           </button>
-          <p style={{ fontSize: 12, color: "#717171", textAlign: "center" }}>
-            Demo: <strong style={{ color: "#1a1a1a" }}>demo@bfin.app</strong> / <strong style={{ color: "#1a1a1a" }}>demo123</strong>
+          <p className="text-xs text-muted-foreground text-center">
+            Demo: <strong className="text-ink">demo@bfin.app</strong> / <strong className="text-ink">demo123</strong>
           </p>
         </form>
       )}
 
-      {/* Footer */}
-      <div style={{ marginTop: 20, fontSize: 12, color: "#717171", textAlign: "center", lineHeight: 1.6 }}>
-        Ao continuar, você concorda com os<br />
-        <a href="#" style={{ color: "#ff385c", textDecoration: "none", fontWeight: 600 }}>Termos de Uso</a>
-        {" "}e{" "}
-        <a href="#" style={{ color: "#ff385c", textDecoration: "none", fontWeight: 600 }}>Política de Privacidade</a>
+      {/* Legal sub-band */}
+      <div className="mt-5 text-center leading-[1.6]" style={{ fontSize: 13 }}>
+        <span className="text-muted-foreground">Ao continuar, você concorda com os</span>
+        <br />
+        <a href="#" className="text-legal-link hover:underline">Termos de Uso</a>
+        <span className="text-muted-foreground"> e </span>
+        <a href="#" className="text-legal-link hover:underline">Política de Privacidade</a>
       </div>
     </div>
   );
