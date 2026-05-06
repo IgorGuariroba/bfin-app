@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
     },
   });
 
-  const origin = request.nextUrl.origin;
+  const origin = process.env.AUTH_URL?.replace(/\/$/, "") ?? request.nextUrl.origin;
   const inviteUrl = `${origin}/convite/${inviteToken}`;
 
   return Response.json({ invite, inviteUrl }, { status: 201 });
