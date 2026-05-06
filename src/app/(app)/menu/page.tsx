@@ -15,65 +15,45 @@ export default async function MenuPage() {
   const user = session.user;
 
   const menuItems = [
-    {
-      icon: User,
-      label: "Editar perfil",
-      href: "#", // stub
-      color: "text-blue-500",
-      bgColor: "bg-blue-500/10",
-    },
-    {
-      icon: CalendarClock,
-      label: "Previsão de diário",
-      href: "/previsao",
-      color: "text-amber",
-      bgColor: "bg-amber/10",
-    },
-    {
-      icon: Settings,
-      label: "Configurações",
-      href: "/configuracoes",
-      color: "text-ink",
-      bgColor: "bg-surface-soft",
-    },
-    {
-      icon: Lightbulb,
-      label: "Sugestões",
-      href: "#", // stub
-      color: "text-purple-500",
-      bgColor: "bg-purple-500/10",
-    },
-    {
-      icon: HelpCircle,
-      label: "Ajuda",
-      href: "#", // stub
-      color: "text-green",
-      bgColor: "bg-green/10",
-    },
+    { icon: User,        label: "Editar perfil",      href: "#" },
+    { icon: CalendarClock, label: "Previsão de diário", href: "/previsao" },
+    { icon: Settings,    label: "Configurações",       href: "/configuracoes" },
+    { icon: Lightbulb,   label: "Sugestões",           href: "#" },
+    { icon: HelpCircle,  label: "Ajuda",               href: "#" },
   ];
 
   return (
     <div className="flex flex-col min-h-full bg-canvas px-4 pt-12 pb-24">
-      <h1 className="text-2xl font-bold text-ink mb-6">Menu</h1>
+      {/* display-xl: 28px/700 */}
+      <h1 className="text-[28px] font-bold leading-[1.43] text-ink mb-6">Menu</h1>
 
-      {/* Profile Card */}
-      <div className="flex flex-col items-center justify-center rounded-3xl bg-surface p-6 shadow-sm mb-8">
-        <div className="h-20 w-20 rounded-full bg-surface-soft border-2 border-hairline flex items-center justify-center mb-4 overflow-hidden">
+      {/* Profile Card — rounded-md (14px), single shadow tier, spacing.lg (24px) */}
+      <div
+        className="flex flex-col items-center justify-center rounded-[14px] bg-surface-card p-6 mb-8"
+        style={{ boxShadow: "rgba(0,0,0,0.02) 0 0 0 1px, rgba(0,0,0,0.04) 0 2px 6px, rgba(0,0,0,0.1) 0 4px 8px" }}
+      >
+        <div className="h-20 w-20 rounded-full bg-surface-soft border border-hairline flex items-center justify-center mb-4 overflow-hidden">
           {user.image ? (
             <img src={user.image} alt={user.name || "User"} className="h-full w-full object-cover" />
           ) : (
-            <User size={32} className="text-muted-foreground" />
+            <User size={32} className="text-muted" />
           )}
         </div>
-        <h2 className="text-xl font-bold text-ink">{user.name || "Usuário"}</h2>
-        <p className="text-sm text-muted-foreground mb-4">{user.email}</p>
-        
-        <Badge variant="secondary" className="bg-primary/10 text-primary hover:bg-primary/20 border-0 font-semibold px-3 py-1">
+        {/* display-sm: 20px/600 */}
+        <h2 className="text-[20px] font-semibold leading-[1.20] tracking-[-0.18px] text-ink">{user.name || "Usuário"}</h2>
+        {/* body-sm: 14px/400 */}
+        <p className="text-[14px] font-normal leading-[1.43] text-muted mt-1 mb-4">{user.email}</p>
+
+        {/* badge: 11px/600, rounded-full, button-pill-rausch palette */}
+        <Badge
+          variant="secondary"
+          className="rounded-full bg-primary/10 text-primary hover:bg-primary/20 border-0 text-[11px] font-semibold leading-[1.18] px-[10px] py-[4px]"
+        >
           Assinatura ativa
         </Badge>
       </div>
 
-      {/* Menu Options */}
+      {/* Menu Options — rounded-md (14px), spacing.base (16px) padding, spacing.md (12px) gap */}
       <div className="flex flex-col gap-3 mb-8">
         {menuItems.map((item, i) => {
           const Icon = item.icon;
@@ -81,19 +61,21 @@ export default async function MenuPage() {
             <Link
               key={i}
               href={item.href}
-              className="flex items-center gap-3 rounded-2xl bg-surface p-4 shadow-sm transition-transform active:scale-95"
+              className="flex items-center gap-3 rounded-[14px] bg-surface-card p-4 transition-transform active:scale-95"
+              style={{ boxShadow: "rgba(0,0,0,0.02) 0 0 0 1px, rgba(0,0,0,0.04) 0 2px 6px, rgba(0,0,0,0.1) 0 4px 8px" }}
             >
-              <div className={`flex h-10 w-10 items-center justify-center rounded-full ${item.bgColor} ${item.color}`}>
+              {/* icon-button-circle: surface-strong bg, ink text, rounded-full, 40px */}
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-surface-strong text-ink">
                 <Icon size={20} />
               </div>
-              <span className="flex-1 font-semibold text-ink">{item.label}</span>
-              <ChevronRight size={20} className="text-muted-foreground" />
+              {/* title-md: 16px/600 */}
+              <span className="flex-1 text-[16px] font-semibold leading-[1.25] text-ink">{item.label}</span>
+              <ChevronRight size={20} className="text-muted" />
             </Link>
           );
         })}
       </div>
 
-      {/* Logout */}
       <LogoutButton />
     </div>
   );
