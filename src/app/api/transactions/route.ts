@@ -24,9 +24,13 @@ export async function GET(request: NextRequest) {
     const end = new Date(year, mon, 1);
     where.date = { gte: start, lt: end };
   } else if (from || to) {
+    const parseLocalDay = (s: string, endOfDay = false) => {
+      const [y, m, d] = s.split("-").map(Number);
+      return endOfDay ? new Date(y, m - 1, d, 23, 59, 59, 999) : new Date(y, m - 1, d, 0, 0, 0);
+    };
     where.date = {
-      ...(from ? { gte: new Date(from) } : {}),
-      ...(to ? { lte: new Date(to) } : {}),
+      ...(from ? { gte: parseLocalDay(from) } : {}),
+      ...(to ? { lte: parseLocalDay(to, true) } : {}),
     };
   }
 
@@ -68,7 +72,8 @@ export async function POST(request: NextRequest) {
     return Response.json({ error: "amount must be positive number" }, { status: 400 });
   }
 
-  const baseDate = new Date(date);
+  const [dy, dm, dd] = (date as string).split("-").map(Number);
+  const baseDate = new Date(dy, dm - 1, dd, 12, 0, 0);
   const repeatMode = repeat ?? "none";
   const endMode = repeatEnd ?? "forever";
   const count = repeatCount ?? 0;

@@ -35,7 +35,7 @@ export async function PUT(
       ...(type ? { type } : {}),
       ...(description ? { description } : {}),
       ...(amount != null ? { amount } : {}),
-      ...(date ? { date: new Date(date) } : {}),
+      ...(date ? { date: (() => { const [y,m,d] = (date as string).split("-").map(Number); return new Date(y, m-1, d, 12, 0, 0); })() } : {}),
       ...(repeat ? { repeat } : {}),
       ...(repeatEnd ? { repeatEnd } : {}),
       ...(repeatCount != null ? { repeatCount } : {}),
