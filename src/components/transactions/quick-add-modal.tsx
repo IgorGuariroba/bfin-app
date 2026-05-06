@@ -146,7 +146,7 @@ export function QuickAddModal() {
   };
 
   /* Display value for the input */
-  const displayValue = centavos === 0 ? "" : (centavos / 100).toFixed(2).replace(".", ",");
+  const displayValue = centavos === 0 ? "" : new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(centavos / 100);
 
   const toggleTag = (id: string) =>
     setSelectedTagIds((prev) =>
