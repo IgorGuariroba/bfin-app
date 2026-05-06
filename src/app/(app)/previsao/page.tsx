@@ -71,7 +71,7 @@ export default function PrevisaoPage() {
 
   return (
     <div className="flex flex-col h-[100dvh] bg-[var(--color-surface-soft)] relative">
-      <BackHeader title="Previsão de diário" action={<button className="text-xl px-2 text-[var(--color-muted)]" onClick={openNew}>+</button>} />
+      <BackHeader title="Previsão de diário" action={<button className="flex items-center justify-center w-10 h-10 text-muted-foreground hover:bg-surface-soft rounded-full transition-colors" onClick={openNew}><Plus size={24} /></button>} />
 
       <div className="flex-1 overflow-y-auto flex flex-col bg-[var(--color-surface-soft)]">
         {loading ? (
@@ -103,6 +103,15 @@ export default function PrevisaoPage() {
                 onEdit={() => openEdit(item)}
               />
             ))}
+            <button
+              onClick={openNew}
+              className="flex items-center gap-3 w-full p-4 text-left hover:bg-[var(--color-surface-soft)] transition-colors border-t border-[var(--color-hairline-soft)]"
+            >
+              <div className="w-10 h-10 rounded-full bg-[var(--color-surface-soft)] flex items-center justify-center shrink-0">
+                <Plus size={18} className="text-muted-foreground" />
+              </div>
+              <span className="text-[15px] font-medium text-[var(--color-ink)]">Adicionar novo gasto</span>
+            </button>
           </div>
         )}
 
