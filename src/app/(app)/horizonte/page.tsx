@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react";
 import { useRouter } from "next/navigation";
 import {
   HorizonteGrid,
@@ -55,27 +55,39 @@ export default function HorizontePage() {
   }, []);
 
   return (
-    <div className="flex flex-col h-[100dvh]">
+    <div className="flex flex-col">
       {/* ── Header: ← Horizonte de saldos + ── */}
-      <header className="sticky top-0 z-30 flex items-center justify-between px-3 py-3 bg-canvas shrink-0">
+      <header className="sticky top-0 z-30 flex items-center justify-between px-3 py-3 bg-canvas">
         <button
           onClick={() => router.back()}
-          className="w-9 h-9 flex items-center justify-center rounded-full text-muted hover:text-ink transition-colors"
+          className="w-9 h-9 flex items-center justify-center rounded-full text-ink hover:bg-hairline-soft transition-colors"
           aria-label="Voltar"
         >
           <ArrowLeft size={20} />
         </button>
         <h1 className="text-base font-semibold text-ink">Horizonte de saldos</h1>
-        <div className="w-9 h-9" />
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => shift(-3)}
+            className="w-9 h-9 flex items-center justify-center rounded-full text-ink hover:bg-hairline-soft transition-colors"
+            aria-label="Meses anteriores"
+          >
+            <ChevronLeft size={20} />
+          </button>
+          <button
+            onClick={() => shift(3)}
+            className="w-9 h-9 flex items-center justify-center rounded-full text-ink hover:bg-hairline-soft transition-colors"
+            aria-label="Próximos meses"
+          >
+            <ChevronRight size={20} />
+          </button>
+        </div>
       </header>
 
       <HorizonteGrid
         months={months}
         data={data}
         loading={loading}
-        onPrev={() => shift(-3)}
-        onNext={() => shift(3)}
-        onShift={shift}
       />
     </div>
   );
