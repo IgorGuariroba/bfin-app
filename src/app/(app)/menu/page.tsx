@@ -19,7 +19,7 @@ export default async function MenuPage() {
     { icon: CalendarClock, label: "Previsão de diário", href: "/previsao" },
     { icon: Settings,    label: "Configurações",       href: "/configuracoes" },
     { icon: Lightbulb,   label: "Sugestões",           href: "/sugestoes" },
-    { icon: HelpCircle,  label: "Ajuda",               href: "#" },
+    { icon: HelpCircle,  label: "Ajuda",               href: "/ajuda" },
   ];
 
   return (
