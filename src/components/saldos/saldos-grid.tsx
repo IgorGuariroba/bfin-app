@@ -1,48 +1,36 @@
 "use client";
 
-import { useEffect } from "react";
-import { useTransactions } from "@/hooks/use-transactions";
+import { useState, useEffect, useCallback } from "react";
 import { DayRow, type DayEntry } from "./day-row";
 
-function getDaysInMonth(year: number, month: number): number {
-  return new Date(year, month, 0).getDate();
-}
+type ApiEntry = {
+  day: number;
+  date: string;
+  byType: Record<string, number>;
+  accSaldo: number;
+};
 
-function computeDailyEntries(
-  transactions: { type: string; amount: number; date: string }[],
-  year: number,
-  month: number,
+type ApiResponse = {
+  entries: ApiEntry[];
+  prevByType: Record<string, number>;
+};
+
+function applyFilter(
+  entries: ApiEntry[],
+  prevByType: Record<string, number>,
   filter: string
 ): DayEntry[] {
-  const daysCount = getDaysInMonth(year, month);
-
-  const byDay: Record<number, Record<string, number>> = {};
-  for (let d = 1; d <= daysCount; d++) byDay[d] = {};
-
-  for (const t of transactions) {
-    const day = parseInt(t.date.split("T")[0].split("-")[2], 10);
-    if (day < 1 || day > daysCount) continue;
-    byDay[day][t.type] = (byDay[day][t.type] ?? 0) + t.amount;
+  if (filter === "all") {
+    return entries.map((e) => ({ day: e.day, date: e.date, byType: e.byType, accSaldo: e.accSaldo }));
   }
 
-  let accSaldo = 0;
-  const entries: DayEntry[] = [];
+  const sign = filter === "saida" || filter === "diario" || filter === "cartao" ? -1 : 1;
+  let acc = sign * (prevByType[filter] ?? 0);
 
-  for (let d = 1; d <= daysCount; d++) {
-    const bt = byDay[d];
-
-    if (filter === "all") {
-      accSaldo += (bt.entrada ?? 0) - (bt.saida ?? 0) - (bt.diario ?? 0) - (bt.cartao ?? 0);
-    } else {
-      const sign = filter === "saida" || filter === "diario" || filter === "cartao" ? -1 : 1;
-      accSaldo += sign * (bt[filter] ?? 0);
-    }
-
-    const dateStr = `${year}-${String(month).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
-    entries.push({ day: d, date: dateStr, byType: bt, accSaldo });
-  }
-
-  return entries;
+  return entries.map((e) => {
+    acc += sign * (e.byType[filter] ?? 0);
+    return { day: e.day, date: e.date, byType: e.byType, accSaldo: acc };
+  });
 }
 
 interface SaldosGridProps {
@@ -52,33 +40,50 @@ interface SaldosGridProps {
 }
 
 export function SaldosGrid({ month, filter, onDayClick }: SaldosGridProps) {
-  const { transactions, loading, refetch } = useTransactions({ month });
+  const [apiData, setApiData] = useState<ApiResponse | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  const [year, mon] = month.split("-").map(Number);
-  const today = new Date();
-  const isCurrentMonth = today.getFullYear() === year && today.getMonth() + 1 === mon;
-  const todayDay = isCurrentMonth ? today.getDate() : -1;
-
-  const entries = computeDailyEntries(transactions, year, mon, filter);
+  const fetchData = useCallback(async (m: string) => {
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/saldos?month=${m}`);
+      if (!res.ok) throw new Error(await res.text());
+      setApiData(await res.json());
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    const handler = () => refetch();
+    fetchData(month);
+  }, [month, fetchData]);
+
+  useEffect(() => {
+    const handler = () => fetchData(month);
     window.addEventListener("bfin:transaction-created", handler);
     return () => window.removeEventListener("bfin:transaction-created", handler);
-  }, [refetch]);
+  }, [month, fetchData]);
 
   useEffect(() => {
-    const el = document.querySelector("[data-today='true']");
-    if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
-  }, [month, loading]);
+    if (!loading && apiData) {
+      const el = document.querySelector("[data-today='true']");
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }, [month, loading, apiData]);
 
-  if (loading) {
+  if (loading || !apiData) {
     return (
       <div className="flex items-center justify-center py-16 text-sm text-[var(--color-muted)]">
         Carregando...
       </div>
     );
   }
+
+  const entries = applyFilter(apiData.entries, apiData.prevByType, filter);
+  const today = new Date();
+  const [year, mon] = month.split("-").map(Number);
+  const isCurrentMonth = today.getFullYear() === year && today.getMonth() + 1 === mon;
+  const todayDay = isCurrentMonth ? today.getDate() : -1;
 
   return (
     <div>

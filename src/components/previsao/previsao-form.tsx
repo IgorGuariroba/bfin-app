@@ -89,9 +89,9 @@ export function PrevisaoForm({ open, onOpenChange, onSuccess, editItem }: Previs
           />
         </div>
         
-        <button 
+        <button
           onClick={() => onOpenChange(false)}
-          className="flex items-center justify-center w-9 h-9 rounded-full text-muted-foreground hover:bg-surface-soft transition-colors self-start shrink-0 mr-1"
+          className="flex items-center justify-center w-8 h-8 bg-[#f2f2f2] hover:bg-[#e8e8e8] rounded-full transition-colors self-start shrink-0 text-[#222222]"
           aria-label="Close"
         >
           <X size={24} />
@@ -117,10 +117,10 @@ export function PrevisaoForm({ open, onOpenChange, onSuccess, editItem }: Previs
 
       {/* Submit button */}
       <div className="p-4 pb-8 border-t border-[var(--color-hairline-soft)]">
-        <button 
+        <button
           onClick={handleSubmit}
           disabled={submitting}
-          className="w-full p-4 bg-[var(--color-ink)] text-white border-none rounded-full text-base font-bold cursor-pointer font-[Inter,-apple-system,system-ui,sans-serif] tracking-[0.1px] active:scale-[0.98] transition-transform disabled:opacity-70 disabled:active:scale-100"
+          className="w-full h-12 bg-[#ff385c] active:bg-[#e00b41] text-white border-none rounded-[8px] text-base font-[500] cursor-pointer transition-colors disabled:bg-[#ffd1da] disabled:cursor-not-allowed"
         >
           {submitting ? "Salvando..." : editItem ? "Salvar gasto" : "Adicionar gasto mensal"}
         </button>

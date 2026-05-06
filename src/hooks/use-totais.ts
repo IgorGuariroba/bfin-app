@@ -10,6 +10,8 @@ export type TotaisData = {
   economia: number;
   custoVida: number;
   performance: number;
+  saldoAnterior: number;
+  saldoAtual: number;
   diarioMedio: number;
   diarioPrev: number;
   previsaoTotal: number;

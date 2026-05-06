@@ -68,5 +68,5 @@ export async function GET(request: NextRequest) {
     });
   }
 
-  return Response.json(entries);
+  return Response.json({ entries, prevByType });
 }
