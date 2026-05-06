@@ -1,6 +1,5 @@
 "use client";
 
-import { useRef } from "react";
 import { cn } from "@/lib/utils";
 
 export type SaldoEntry = {
@@ -63,9 +62,6 @@ interface HorizonteGridProps {
   months: [string, string, string];
   data: MonthData[];
   loading: boolean;
-  onPrev: () => void;
-  onNext: () => void;
-  onShift: (delta: number) => void;
 }
 
 const TODAY = new Date();
@@ -76,12 +72,7 @@ export function HorizonteGrid({
   months,
   data,
   loading,
-  onShift,
 }: HorizonteGridProps) {
-  const touchStartX = useRef(0);
-  const mouseStartX = useRef(0);
-  const isDragging = useRef(false);
-
   const byMonth: Record<string, Record<number, number>> = {};
   for (const md of data) {
     byMonth[md.month] = {};
@@ -98,22 +89,7 @@ export function HorizonteGrid({
   const maxDays = Math.max(...daysInMonth);
 
   return (
-    <div
-      className="flex flex-col select-none flex-1 overflow-hidden"
-      onTouchStart={(e) => { touchStartX.current = e.touches[0].clientX; }}
-      onTouchEnd={(e) => {
-        const dx = e.changedTouches[0].clientX - touchStartX.current;
-        if (Math.abs(dx) > 50) onShift(dx < 0 ? 3 : -3);
-      }}
-      onMouseDown={(e) => { mouseStartX.current = e.clientX; isDragging.current = true; }}
-      onMouseUp={(e) => {
-        if (!isDragging.current) return;
-        isDragging.current = false;
-        const dx = e.clientX - mouseStartX.current;
-        if (Math.abs(dx) > 50) onShift(dx < 0 ? 3 : -3);
-      }}
-      onMouseLeave={() => { isDragging.current = false; }}
-    >
+    <div className="flex flex-col flex-1 overflow-hidden">
       {/* ── Month headers ── */}
       <div className="grid grid-cols-3 border-b border-hairline sticky top-0 z-10 bg-canvas">
         {months.map((m, i) => {
