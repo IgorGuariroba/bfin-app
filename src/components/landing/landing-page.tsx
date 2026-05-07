@@ -8,7 +8,6 @@ import {
   ShieldCheck,
   Smartphone,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 
 const features = [
   {
@@ -70,64 +69,80 @@ const faqs = [
 
 export function LandingPage() {
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <header className="sticky top-0 z-40 border-b border-border/40 bg-background/80 backdrop-blur">
-        <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4">
+    <div className="min-h-screen bg-canvas text-ink">
+      <header className="sticky top-0 z-40 border-b border-hairline bg-canvas">
+        <div className="mx-auto flex h-20 max-w-[1280px] items-center justify-between px-6">
           <Link href="/" className="flex items-center gap-2">
             <Image
               src="/icon.png"
               alt="bfin"
-              width={28}
-              height={28}
+              width={32}
+              height={32}
               className="rounded"
             />
-            <span className="text-lg font-semibold tracking-tight">bfin</span>
+            <span className="text-[22px] font-bold tracking-tight text-rausch">
+              bfin
+            </span>
           </Link>
-          <nav className="flex items-center gap-2">
-            <Button asChild variant="ghost" size="sm">
-              <Link href="#features">Recursos</Link>
-            </Button>
-            <Button asChild variant="ghost" size="sm">
-              <Link href="#faq">FAQ</Link>
-            </Button>
-            <Button asChild size="sm">
-              <Link href="/login">Entrar</Link>
-            </Button>
+          <nav className="hidden items-center gap-8 md:flex">
+            <Link
+              href="#features"
+              className="text-base font-semibold text-ink hover:underline underline-offset-4"
+            >
+              Recursos
+            </Link>
+            <Link
+              href="#faq"
+              className="text-base font-semibold text-ink hover:underline underline-offset-4"
+            >
+              FAQ
+            </Link>
           </nav>
+          <Link
+            href="/login"
+            className="inline-flex h-12 items-center justify-center rounded-lg bg-rausch px-6 text-base font-medium text-white transition-colors hover:bg-rausch-active"
+          >
+            Entrar
+          </Link>
         </div>
       </header>
 
       <main>
-        <section className="relative overflow-hidden border-b border-border/40">
-          <div className="mx-auto grid max-w-6xl gap-10 px-4 py-16 md:grid-cols-2 md:py-24 md:gap-16">
+        <section className="border-b border-hairline-soft">
+          <div className="mx-auto grid max-w-[1280px] gap-16 px-6 py-16 md:grid-cols-2 md:py-24">
             <div className="flex flex-col justify-center gap-6">
-              <span className="inline-flex w-fit items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
-                Beta aberto · grátis
+              <span className="inline-flex w-fit items-center rounded-full border border-hairline bg-canvas px-3 py-1 text-[11px] font-semibold tracking-wide text-ink">
+                BETA · GRÁTIS
               </span>
-              <h1 className="text-4xl font-bold tracking-tight md:text-5xl">
+              <h1 className="text-[44px] font-bold leading-[1.1] tracking-tight md:text-[56px]">
                 Controle financeiro{" "}
-                <span className="text-primary">sem planilha</span>.
+                <span className="text-rausch">sem planilha</span>.
               </h1>
-              <p className="text-lg text-muted-foreground">
+              <p className="max-w-md text-base leading-relaxed text-[#3f3f3f]">
                 Organize gastos, metas e investimentos num só lugar. Simples,
                 rápido, no seu bolso.
               </p>
-              <div className="flex flex-wrap gap-3">
-                <Button asChild size="lg">
-                  <Link href="/login">Criar conta grátis</Link>
-                </Button>
-                <Button asChild size="lg" variant="outline">
-                  <Link href="#features">Ver recursos</Link>
-                </Button>
+              <div className="flex flex-wrap gap-3 pt-2">
+                <Link
+                  href="/login"
+                  className="inline-flex h-12 items-center justify-center rounded-lg bg-rausch px-6 text-base font-medium text-white transition-colors hover:bg-rausch-active"
+                >
+                  Criar conta grátis
+                </Link>
+                <Link
+                  href="#features"
+                  className="inline-flex h-12 items-center justify-center rounded-lg border border-ink bg-canvas px-6 text-base font-medium text-ink transition-colors hover:bg-surface-soft"
+                >
+                  Ver recursos
+                </Link>
               </div>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-[13px] text-muted">
                 Sem cartão de crédito. Cancele quando quiser.
               </p>
             </div>
 
             <div className="relative flex items-center justify-center">
-              <div className="absolute inset-0 bg-gradient-to-tr from-primary/20 via-transparent to-transparent blur-3xl" />
-              <div className="relative aspect-[4/5] w-full max-w-sm overflow-hidden rounded-2xl border border-border/60 bg-muted/20 shadow-2xl">
+              <div className="relative aspect-[4/5] w-full max-w-sm overflow-hidden rounded-[14px] border border-hairline bg-surface-soft">
                 <Image
                   src="/og.png"
                   alt="Tela do bfin"
@@ -143,47 +158,51 @@ export function LandingPage() {
 
         <section
           id="features"
-          className="border-b border-border/40 py-16 md:py-24"
+          className="border-b border-hairline-soft py-16 md:py-24"
         >
-          <div className="mx-auto max-w-6xl px-4">
-            <div className="mx-auto mb-12 max-w-2xl text-center">
-              <h2 className="text-3xl font-bold tracking-tight md:text-4xl">
+          <div className="mx-auto max-w-[1280px] px-6">
+            <div className="mx-auto mb-12 max-w-2xl">
+              <h2 className="text-[28px] font-bold tracking-tight md:text-[32px]">
                 Tudo que você precisa pra decidir melhor
               </h2>
-              <p className="mt-3 text-muted-foreground">
+              <p className="mt-3 text-base text-muted">
                 Recursos pensados pra quem quer entender o próprio dinheiro sem
                 virar contador.
               </p>
             </div>
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {features.map(({ icon: Icon, title, description }) => (
                 <div
                   key={title}
-                  className="rounded-xl border border-border/60 bg-card p-6 transition-colors hover:border-primary/40"
+                  className="rounded-[14px] border border-hairline bg-canvas p-6 transition-shadow hover:shadow-[rgba(0,0,0,0.02)_0_0_0_1px,rgba(0,0,0,0.04)_0_2px_6px_0,rgba(0,0,0,0.1)_0_4px_8px_0]"
                 >
-                  <div className="mb-4 inline-flex size-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                  <div className="mb-4 inline-flex size-10 items-center justify-center rounded-full bg-surface-soft text-ink">
                     <Icon className="size-5" />
                   </div>
-                  <h3 className="mb-2 text-lg font-semibold">{title}</h3>
-                  <p className="text-sm text-muted-foreground">{description}</p>
+                  <h3 className="mb-2 text-base font-semibold text-ink">
+                    {title}
+                  </h3>
+                  <p className="text-sm leading-relaxed text-muted">
+                    {description}
+                  </p>
                 </div>
               ))}
             </div>
           </div>
         </section>
 
-        <section className="border-b border-border/40 py-16 md:py-24">
-          <div className="mx-auto max-w-6xl px-4">
-            <div className="mx-auto mb-12 max-w-2xl text-center">
-              <h2 className="text-3xl font-bold tracking-tight md:text-4xl">
+        <section className="border-b border-hairline-soft py-16 md:py-24">
+          <div className="mx-auto max-w-[1280px] px-6">
+            <div className="mx-auto mb-12 max-w-2xl">
+              <h2 className="text-[28px] font-bold tracking-tight md:text-[32px]">
                 Veja seu dinheiro em movimento
               </h2>
-              <p className="mt-3 text-muted-foreground">
+              <p className="mt-3 text-base text-muted">
                 Saldos, lançamentos e horizonte financeiro com leitura clara em
                 qualquer tela.
               </p>
             </div>
-            <div className="relative mx-auto max-w-4xl overflow-hidden rounded-2xl border border-border/60 bg-muted/20 shadow-2xl">
+            <div className="relative mx-auto max-w-4xl overflow-hidden rounded-[14px] border border-hairline bg-surface-soft">
               <div className="relative aspect-video">
                 <Image
                   src="/og.png"
@@ -197,26 +216,31 @@ export function LandingPage() {
           </div>
         </section>
 
-        <section id="faq" className="border-b border-border/40 py-16 md:py-24">
-          <div className="mx-auto max-w-3xl px-4">
-            <div className="mb-12 text-center">
-              <h2 className="text-3xl font-bold tracking-tight md:text-4xl">
+        <section
+          id="faq"
+          className="border-b border-hairline-soft py-16 md:py-24"
+        >
+          <div className="mx-auto max-w-3xl px-6">
+            <div className="mb-12">
+              <h2 className="text-[28px] font-bold tracking-tight md:text-[32px]">
                 Perguntas frequentes
               </h2>
             </div>
-            <div className="space-y-4">
+            <div className="divide-y divide-hairline border-y border-hairline">
               {faqs.map(({ q, a }) => (
                 <details
                   key={q}
-                  className="group rounded-xl border border-border/60 bg-card p-5 [&_summary::-webkit-details-marker]:hidden"
+                  className="group py-5 [&_summary::-webkit-details-marker]:hidden"
                 >
-                  <summary className="flex cursor-pointer items-center justify-between gap-4 font-medium">
+                  <summary className="flex cursor-pointer items-center justify-between gap-4 text-base font-semibold text-ink">
                     {q}
-                    <span className="text-muted-foreground transition-transform group-open:rotate-45">
+                    <span className="text-2xl font-light text-ink transition-transform group-open:rotate-45">
                       +
                     </span>
                   </summary>
-                  <p className="mt-3 text-sm text-muted-foreground">{a}</p>
+                  <p className="mt-3 text-sm leading-relaxed text-muted">
+                    {a}
+                  </p>
                 </details>
               ))}
             </div>
@@ -224,45 +248,94 @@ export function LandingPage() {
         </section>
 
         <section className="py-16 md:py-24">
-          <div className="mx-auto max-w-3xl px-4 text-center">
-            <h2 className="text-3xl font-bold tracking-tight md:text-4xl">
+          <div className="mx-auto max-w-2xl px-6 text-center">
+            <h2 className="text-[28px] font-bold tracking-tight md:text-[32px]">
               Pronto pra organizar suas finanças?
             </h2>
-            <p className="mt-3 text-muted-foreground">
+            <p className="mt-3 text-base text-muted">
               Crie sua conta em menos de um minuto.
             </p>
-            <div className="mt-6 flex justify-center">
-              <Button asChild size="lg">
-                <Link href="/login">Começar agora</Link>
-              </Button>
+            <div className="mt-8 flex justify-center">
+              <Link
+                href="/login"
+                className="inline-flex h-12 items-center justify-center rounded-lg bg-rausch px-8 text-base font-medium text-white transition-colors hover:bg-rausch-active"
+              >
+                Começar agora
+              </Link>
             </div>
           </div>
         </section>
       </main>
 
-      <footer className="border-t border-border/40 py-10">
-        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-4 text-sm text-muted-foreground md:flex-row">
-          <div className="flex items-center gap-2">
-            <Image
-              src="/icon.png"
-              alt="bfin"
-              width={20}
-              height={20}
-              className="rounded"
-            />
-            <span>© {new Date().getFullYear()} bfin</span>
+      <footer className="border-t border-hairline bg-canvas">
+        <div className="mx-auto max-w-[1280px] px-6 py-12">
+          <div className="grid gap-8 md:grid-cols-3">
+            <div>
+              <h4 className="mb-4 text-base font-medium text-ink">Suporte</h4>
+              <ul className="space-y-3 text-sm text-ink">
+                <li>
+                  <Link href="#faq" className="hover:underline">
+                    Central de ajuda
+                  </Link>
+                </li>
+                <li>
+                  <Link href="#faq" className="hover:underline">
+                    FAQ
+                  </Link>
+                </li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="mb-4 text-base font-medium text-ink">Produto</h4>
+              <ul className="space-y-3 text-sm text-ink">
+                <li>
+                  <Link href="#features" className="hover:underline">
+                    Recursos
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/login" className="hover:underline">
+                    Entrar
+                  </Link>
+                </li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="mb-4 text-base font-medium text-ink">bfin</h4>
+              <ul className="space-y-3 text-sm text-ink">
+                <li>
+                  <Link href="/" className="hover:underline">
+                    Sobre
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/login" className="hover:underline">
+                    Criar conta
+                  </Link>
+                </li>
+              </ul>
+            </div>
           </div>
-          <nav className="flex items-center gap-4">
-            <Link href="/login" className="hover:text-foreground">
-              Entrar
-            </Link>
-            <Link href="#features" className="hover:text-foreground">
-              Recursos
-            </Link>
-            <Link href="#faq" className="hover:text-foreground">
-              FAQ
-            </Link>
-          </nav>
+          <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-hairline pt-6 text-[13px] text-muted md:flex-row">
+            <div className="flex items-center gap-2">
+              <Image
+                src="/icon.png"
+                alt="bfin"
+                width={20}
+                height={20}
+                className="rounded"
+              />
+              <span>© {new Date().getFullYear()} bfin</span>
+            </div>
+            <div className="flex items-center gap-4">
+              <Link href="#" className="hover:underline">
+                Termos
+              </Link>
+              <Link href="#" className="hover:underline">
+                Privacidade
+              </Link>
+            </div>
+          </div>
         </div>
       </footer>
     </div>
