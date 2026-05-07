@@ -142,15 +142,17 @@ export function LandingPage() {
             </div>
 
             <div className="relative flex items-center justify-center">
-              <div className="relative aspect-[4/5] w-full max-w-sm overflow-hidden rounded-[14px] border border-hairline bg-surface-soft">
-                <Image
-                  src="/og.png"
-                  alt="Tela do bfin"
-                  fill
-                  sizes="(max-width: 768px) 100vw, 400px"
-                  className="object-cover"
-                  priority
-                />
+              <div className="relative w-full max-w-[320px]">
+                <div className="relative aspect-[9/19] overflow-hidden rounded-[40px] border-[10px] border-ink bg-canvas shadow-[0_20px_40px_rgba(0,0,0,0.08),0_4px_12px_rgba(0,0,0,0.04)]">
+                  <Image
+                    src="/saldos.png"
+                    alt="Tela de saldos diários do bfin"
+                    fill
+                    sizes="(max-width: 768px) 100vw, 320px"
+                    className="object-cover object-[center_8%]"
+                    priority
+                  />
+                </div>
               </div>
             </div>
           </div>
@@ -191,7 +193,7 @@ export function LandingPage() {
           </div>
         </section>
 
-        <section className="border-b border-hairline-soft py-16 md:py-24">
+        <section className="border-b border-hairline-soft bg-surface-soft py-16 md:py-24">
           <div className="mx-auto max-w-[1280px] px-6">
             <div className="mx-auto mb-12 max-w-2xl">
               <h2 className="text-[28px] font-bold tracking-tight md:text-[32px]">
@@ -202,16 +204,45 @@ export function LandingPage() {
                 qualquer tela.
               </p>
             </div>
-            <div className="relative mx-auto max-w-4xl overflow-hidden rounded-[14px] border border-hairline bg-surface-soft">
-              <div className="relative aspect-video">
-                <Image
-                  src="/og.png"
-                  alt="Preview do app bfin"
-                  fill
-                  sizes="(max-width: 1024px) 100vw, 1024px"
-                  className="object-cover"
-                />
-              </div>
+            <div className="grid gap-10 sm:grid-cols-3 sm:gap-6 md:gap-10">
+              {[
+                {
+                  src: "/totais.png",
+                  alt: "Tela de totais do mês",
+                  title: "Resumo claro do mês",
+                  desc: "Performance, custo de vida e diário médio num panorama só.",
+                },
+                {
+                  src: "/horizonte-de-saldo.png",
+                  alt: "Tela de horizonte de saldo",
+                  title: "Projeção visual do saldo",
+                  desc: "Heatmap de meses futuros mostra quando o caixa aperta.",
+                },
+                {
+                  src: "/tags.png",
+                  alt: "Tela de tags",
+                  title: "Organize do seu jeito",
+                  desc: "Tags do sistema e personalizadas pra agrupar tudo.",
+                },
+              ].map(({ src, alt, title, desc }) => (
+                <div key={src} className="flex flex-col items-center text-center">
+                  <div className="relative aspect-[9/19] w-full max-w-[260px] overflow-hidden rounded-[36px] border-[8px] border-ink bg-canvas shadow-[0_16px_32px_rgba(0,0,0,0.08),0_4px_10px_rgba(0,0,0,0.04)]">
+                    <Image
+                      src={src}
+                      alt={alt}
+                      fill
+                      sizes="(max-width: 640px) 100vw, 260px"
+                      className="object-cover object-top"
+                    />
+                  </div>
+                  <h3 className="mt-6 text-base font-semibold text-ink">
+                    {title}
+                  </h3>
+                  <p className="mt-2 max-w-[260px] text-sm leading-relaxed text-body-text">
+                    {desc}
+                  </p>
+                </div>
+              ))}
             </div>
           </div>
         </section>
