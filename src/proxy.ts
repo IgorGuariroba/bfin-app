@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-const publicRoutes = ["/login"];
+const publicRoutes = ["/login", "/convite"];
+const publicExact = ["/"];
 const SESSION_COOKIE =
   process.env.NODE_ENV === "production"
     ? "__Secure-authjs.session-token"
@@ -10,7 +11,10 @@ const SESSION_COOKIE =
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  const isPublic = publicRoutes.some((route) => pathname.startsWith(route));
+  const isPublic =
+    publicExact.includes(pathname) ||
+    publicRoutes.some((route) => pathname.startsWith(route));
+  const isAuthRedirectRoute = pathname.startsWith("/login");
   const hasSession = request.cookies.has(SESSION_COOKIE);
 
   // Não logado + rota protegida → login
@@ -18,8 +22,9 @@ export function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
-  // Logado + rota pública → saldos
-  if (isPublic && hasSession) {
+  // Logado + /login → saldos (landing em / fica visível mesmo logado pra preview;
+  // page.tsx já redireciona logados pra /saldos)
+  if (isAuthRedirectRoute && hasSession) {
     return NextResponse.redirect(new URL("/saldos", request.url));
   }
 
@@ -27,5 +32,5 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!api/auth|_next/static|_next/image|sw\\.js|manifest\\.json|icons/|.*\\.png$).*)"],
+  matcher: ["/((?!api/auth|_next/static|_next/image|sw\\.js|manifest\\.json|icons/|.*\\.(?:png|jpe?g|webp|svg|gif|ico)$).*)"],
 };
