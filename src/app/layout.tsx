@@ -28,8 +28,9 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://bfincont.com.br"),
-  title: "bfin",
-  description: "Controle financeiro pessoal",
+  title: "bfin · Controle financeiro pessoal",
+  description:
+    "Organize gastos, metas e investimentos num só lugar. Simples, rápido, no seu bolso.",
   applicationName: "bfin",
   appleWebApp: {
     capable: true,
@@ -44,8 +45,9 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     siteName: "bfin",
-    title: "bfin",
-    description: "Controle financeiro pessoal",
+    title: "bfin · Controle financeiro pessoal",
+    description:
+      "Organize gastos, metas e investimentos num só lugar. Simples, rápido, no seu bolso.",
     url: "/",
     locale: "pt_BR",
     images: [
@@ -59,8 +61,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "bfin",
-    description: "Controle financeiro pessoal",
+    title: "bfin · Controle financeiro pessoal",
+    description:
+      "Organize gastos, metas e investimentos num só lugar. Simples, rápido, no seu bolso.",
     images: ["/og.png"],
   },
   other: {
