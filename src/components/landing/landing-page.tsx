@@ -118,7 +118,7 @@ export function LandingPage() {
                 Controle financeiro{" "}
                 <span className="text-rausch">sem planilha</span>.
               </h1>
-              <p className="max-w-md text-base leading-relaxed text-[#3f3f3f]">
+              <p className="max-w-md text-base leading-relaxed text-body-text">
                 Organize gastos, metas e investimentos num só lugar. Simples,
                 rápido, no seu bolso.
               </p>
@@ -136,7 +136,7 @@ export function LandingPage() {
                   Ver recursos
                 </Link>
               </div>
-              <p className="text-[13px] text-muted">
+              <p className="text-[13px] text-body-text">
                 Sem cartão de crédito. Cancele quando quiser.
               </p>
             </div>
@@ -165,7 +165,7 @@ export function LandingPage() {
               <h2 className="text-[28px] font-bold tracking-tight md:text-[32px]">
                 Tudo que você precisa pra decidir melhor
               </h2>
-              <p className="mt-3 text-base text-muted">
+              <p className="mt-3 text-base text-body-text">
                 Recursos pensados pra quem quer entender o próprio dinheiro sem
                 virar contador.
               </p>
@@ -182,7 +182,7 @@ export function LandingPage() {
                   <h3 className="mb-2 text-base font-semibold text-ink">
                     {title}
                   </h3>
-                  <p className="text-sm leading-relaxed text-muted">
+                  <p className="text-sm leading-relaxed text-body-text">
                     {description}
                   </p>
                 </div>
@@ -197,7 +197,7 @@ export function LandingPage() {
               <h2 className="text-[28px] font-bold tracking-tight md:text-[32px]">
                 Veja seu dinheiro em movimento
               </h2>
-              <p className="mt-3 text-base text-muted">
+              <p className="mt-3 text-base text-body-text">
                 Saldos, lançamentos e horizonte financeiro com leitura clara em
                 qualquer tela.
               </p>
@@ -238,7 +238,7 @@ export function LandingPage() {
                       +
                     </span>
                   </summary>
-                  <p className="mt-3 text-sm leading-relaxed text-muted">
+                  <p className="mt-3 text-sm leading-relaxed text-body-text">
                     {a}
                   </p>
                 </details>
