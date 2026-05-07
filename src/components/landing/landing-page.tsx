@@ -50,26 +50,34 @@ const features = [
 
 const faqs = [
   {
-    q: "O bfin é gratuito?",
-    a: "Sim, o uso pessoal é gratuito durante o beta. Planos pagos podem surgir no futuro com features avançadas.",
+    q: "Quanto tempo leva pra começar a usar?",
+    a: "Menos de um minuto. Cria conta com e-mail ou Google, lança a primeira despesa e já vê o saldo do mês. Sem onboarding longo.",
+  },
+  {
+    q: "Quantas contas e cartões posso cadastrar?",
+    a: "Sem limite. Conta corrente, poupança, carteira, cartões de crédito — todos no mesmo painel, com saldo consolidado.",
+  },
+  {
+    q: "Dá pra importar extrato OFX ou CSV?",
+    a: "Importação de OFX e CSV está no roadmap do beta. Hoje o foco é lançamento manual rápido e recorrências automáticas.",
+  },
+  {
+    q: "Funciona pra mais de uma pessoa ou família?",
+    a: "Cada conta é individual no beta. Compartilhamento de carteira entre membros da família está sendo desenhado.",
   },
   {
     q: "Preciso conectar minha conta bancária?",
-    a: "Não. O bfin funciona com lançamentos manuais e importação. Conexão bancária automática é opcional e está em desenvolvimento.",
+    a: "Não. O bfin não acessa seu banco. Você lança o que quiser, do jeito que quiser — manual e privado.",
   },
   {
-    q: "Meus dados estão seguros?",
-    a: "Os dados ficam vinculados à sua conta autenticada. Não vendemos nem compartilhamos suas informações financeiras.",
-  },
-  {
-    q: "Funciona offline?",
-    a: "Como PWA, o bfin guarda recursos localmente e abre rápido. Operações que dependem de servidor exigem conexão.",
+    q: "É grátis mesmo? Vai ter pegadinha?",
+    a: "Grátis no beta, sem cartão de crédito. Se surgirem planos pagos no futuro, será por features extras — o básico continua livre.",
   },
 ];
 
 export function LandingPage() {
   return (
-    <div className="min-h-screen bg-canvas text-ink">
+    <div className="min-h-screen bg-canvas pb-20 text-ink md:pb-0">
       <header className="sticky top-0 z-40 border-b border-hairline bg-canvas">
         <div className="mx-auto flex h-20 max-w-[1280px] items-center justify-between px-6">
           <Link href="/" className="flex items-center gap-2">
@@ -119,8 +127,8 @@ export function LandingPage() {
                 <span className="text-rausch">sem planilha</span>.
               </h1>
               <p className="max-w-md text-base leading-relaxed text-body-text">
-                Organize gastos, metas e investimentos num só lugar. Simples,
-                rápido, no seu bolso.
+                Saiba em 30 segundos quanto sobra no fim do mês — e nos próximos
+                seis. Sem importar extrato, sem fórmula.
               </p>
               <div className="flex flex-wrap gap-3 pt-2">
                 <Link
@@ -130,28 +138,60 @@ export function LandingPage() {
                   Criar conta grátis
                 </Link>
                 <Link
-                  href="#features"
+                  href="#como-funciona"
                   className="inline-flex h-12 items-center justify-center rounded-lg border border-ink bg-canvas px-6 text-base font-medium text-ink transition-colors hover:bg-surface-soft"
                 >
-                  Ver recursos
+                  Ver como funciona
                 </Link>
               </div>
               <p className="text-[13px] text-body-text">
-                Sem cartão de crédito. Cancele quando quiser.
+                Grátis no beta. Sem instalar nada, abre direto no navegador.
               </p>
+              <ul className="flex flex-wrap items-center gap-x-5 gap-y-2 pt-2 text-[13px] text-body-text">
+                <li className="flex items-center gap-1.5">
+                  <span className="size-1.5 rounded-full bg-rausch" />
+                  Sem anúncios
+                </li>
+                <li className="flex items-center gap-1.5">
+                  <span className="size-1.5 rounded-full bg-rausch" />
+                  Sem venda de dados
+                </li>
+                <li className="flex items-center gap-1.5">
+                  <span className="size-1.5 rounded-full bg-rausch" />
+                  Feito no Brasil
+                </li>
+              </ul>
             </div>
 
             <div className="relative flex items-center justify-center">
-              <div className="relative w-full max-w-[320px]">
-                <div className="relative aspect-[9/19] overflow-hidden rounded-[40px] border-[10px] border-ink bg-canvas shadow-[0_20px_40px_rgba(0,0,0,0.08),0_4px_12px_rgba(0,0,0,0.04)]">
-                  <Image
-                    src="/saldos.png"
-                    alt="Tela de saldos diários do bfin"
-                    fill
-                    sizes="(max-width: 768px) 100vw, 320px"
-                    className="object-cover object-[center_8%]"
-                    priority
-                  />
+              <div
+                aria-hidden
+                className="pointer-events-none absolute -inset-8 rounded-full bg-rausch/5 blur-3xl"
+              />
+              <div className="relative w-full max-w-[420px]">
+                <div className="absolute right-0 top-12 hidden w-[58%] rotate-[6deg] sm:block">
+                  <div className="relative aspect-[9/19] overflow-hidden rounded-[32px] border-[8px] border-ink bg-canvas shadow-[0_24px_48px_rgba(0,0,0,0.12),0_4px_12px_rgba(0,0,0,0.06)]">
+                    <Image
+                      src="/horizonte-de-saldo.png"
+                      alt="Projeção de saldo dos próximos meses"
+                      fill
+                      sizes="(max-width: 768px) 0px, 244px"
+                      className="object-cover object-top"
+                    />
+                  </div>
+                </div>
+
+                <div className="relative z-10 mx-auto w-[68%] sm:ml-0 sm:w-[62%] sm:-rotate-[4deg]">
+                  <div className="relative aspect-[9/19] overflow-hidden rounded-[36px] border-[9px] border-ink bg-canvas shadow-[0_28px_56px_rgba(0,0,0,0.16),0_6px_16px_rgba(0,0,0,0.08)]">
+                    <Image
+                      src="/saldos.png"
+                      alt="Tela de saldos diários do bfin"
+                      fill
+                      sizes="(max-width: 768px) 220px, 260px"
+                      className="object-cover object-[center_8%]"
+                      priority
+                    />
+                  </div>
                 </div>
               </div>
             </div>
@@ -193,7 +233,10 @@ export function LandingPage() {
           </div>
         </section>
 
-        <section className="border-b border-hairline-soft bg-surface-soft py-16 md:py-24">
+        <section
+          id="como-funciona"
+          className="border-b border-hairline-soft bg-surface-soft py-16 md:py-24"
+        >
           <div className="mx-auto max-w-[1280px] px-6">
             <div className="mx-auto mb-12 max-w-2xl">
               <h2 className="text-[28px] font-bold tracking-tight md:text-[32px]">
@@ -300,54 +343,7 @@ export function LandingPage() {
 
       <footer className="border-t border-hairline bg-canvas">
         <div className="mx-auto max-w-[1280px] px-6 py-12">
-          <div className="grid gap-8 md:grid-cols-3">
-            <div>
-              <h4 className="mb-4 text-base font-medium text-ink">Suporte</h4>
-              <ul className="space-y-3 text-sm text-ink">
-                <li>
-                  <Link href="#faq" className="hover:underline">
-                    Central de ajuda
-                  </Link>
-                </li>
-                <li>
-                  <Link href="#faq" className="hover:underline">
-                    FAQ
-                  </Link>
-                </li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="mb-4 text-base font-medium text-ink">Produto</h4>
-              <ul className="space-y-3 text-sm text-ink">
-                <li>
-                  <Link href="#features" className="hover:underline">
-                    Recursos
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/login" className="hover:underline">
-                    Entrar
-                  </Link>
-                </li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="mb-4 text-base font-medium text-ink">bfin</h4>
-              <ul className="space-y-3 text-sm text-ink">
-                <li>
-                  <Link href="/" className="hover:underline">
-                    Sobre
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/login" className="hover:underline">
-                    Criar conta
-                  </Link>
-                </li>
-              </ul>
-            </div>
-          </div>
-          <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-hairline pt-6 text-[13px] text-muted md:flex-row">
+          <div className="flex flex-col items-center justify-between gap-6 text-[13px] text-muted md:flex-row">
             <div className="flex items-center gap-2">
               <Image
                 src="/icon.png"
@@ -356,19 +352,31 @@ export function LandingPage() {
                 height={20}
                 className="rounded"
               />
-              <span>© {new Date().getFullYear()} bfin</span>
+              <span>© {new Date().getFullYear()} bfin · Beta no Brasil</span>
             </div>
-            <div className="flex items-center gap-4">
-              <Link href="#" className="hover:underline">
-                Termos
+            <nav className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
+              <Link href="#features" className="hover:underline">
+                Recursos
               </Link>
-              <Link href="#" className="hover:underline">
-                Privacidade
+              <Link href="#faq" className="hover:underline">
+                FAQ
               </Link>
-            </div>
+              <Link href="/login" className="hover:underline">
+                Entrar
+              </Link>
+            </nav>
           </div>
         </div>
       </footer>
+
+      <div className="fixed inset-x-0 bottom-0 z-50 border-t border-hairline bg-canvas/95 px-4 py-3 backdrop-blur md:hidden">
+        <Link
+          href="/login"
+          className="flex h-12 w-full items-center justify-center rounded-lg bg-rausch px-6 text-base font-medium text-white transition-colors hover:bg-rausch-active"
+        >
+          Criar conta grátis
+        </Link>
+      </div>
     </div>
   );
 }

@@ -17,7 +17,7 @@
   --color-rausch-disabled: var(--rausch-disabled);
   --color-ink: var(--ink);
   --color-body-text: var(--body-text);
-  --color-muted: var(--muted);
+  --color-muted: var(--muted-text);
   --color-muted-soft: var(--muted-soft);
   --color-hairline: var(--hairline);
   --color-hairline-soft: var(--hairline-soft);
@@ -81,6 +81,7 @@
   --ink: #222222;
   --body-text: #3f3f3f;
   --muted: #6a6a6a;
+  --muted-text: #595959;
   --muted-soft: #929292;
   --hairline: #dddddd;
   --hairline-soft: #ebebeb;
@@ -136,6 +137,7 @@
   --ink: #ededed;
   --body-text: #c0c0c0;
   --muted: #a0a0a0;
+  --muted-text: #c4c4c4;
   --muted-soft: #6a6a6a;
   --hairline: rgba(255, 255, 255, 0.1);
   --hairline-soft: rgba(255, 255, 255, 0.06);
