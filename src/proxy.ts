@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-const publicRoutes = ["/login", "/convite"];
+const publicRoutes = ["/login", "/convite", "/api/health"];
 const publicExact = ["/"];
 const SESSION_COOKIE =
   process.env.NODE_ENV === "production"
