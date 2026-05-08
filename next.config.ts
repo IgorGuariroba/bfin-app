@@ -39,6 +39,7 @@ const nextConfig: NextConfig = {
           gzipContents: true,
           keepSourcemaps: false,
           nextjs: true,
+          verbose: true,
         })
       );
     }
