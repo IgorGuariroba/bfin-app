@@ -1,8 +1,9 @@
 import { getWebInstrumentations, initializeFaro } from '@grafana/faro-web-sdk';
 import { TracingInstrumentation } from '@grafana/faro-web-tracing';
+import { setFaro } from '@/lib/faro';
 
 if (typeof window !== 'undefined') {
-  initializeFaro({
+  const faro = initializeFaro({
     url: process.env.NEXT_PUBLIC_FARO_URL!,
     app: {
       name: 'bfin-app',
@@ -11,4 +12,6 @@ if (typeof window !== 'undefined') {
     },
     instrumentations: [...getWebInstrumentations(), new TracingInstrumentation()],
   });
+
+  setFaro(faro);
 }
