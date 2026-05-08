@@ -8,6 +8,7 @@ import { BackHeader } from "@/components/layout/back-header";
 import { MonthHeader } from "@/components/layout/month-header";
 import { useMonth } from "@/hooks/use-month";
 import { useTransactions } from "@/hooks/use-transactions";
+import { usePlan, freeOldestMonth } from "@/hooks/use-plan";
 import { useTags } from "@/hooks/use-tags";
 import {
   Select,
@@ -38,6 +39,8 @@ export default function MovimentacoesPage({ params }: PageProps) {
   const initialMonth = searchParams.get("month") ?? undefined;
 
   const { month, prev, next, label } = useMonth(initialMonth);
+  const { plan } = usePlan();
+  const isPrevLocked = plan === "free" && month <= freeOldestMonth();
   const [filterTipo, setFilterTipo] = useState<string>(tipo === "all" ? "all" : tipo);
   const [filterTag, setFilterTag] = useState<string>("all");
 
@@ -58,7 +61,7 @@ export default function MovimentacoesPage({ params }: PageProps) {
   return (
     <div className="flex flex-col">
       <BackHeader title={pageTitle} />
-      <MonthHeader month={label} onPrev={prev} onNext={next} />
+      <MonthHeader month={label} onPrev={prev} onNext={next} isPrevLocked={isPrevLocked} />
 
       <div className="flex gap-2 px-4 py-2 border-b border-[var(--color-hairline-soft)]">
         {tipo === "all" && (

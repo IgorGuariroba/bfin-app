@@ -4,6 +4,7 @@ import { MonthHeader } from "@/components/layout/month-header";
 import { MovimentacaoItem } from "@/components/totais/movimentacao-item";
 import { useMonth } from "@/hooks/use-month";
 import { useTotais } from "@/hooks/use-totais";
+import { usePlan, freeOldestMonth } from "@/hooks/use-plan";
 import { fmt } from "@/lib/utils";
 import { CAT_COLORS } from "@/lib/constants";
 
@@ -37,6 +38,8 @@ function Operator({ children }: { children: React.ReactNode }) {
 export default function TotaisPage() {
   const { month, prev, next, label } = useMonth();
   const { data, loading } = useTotais(month);
+  const { plan } = usePlan();
+  const isPrevLocked = plan === "free" && month <= freeOldestMonth();
 
   const economiaPct =
     data && data.entradas > 0
@@ -66,7 +69,7 @@ export default function TotaisPage() {
 
   return (
     <div className="flex flex-col pb-20">
-      <MonthHeader month={label} onPrev={prev} onNext={next} />
+      <MonthHeader month={label} onPrev={prev} onNext={next} isPrevLocked={isPrevLocked} />
 
       {loading && (
         <div className="flex items-center justify-center py-16 text-sm text-muted-foreground">

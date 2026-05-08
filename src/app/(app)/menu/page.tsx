@@ -4,6 +4,7 @@ import Link from "next/link";
 import { User, CalendarClock, Settings, Lightbulb, HelpCircle, ChevronRight } from "lucide-react";
 import { LogoutButton } from "./logout-button";
 import { Badge } from "@/components/ui/badge";
+import { getUserPlan } from "@/lib/plan";
 
 export default async function MenuPage() {
   const session = await auth();
@@ -13,6 +14,7 @@ export default async function MenuPage() {
   }
 
   const user = session.user;
+  const plan = await getUserPlan(user.id!);
 
   const menuItems = [
     { icon: User,        label: "Editar perfil",      href: "/perfil" },
@@ -44,9 +46,13 @@ export default async function MenuPage() {
         {/* badge: 11px/600, rounded-full, primary #ff385c */}
         <Badge
           variant="secondary"
-          className="rounded-full bg-green-100 text-green-700 hover:bg-green-200 border-0 text-[11px] font-semibold leading-[1.18] px-[10px] py-[4px]"
+          className={
+            plan === "pro"
+              ? "rounded-full bg-green-100 text-green-700 hover:bg-green-200 border-0 text-[11px] font-semibold leading-[1.18] px-[10px] py-[4px]"
+              : "rounded-full bg-surface-strong text-muted-foreground hover:bg-surface-strong border-0 text-[11px] font-semibold leading-[1.18] px-[10px] py-[4px]"
+          }
         >
-          Assinatura ativa
+          {plan === "pro" ? "Assinatura ativa" : "Plano gratuito"}
         </Badge>
       </div>
 

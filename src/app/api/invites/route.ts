@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { cookies } from "next/headers";
 import type { NextRequest } from "next/server";
+import { getUserPlan } from "@/lib/plan";
 
 export async function GET() {
   const session = await auth();
@@ -32,6 +33,14 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   const session = await auth();
   if (!session?.user?.id) return Response.json({ error: "Unauthorized" }, { status: 401 });
+
+  const plan = await getUserPlan(session.user.id);
+  if (plan === "free") {
+    return Response.json(
+      { error: "Convites disponíveis apenas no plano Pro", upgrade: true },
+      { status: 403 }
+    );
+  }
 
   const body = await request.json();
   const { email } = body;
