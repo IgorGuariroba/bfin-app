@@ -10,6 +10,8 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN DATABASE_URL=postgresql://dummy:dummy@localhost:5432/dummy npx prisma generate
 ENV NEXT_TELEMETRY_DISABLED=1
+ARG NEXT_PUBLIC_FARO_URL
+ENV NEXT_PUBLIC_FARO_URL=$NEXT_PUBLIC_FARO_URL
 RUN npm run build
 
 FROM node:22-alpine AS runner
