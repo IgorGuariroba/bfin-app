@@ -12,6 +12,8 @@ RUN DATABASE_URL=postgresql://dummy:dummy@localhost:5432/dummy npx prisma genera
 ENV NEXT_TELEMETRY_DISABLED=1
 ARG NEXT_PUBLIC_FARO_URL
 ENV NEXT_PUBLIC_FARO_URL=$NEXT_PUBLIC_FARO_URL
+ARG FARO_API_KEY
+ENV FARO_API_KEY=$FARO_API_KEY
 RUN npm run build
 
 FROM node:22-alpine AS runner
