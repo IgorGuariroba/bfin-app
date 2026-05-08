@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { ArrowLeft, ChevronLeft, ChevronRight, Plus, ChevronDown, Wallet } from "lucide-react";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { useTransactions } from "@/hooks/use-transactions";
@@ -53,6 +53,12 @@ export function DayDetail({ date, onClose, onNavigate }: DayDetailProps) {
   const { transactions, loading, refetch } = useTransactions(
     date ? { from: date, to: date, type: queryType } : {}
   );
+
+  useEffect(() => {
+    const handler = () => refetch();
+    window.addEventListener("bfin:transaction-created", handler);
+    return () => window.removeEventListener("bfin:transaction-created", handler);
+  }, [refetch]);
 
   const prevDate = date ? addDays(date, -1) : null;
   const nextDate = date ? addDays(date, 1) : null;

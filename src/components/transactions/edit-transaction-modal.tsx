@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
 import { X, Pencil, CalendarDays, ChevronDown, Trash2 } from "lucide-react";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
@@ -34,7 +34,6 @@ export function EditTransactionModal({ transaction, onClose, onUpdated }: EditTr
   const [date, setDate] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [typeOpen, setTypeOpen] = useState(false);
-  const dateRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (transaction) {
@@ -115,7 +114,7 @@ export function EditTransactionModal({ transaction, onClose, onUpdated }: EditTr
       <SheetContent
         side="bottom"
         showCloseButton={false}
-        className="p-0 rounded-t-2xl max-h-[85dvh] flex flex-col gap-0"
+        className="p-0 !h-[100dvh] !max-h-[100dvh] flex flex-col gap-0"
       >
         <SheetTitle className="sr-only">Editar Transação</SheetTitle>
 
@@ -198,23 +197,21 @@ export function EditTransactionModal({ transaction, onClose, onUpdated }: EditTr
           <div className="border-t border-hairline-soft" />
 
           {/* Date */}
-          <button
-            onClick={() => dateRef.current?.showPicker?.()}
-            className="flex items-center gap-3.5 w-full py-4 text-left"
-          >
+          <div className="relative flex items-center gap-3.5 w-full py-4 text-left">
             <CalendarDays size={18} className="text-muted-foreground flex-shrink-0" />
             <span className="flex-1 text-[15px] text-ink">Data</span>
             <span className="text-[15px] text-muted-foreground">{date ? fmtDateDisplay(date) : ""}</span>
             <ChevronDown size={14} className="text-muted-foreground ml-0.5" />
             <input
-              ref={dateRef}
               type="date"
               value={date}
               onChange={(e) => setDate(e.target.value)}
-              className="sr-only"
-              tabIndex={-1}
+              onClick={(e) => {
+                try { (e.target as HTMLInputElement).showPicker?.(); } catch {}
+              }}
+              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
             />
-          </button>
+          </div>
         </div>
 
         {/* Actions */}
