@@ -34,6 +34,8 @@ jobs:
           tags: |
             ${{ env.IMAGE_NAME }}:${{ github.sha }}
             ${{ env.IMAGE_NAME }}:latest
+          build-args: |
+            NEXT_PUBLIC_FARO_URL=${{ secrets.NEXT_PUBLIC_FARO_URL }}
 
       - name: Deploy to VPS
         uses: appleboy/ssh-action@v1
