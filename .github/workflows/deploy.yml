@@ -36,6 +36,7 @@ jobs:
             ${{ env.IMAGE_NAME }}:latest
           build-args: |
             NEXT_PUBLIC_FARO_URL=${{ secrets.NEXT_PUBLIC_FARO_URL }}
+            FARO_API_KEY=${{ secrets.FARO_API_KEY }}
 
       - name: Deploy to VPS
         uses: appleboy/ssh-action@v1
