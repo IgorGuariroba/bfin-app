@@ -1,14 +1,42 @@
 import "server-only";
+import { createHmac } from "crypto";
 import { PreApproval } from "mercadopago";
 import { mpClient } from "@/lib/mercadopago";
 import { prisma } from "@/lib/prisma";
 
+function verifySignature(request: Request, rawBody: string, dataId: string): boolean {
+  const secret = process.env.MERCADO_PAGO_WEBHOOK_SECRET;
+  if (!secret) return true; // skip validation when secret not configured
+
+  const xSignature = request.headers.get("x-signature") ?? "";
+  const xRequestId = request.headers.get("x-request-id") ?? "";
+
+  const ts = xSignature.match(/ts=([^,]+)/)?.[1];
+  const v1 = xSignature.match(/v1=([^,]+)/)?.[1];
+  if (!ts || !v1) return false;
+
+  const message = `id:${dataId};request-id:${xRequestId};ts:${ts}`;
+  const expected = createHmac("sha256", secret).update(message).digest("hex");
+
+  return expected === v1;
+}
+
 export async function POST(request: Request) {
-  const body = await request.json();
+  const rawBody = await request.text();
+  let body: { type?: string; data?: { id?: string } };
+  try {
+    body = JSON.parse(rawBody);
+  } catch {
+    return Response.json({ error: "Invalid JSON" }, { status: 400 });
+  }
   const { type, data } = body as { type?: string; data?: { id?: string } };
 
   if (type !== "subscription_preapproval" || !data?.id) {
     return Response.json({ ok: true });
+  }
+
+  if (!verifySignature(request, rawBody, data.id)) {
+    return Response.json({ error: "Invalid signature" }, { status: 401 });
   }
 
   const preApproval = new PreApproval(mpClient);
