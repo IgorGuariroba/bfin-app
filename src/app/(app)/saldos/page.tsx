@@ -4,8 +4,9 @@ import { useState } from "react";
 import { MonthHeader } from "@/components/layout/month-header";
 import { SaldosGrid } from "@/components/saldos/saldos-grid";
 import { DayDetail } from "@/components/transactions/day-detail";
+import { ProUpsellSheet } from "@/components/plan/pro-upsell-sheet";
 import { useMonth } from "@/hooks/use-month";
-import { usePlan, freeOldestMonth } from "@/hooks/use-plan";
+import { usePlan } from "@/hooks/use-plan";
 import {
   Select,
   SelectContent,
@@ -25,10 +26,11 @@ const FILTER_OPTIONS = [
 
 export default function SaldosPage() {
   const { month, prev, next, label } = useMonth();
-  const { plan } = usePlan();
-  const isPrevLocked = plan === "free" && month <= freeOldestMonth();
+  const { isFutureLocked } = usePlan();
+  const isBlocked = isFutureLocked(month);
   const [filter, setFilter] = useState("all");
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [upsellOpen, setUpsellOpen] = useState(false);
 
   return (
     <div className="flex flex-col">
@@ -36,7 +38,6 @@ export default function SaldosPage() {
         month={label}
         onPrev={prev}
         onNext={next}
-        isPrevLocked={isPrevLocked}
         onTodayClick={() => {
           const el = document.querySelector("[data-today='true']");
           if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -70,6 +71,8 @@ export default function SaldosPage() {
       <SaldosGrid
         month={month}
         filter={filter}
+        isBlocked={isBlocked}
+        onUpsell={() => setUpsellOpen(true)}
         onDayClick={(date) => setSelectedDate(date)}
       />
 
@@ -77,6 +80,12 @@ export default function SaldosPage() {
         date={selectedDate}
         onClose={() => setSelectedDate(null)}
         onNavigate={(date) => setSelectedDate(date)}
+      />
+
+      <ProUpsellSheet
+        open={upsellOpen}
+        onClose={() => setUpsellOpen(false)}
+        context="saldos"
       />
     </div>
   );

@@ -1,7 +1,9 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { Lock } from "lucide-react";
 import { DayRow, type DayEntry } from "./day-row";
+import { generateFakeSaldosEntries } from "@/lib/fake-month-data";
 
 type ApiEntry = {
   day: number;
@@ -36,10 +38,12 @@ function applyFilter(
 interface SaldosGridProps {
   month: string;
   filter: string;
+  isBlocked: boolean;
+  onUpsell: () => void;
   onDayClick: (date: string) => void;
 }
 
-export function SaldosGrid({ month, filter, onDayClick }: SaldosGridProps) {
+export function SaldosGrid({ month, filter, isBlocked, onUpsell, onDayClick }: SaldosGridProps) {
   const [apiData, setApiData] = useState<ApiResponse | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -55,14 +59,15 @@ export function SaldosGrid({ month, filter, onDayClick }: SaldosGridProps) {
   }, []);
 
   useEffect(() => {
-    fetchData(month);
-  }, [month, fetchData]);
+    if (!isBlocked) fetchData(month);
+  }, [month, fetchData, isBlocked]);
 
   useEffect(() => {
+    if (isBlocked) return;
     const handler = () => fetchData(month);
     window.addEventListener("bfin:transaction-created", handler);
     return () => window.removeEventListener("bfin:transaction-created", handler);
-  }, [month, fetchData]);
+  }, [month, fetchData, isBlocked]);
 
   useEffect(() => {
     if (!loading && apiData) {
@@ -70,6 +75,36 @@ export function SaldosGrid({ month, filter, onDayClick }: SaldosGridProps) {
       if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
     }
   }, [month, loading, apiData]);
+
+  // Blocked month: fake data with blur overlay
+  if (isBlocked) {
+    const fakeEntries = generateFakeSaldosEntries(month);
+
+    return (
+      <div className="relative">
+        <div className="blur-sm pointer-events-none select-none">
+          {fakeEntries.map((entry) => (
+            <DayRow
+              key={entry.day}
+              entry={entry}
+              filter="all"
+              isToday={false}
+              onClick={() => {}}
+            />
+          ))}
+        </div>
+        {/* Clickable overlay */}
+        <button
+          onClick={onUpsell}
+          className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-canvas/60 backdrop-blur-[2px] cursor-pointer"
+        >
+          <Lock className="text-ink/60" size={28} />
+          <span className="text-sm font-semibold text-ink/80">Veja seu saldo futuro</span>
+          <span className="text-xs text-ink/50">Toque para desbloquear</span>
+        </button>
+      </div>
+    );
+  }
 
   if (loading || !apiData) {
     return (
