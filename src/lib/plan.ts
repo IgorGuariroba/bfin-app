@@ -8,9 +8,14 @@ export type Plan = "free" | "pro";
 export async function getUserPlan(userId: string): Promise<Plan> {
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { plan: true },
+    select: { plan: true, planExpiresAt: true },
   });
-  return (user?.plan ?? "free") as Plan;
+  if (!user || user.plan !== "pro") return "free";
+  if (user.planExpiresAt && user.planExpiresAt < new Date()) {
+    await prisma.user.update({ where: { id: userId }, data: { plan: "free" } });
+    return "free";
+  }
+  return "pro";
 }
 
 /** Returns the oldest YYYY-MM month a free user can access (inclusive). */

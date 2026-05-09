@@ -14,8 +14,10 @@ model User {
   emailVerified  DateTime?
   image          String?
   password       String?
-  plan           String   @default("free")
-  accounts       Account[]
+  plan             String    @default("free")
+  planExpiresAt    DateTime?
+  mpSubscriptionId String?
+  accounts         Account[]
   sessions       Session[]
   transactions   Transaction[]
   previsoes      Previsao[]
