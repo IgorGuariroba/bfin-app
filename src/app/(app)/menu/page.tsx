@@ -1,7 +1,7 @@
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { User, CalendarClock, Settings, Lightbulb, HelpCircle, ChevronRight } from "lucide-react";
+import { User, CalendarClock, Settings, Lightbulb, HelpCircle, ChevronRight, Zap } from "lucide-react";
 import { LogoutButton } from "./logout-button";
 import { Badge } from "@/components/ui/badge";
 import { getUserPlan } from "@/lib/plan";
@@ -58,6 +58,18 @@ export default async function MenuPage() {
 
       {/* Menu Options — rounded-md (14px), spacing.base (16px) padding, spacing.md (12px) gap */}
       <div className="flex flex-col gap-3 mb-8">
+        {plan === "free" && (
+          <Link
+            href="/assinar"
+            className="flex items-center gap-3 rounded-[14px] bg-green-600 p-4 transition-transform active:scale-95"
+          >
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-500 text-white">
+              <Zap size={20} />
+            </div>
+            <span className="flex-1 text-[16px] font-semibold leading-[1.25] text-white">Assinar Pro</span>
+            <ChevronRight size={20} className="text-green-200" />
+          </Link>
+        )}
         {menuItems.map((item, i) => {
           const Icon = item.icon;
           return (
@@ -67,11 +79,9 @@ export default async function MenuPage() {
               className="flex items-center gap-3 rounded-[14px] bg-surface-card p-4 transition-transform active:scale-95"
               style={{ boxShadow: "rgba(0,0,0,0.02) 0 0 0 1px, rgba(0,0,0,0.04) 0 2px 6px, rgba(0,0,0,0.1) 0 4px 8px" }}
             >
-              {/* icon-button-circle: surface-strong bg, ink text, rounded-full, 40px */}
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-surface-strong text-ink">
                 <Icon size={20} />
               </div>
-              {/* title-md: 16px/600 */}
               <span className="flex-1 text-[16px] font-semibold leading-[1.25] text-ink">{item.label}</span>
               <ChevronRight size={20} className="text-muted" />
             </Link>
