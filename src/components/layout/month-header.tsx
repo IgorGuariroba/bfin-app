@@ -36,12 +36,13 @@ interface MonthHeaderProps {
   onPrev: () => void;
   onNext: () => void;
   isPrevLocked?: boolean;
+  isNextLocked?: boolean;
   onGridToggle?: () => void;
   onTodayClick?: () => void;
   className?: string;
 }
 
-export function MonthHeader({ month, onPrev, onNext, isPrevLocked, onGridToggle, onTodayClick, className }: MonthHeaderProps) {
+export function MonthHeader({ month, onPrev, onNext, isPrevLocked, isNextLocked, onGridToggle, onTodayClick, className }: MonthHeaderProps) {
   const router = useRouter();
 
   const handleGrid = () => {
@@ -84,11 +85,17 @@ export function MonthHeader({ month, onPrev, onNext, isPrevLocked, onGridToggle,
         </button>
         <span className="text-base font-semibold text-ink min-w-[120px] text-center">{month}</span>
         <button
-          onClick={onNext}
-          className="flex items-center justify-center w-8 h-8 rounded-full text-muted-foreground hover:text-ink transition-colors"
-          aria-label="Próximo mês"
+          onClick={isNextLocked ? undefined : onNext}
+          className={cn(
+            "flex items-center justify-center w-8 h-8 rounded-full transition-colors",
+            isNextLocked
+              ? "text-muted-foreground/40 cursor-default"
+              : "text-muted-foreground hover:text-ink"
+          )}
+          aria-label={isNextLocked ? "Meses futuros disponíveis no plano Pro" : "Próximo mês"}
+          title={isNextLocked ? "Meses futuros disponíveis no plano Pro" : undefined}
         >
-          <ChevronRight size={20} />
+          {isNextLocked ? <Lock size={16} /> : <ChevronRight size={20} />}
         </button>
       </div>
 

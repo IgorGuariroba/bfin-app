@@ -5,7 +5,7 @@ import { MonthHeader } from "@/components/layout/month-header";
 import { SaldosGrid } from "@/components/saldos/saldos-grid";
 import { DayDetail } from "@/components/transactions/day-detail";
 import { useMonth } from "@/hooks/use-month";
-import { usePlan, freeOldestMonth } from "@/hooks/use-plan";
+import { usePlan } from "@/hooks/use-plan";
 import {
   Select,
   SelectContent,
@@ -25,8 +25,8 @@ const FILTER_OPTIONS = [
 
 export default function SaldosPage() {
   const { month, prev, next, label } = useMonth();
-  const { plan } = usePlan();
-  const isPrevLocked = plan === "free" && month <= freeOldestMonth();
+  const { isFutureLocked } = usePlan();
+  const isNextLocked = isFutureLocked(month);
   const [filter, setFilter] = useState("all");
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
@@ -36,7 +36,7 @@ export default function SaldosPage() {
         month={label}
         onPrev={prev}
         onNext={next}
-        isPrevLocked={isPrevLocked}
+        isNextLocked={isNextLocked}
         onTodayClick={() => {
           const el = document.querySelector("[data-today='true']");
           if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });

@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getEffectiveUserId } from "@/lib/effective-user";
+import { getUserPlan, isFutureMonthAllowed } from "@/lib/plan";
 import type { NextRequest } from "next/server";
 
 export async function GET(request: NextRequest) {
@@ -16,6 +17,11 @@ export async function GET(request: NextRequest) {
   const [year, mon] = month.split("-").map(Number);
   if (!year || !mon || mon < 1 || mon > 12) {
     return Response.json({ error: "invalid month" }, { status: 400 });
+  }
+
+  const plan = await getUserPlan(userId);
+  if (!isFutureMonthAllowed(month, plan)) {
+    return Response.json({ error: "plan_required" }, { status: 403 });
   }
 
   const start = new Date(year, mon - 1, 1);
