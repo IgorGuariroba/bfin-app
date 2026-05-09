@@ -1,6 +1,8 @@
 "use client";
 
+import { Lock } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { generateFakeHorizonteEntries } from "@/lib/fake-month-data";
 
 export type SaldoEntry = {
   day: number;
@@ -62,16 +64,29 @@ interface HorizonteGridProps {
   months: [string, string, string];
   data: MonthData[];
   loading: boolean;
+  blockedMonths: string[];
+  onUpsell: () => void;
 }
 
 const TODAY = new Date();
 const TODAY_MONTH = `${TODAY.getFullYear()}-${String(TODAY.getMonth() + 1).padStart(2, "0")}`;
 const TODAY_DAY = TODAY.getDate();
 
+// Cache fake data per month to avoid regeneration
+const fakeCache = new Map<string, SaldoEntry[]>();
+function getFakeEntries(month: string): SaldoEntry[] {
+  if (!fakeCache.has(month)) {
+    fakeCache.set(month, generateFakeHorizonteEntries(month));
+  }
+  return fakeCache.get(month)!;
+}
+
 export function HorizonteGrid({
   months,
   data,
   loading,
+  blockedMonths,
+  onUpsell,
 }: HorizonteGridProps) {
   const byMonth: Record<string, Record<number, number>> = {};
   for (const md of data) {
@@ -81,12 +96,24 @@ export function HorizonteGrid({
     }
   }
 
+  // Fill blocked months with fake data
+  for (const m of blockedMonths) {
+    if (!byMonth[m] || Object.keys(byMonth[m]).length === 0) {
+      const fake = getFakeEntries(m);
+      byMonth[m] = {};
+      for (const e of fake) {
+        byMonth[m][e.day] = e.accSaldo;
+      }
+    }
+  }
+
   const daysInMonth = months.map((m) => {
     const [y, mo] = m.split("-").map(Number);
     return new Date(y, mo, 0).getDate();
   });
 
   const maxDays = Math.max(...daysInMonth);
+  const isBlocked = (m: string) => blockedMonths.includes(m);
 
   return (
     <div className="flex flex-col">
@@ -94,16 +121,24 @@ export function HorizonteGrid({
       <div className="grid grid-cols-3 border-b border-hairline sticky top-[60px] z-20 bg-canvas">
         {months.map((m, i) => {
           const isCurrent = m === TODAY_MONTH;
+          const blocked = isBlocked(m);
           return (
             <div
               key={m}
               className={cn(
                 "py-2.5 text-center text-xs font-semibold tracking-[0.32px] uppercase",
                 i < 2 && "border-r border-hairline",
-                isCurrent ? "bg-ink text-on-primary" : "text-ink"
+                isCurrent ? "bg-ink text-on-primary" : "text-ink",
+                blocked && "relative"
               )}
             >
-              {monthLabel(m)}
+              {blocked ? (
+                <span className="flex items-center justify-center gap-1">
+                  {monthLabel(m)} <Lock size={12} />
+                </span>
+              ) : (
+                monthLabel(m)
+              )}
             </div>
           );
         })}
@@ -132,41 +167,44 @@ export function HorizonteGrid({
                 const saldo = byMonth[m]?.[day] ?? 0;
                 const isToday = m === TODAY_MONTH && day === TODAY_DAY;
                 const colors = cellColor(saldo);
+                const blocked = isBlocked(m);
 
                 return (
                   <div
                     key={m}
                     className={cn(
-                      "flex items-stretch h-11",
+                      "flex items-stretch h-11 relative",
                       idx < 2 && "border-r border-hairline-soft",
-                      isToday && "bg-ink"
+                      isToday && !blocked && "bg-ink",
+                      blocked && "blur-[3px] select-none cursor-pointer"
                     )}
+                    onClick={blocked ? onUpsell : undefined}
                   >
-                    {/* Label: dia + dia da semana — sem border interna, só largura separa */}
+                    {/* Label: dia + dia da semana */}
                     <div className="flex flex-col items-center justify-center w-8 shrink-0">
                       <span className={cn(
                         "text-[11px] tabular-nums leading-none",
-                        isToday ? "font-semibold text-on-primary" : "font-medium text-ink"
+                        isToday && !blocked ? "font-semibold text-on-primary" : "font-medium text-ink"
                       )}>
                         {day}
                       </span>
                       <span className={cn(
                         "text-[8px] font-medium uppercase tracking-[0.24px] leading-none mt-0.5",
-                        isToday ? "text-on-primary/60" : "text-muted-soft"
+                        isToday && !blocked ? "text-on-primary/60" : "text-muted-soft"
                       )}>
                         {weekdayAbbr(m, day)}
                       </span>
                     </div>
 
-                    {/* Saldo — cor de fundo só aqui */}
+                    {/* Saldo */}
                     <div
                       className="flex-1 flex items-center justify-end px-1.5 text-[11px] font-semibold tabular-nums"
-                      style={isToday
+                      style={isToday && !blocked
                         ? undefined
                         : { backgroundColor: colors.bg, color: colors.text }
                       }
                     >
-                      <span className={isToday ? "text-on-primary" : undefined}>
+                      <span className={isToday && !blocked ? "text-on-primary" : undefined}>
                         {fmtCompact(saldo)}
                       </span>
                     </div>
@@ -175,6 +213,17 @@ export function HorizonteGrid({
               })}
             </div>
           ))}
+
+          {/* Blocked overlay row at bottom — tap target */}
+          {blockedMonths.length > 0 && (
+            <button
+              onClick={onUpsell}
+              className="flex items-center justify-center gap-2 py-4 text-sm text-ink/60 hover:text-ink/80 transition-colors"
+            >
+              <Lock size={14} />
+              <span>Meses futuros disponíveis no Pro</span>
+            </button>
+          )}
         </div>
       )}
     </div>

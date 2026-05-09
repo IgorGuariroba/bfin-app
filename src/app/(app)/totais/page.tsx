@@ -1,10 +1,14 @@
 "use client";
 
+import { useState } from "react";
+import { Lock } from "lucide-react";
 import { MonthHeader } from "@/components/layout/month-header";
 import { MovimentacaoItem } from "@/components/totais/movimentacao-item";
+import { ProUpsellSheet } from "@/components/plan/pro-upsell-sheet";
 import { useMonth } from "@/hooks/use-month";
 import { useTotais } from "@/hooks/use-totais";
 import { usePlan } from "@/hooks/use-plan";
+import { generateFakeTotaisData } from "@/lib/fake-month-data";
 import { fmt } from "@/lib/utils";
 import { CAT_COLORS } from "@/lib/constants";
 
@@ -37,9 +41,14 @@ function Operator({ children }: { children: React.ReactNode }) {
 
 export default function TotaisPage() {
   const { month, prev, next, label } = useMonth();
-  const { data, loading } = useTotais(month);
   const { isFutureLocked } = usePlan();
-  const isNextLocked = isFutureLocked(month);
+  const isBlocked = isFutureLocked(month);
+  const [upsellOpen, setUpsellOpen] = useState(false);
+
+  // Only fetch real data if not blocked
+  const totaisResult = useTotais(isBlocked ? "" : month);
+  const data = isBlocked ? generateFakeTotaisData(month) : totaisResult.data;
+  const loading = isBlocked ? false : totaisResult.loading;
 
   const economiaPct =
     data && data.entradas > 0
@@ -69,7 +78,7 @@ export default function TotaisPage() {
 
   return (
     <div className="flex flex-col pb-20">
-      <MonthHeader month={label} onPrev={prev} onNext={next} isNextLocked={isNextLocked} />
+      <MonthHeader month={label} onPrev={prev} onNext={next} />
 
       {loading && (
         <div className="flex items-center justify-center py-16 text-sm text-muted-foreground">
@@ -78,118 +87,139 @@ export default function TotaisPage() {
       )}
 
       {!loading && data && (
-        <>
-          {/* ═══ Cálculos do mês ═══ */}
-          <p className="px-4 pt-4 pb-2 text-xs font-medium text-muted">
-            Cálculos do mês
-          </p>
+        <div className="relative">
+          {/* Blur when blocked */}
+          {isBlocked && (
+            <>
+              <div className="blur-sm pointer-events-none select-none" />
+              <button
+                onClick={() => setUpsellOpen(true)}
+                className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-canvas/60 backdrop-blur-[2px] cursor-pointer z-10"
+              >
+                <Lock className="text-ink/60" size={28} />
+                <span className="text-sm font-semibold text-ink/80">Desbloqueie para ver seus totais futuros</span>
+                <span className="text-xs text-ink/50">Toque para desbloquear</span>
+              </button>
+            </>
+          )}
 
-          {/* ── Performance ── */}
-          <section className="px-4 py-4 border-b border-hairline-soft">
-            <div className="flex items-start justify-between">
-              <span className="text-base font-semibold text-ink">Performance</span>
-              <div className="text-right">
-                <p
-                  className="text-base font-semibold tabular-nums"
-                  style={{ color: data.saldoAtual >= 0 ? POSITIVE : "var(--color-rausch)" }}
-                >
-                  {data.saldoAtual < 0 ? "– " : ""}{fmt(Math.abs(data.saldoAtual))}
+          <div className={isBlocked ? "blur-sm pointer-events-none select-none" : ""}>
+            {/* ═══ Cálculos do mês ═══ */}
+            <p className="px-4 pt-4 pb-2 text-xs font-medium text-muted">
+              Cálculos do mês
+            </p>
+
+            {/* ── Performance ── */}
+            <section className="px-4 py-4 border-b border-hairline-soft">
+              <div className="flex items-start justify-between">
+                <span className="text-base font-semibold text-ink">Performance</span>
+                <div className="text-right">
+                  <p
+                    className="text-base font-semibold tabular-nums"
+                    style={{ color: data.saldoAtual >= 0 ? POSITIVE : "var(--color-rausch)" }}
+                  >
+                    {data.saldoAtual < 0 ? "– " : ""}{fmt(Math.abs(data.saldoAtual))}
+                  </p>
+                  <p className="text-xs text-muted mt-0.5">{perfLabel}</p>
+                </div>
+              </div>
+              {/* Formula: E - S - D - G - C = D */}
+              <div className="flex items-center gap-0.5 mt-3">
+                <Dot cat="entrada" />
+                <Operator>–</Operator>
+                <Dot cat="saida" />
+                <Operator>–</Operator>
+                <Dot cat="diario" />
+                <Operator>–</Operator>
+                <Dot cat="economia" />
+                <Operator>–</Operator>
+                <Dot cat="cartao" />
+                <Operator>=</Operator>
+                <Dot cat="diario" size={18} />
+              </div>
+            </section>
+
+            {/* ── Economizado ── */}
+            <section className="px-4 py-4 border-b border-hairline-soft">
+              <div className="flex items-start justify-between">
+                <span className="text-base font-semibold text-ink">Economizado</span>
+                <div className="text-right">
+                  <p className="text-base font-semibold tabular-nums text-ink">{economiaPct}%</p>
+                  <p className="text-xs text-muted mt-0.5">{econLabel}</p>
+                </div>
+              </div>
+              {/* Progress bar */}
+              <div className="flex items-center gap-2 mt-3">
+                <Dot cat="economia" />
+                <div className="flex-1 h-2 bg-surface-strong rounded-full overflow-hidden">
+                  <div
+                    className="h-full rounded-full transition-all"
+                    style={{
+                      width: `${economiaPct}%`,
+                      backgroundColor: POSITIVE,
+                    }}
+                  />
+                </div>
+                <Dot cat="economia" />
+              </div>
+            </section>
+
+            {/* ── Custo de vida ── */}
+            <section className="px-4 py-4 border-b border-hairline-soft">
+              <div className="flex items-start justify-between">
+                <span className="text-base font-semibold text-ink">Custo de vida</span>
+                <div className="text-right">
+                  <p className="text-base font-semibold tabular-nums text-ink">{fmt(data.custoVida)}</p>
+                  <p className="text-xs text-muted mt-0.5">{custoLabel}</p>
+                </div>
+              </div>
+              {/* Formula: S + D + C + D */}
+              <div className="flex items-center gap-0.5 mt-3">
+                <Dot cat="saida" />
+                <Operator>+</Operator>
+                <Dot cat="diario" />
+                <Operator>+</Operator>
+                <Dot cat="cartao" />
+                <Operator>+</Operator>
+                <Dot cat="diario" size={18} />
+              </div>
+            </section>
+
+            {/* ── Diário médio ── */}
+            <section className="px-4 py-4 border-b border-hairline-soft">
+              <div className="flex items-start justify-between">
+                <span className="text-base font-semibold text-ink">Diário médio</span>
+                <div className="text-right">
+                  <p className="text-base font-semibold tabular-nums text-ink">{fmt(data.diarioMedio)}</p>
+                  <p className="text-xs text-muted mt-0.5 flex items-center justify-end gap-1">
+                    <span className="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full border border-muted text-[8px] text-muted">⊙</span>
+                    {fmt(data.diarioPrev)}
+                  </p>
+                </div>
+              </div>
+              {/* Formula: D / 0 */}
+              <div className="flex items-center gap-0.5 mt-3">
+                <Dot cat="diario" />
+                <Operator>/</Operator>
+                <span className="text-xs font-medium text-muted">{data.daysElapsed}</span>
+              </div>
+            </section>
+
+            {/* ═══ Movimentações do mês ═══ */}
+            {!isBlocked && (
+              <>
+                <p className="px-4 pt-5 pb-2 text-xs font-medium text-muted">
+                  Movimentações do mês
                 </p>
-                <p className="text-xs text-muted mt-0.5">{perfLabel}</p>
-              </div>
-            </div>
-            {/* Formula: E - S - D - G - C = D */}
-            <div className="flex items-center gap-0.5 mt-3">
-              <Dot cat="entrada" />
-              <Operator>–</Operator>
-              <Dot cat="saida" />
-              <Operator>–</Operator>
-              <Dot cat="diario" />
-              <Operator>–</Operator>
-              <Dot cat="economia" />
-              <Operator>–</Operator>
-              <Dot cat="cartao" />
-              <Operator>=</Operator>
-              <Dot cat="diario" size={18} />
-            </div>
-          </section>
 
-          {/* ── Economizado ── */}
-          <section className="px-4 py-4 border-b border-hairline-soft">
-            <div className="flex items-start justify-between">
-              <span className="text-base font-semibold text-ink">Economizado</span>
-              <div className="text-right">
-                <p className="text-base font-semibold tabular-nums text-ink">{economiaPct}%</p>
-                <p className="text-xs text-muted mt-0.5">{econLabel}</p>
-              </div>
-            </div>
-            {/* Progress bar */}
-            <div className="flex items-center gap-2 mt-3">
-              <Dot cat="economia" />
-              <div className="flex-1 h-2 bg-surface-strong rounded-full overflow-hidden">
-                <div
-                  className="h-full rounded-full transition-all"
-                  style={{
-                    width: `${economiaPct}%`,
-                    backgroundColor: POSITIVE,
-                  }}
-                />
-              </div>
-              <Dot cat="economia" />
-            </div>
-          </section>
-
-          {/* ── Custo de vida ── */}
-          <section className="px-4 py-4 border-b border-hairline-soft">
-            <div className="flex items-start justify-between">
-              <span className="text-base font-semibold text-ink">Custo de vida</span>
-              <div className="text-right">
-                <p className="text-base font-semibold tabular-nums text-ink">{fmt(data.custoVida)}</p>
-                <p className="text-xs text-muted mt-0.5">{custoLabel}</p>
-              </div>
-            </div>
-            {/* Formula: S + D + C + D */}
-            <div className="flex items-center gap-0.5 mt-3">
-              <Dot cat="saida" />
-              <Operator>+</Operator>
-              <Dot cat="diario" />
-              <Operator>+</Operator>
-              <Dot cat="cartao" />
-              <Operator>+</Operator>
-              <Dot cat="diario" size={18} />
-            </div>
-          </section>
-
-          {/* ── Diário médio ── */}
-          <section className="px-4 py-4 border-b border-hairline-soft">
-            <div className="flex items-start justify-between">
-              <span className="text-base font-semibold text-ink">Diário médio</span>
-              <div className="text-right">
-                <p className="text-base font-semibold tabular-nums text-ink">{fmt(data.diarioMedio)}</p>
-                <p className="text-xs text-muted mt-0.5 flex items-center justify-end gap-1">
-                  <span className="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full border border-muted text-[8px] text-muted">⊙</span>
-                  {fmt(data.diarioPrev)}
-                </p>
-              </div>
-            </div>
-            {/* Formula: D / 0 */}
-            <div className="flex items-center gap-0.5 mt-3">
-              <Dot cat="diario" />
-              <Operator>/</Operator>
-              <span className="text-xs font-medium text-muted">{data.daysElapsed}</span>
-            </div>
-          </section>
-
-          {/* ═══ Movimentações do mês ═══ */}
-          <p className="px-4 pt-5 pb-2 text-xs font-medium text-muted">
-            Movimentações do mês
-          </p>
-
-          <MovimentacaoItem tipo="entrada" total={data.entradas} month={month} />
-          <MovimentacaoItem tipo="saida" total={data.saidas} month={month} />
-          <MovimentacaoItem tipo="diario" total={data.diarios} month={month} />
-          <MovimentacaoItem tipo="economia" total={data.economia} month={month} />
-        </>
+                <MovimentacaoItem tipo="entrada" total={data.entradas} month={month} />
+                <MovimentacaoItem tipo="saida" total={data.saidas} month={month} />
+                <MovimentacaoItem tipo="diario" total={data.diarios} month={month} />
+                <MovimentacaoItem tipo="economia" total={data.economia} month={month} />
+              </>
+            )}
+          </div>
+        </div>
       )}
 
       {!loading && !data && (
@@ -197,6 +227,12 @@ export default function TotaisPage() {
           Sem dados para este mês.
         </div>
       )}
+
+      <ProUpsellSheet
+        open={upsellOpen}
+        onClose={() => setUpsellOpen(false)}
+        context="totais"
+      />
     </div>
   );
 }
