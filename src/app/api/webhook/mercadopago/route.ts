@@ -48,10 +48,32 @@ export async function POST(request: Request) {
   if (sub.status === "authorized") {
     const billingDays = cycle === "annual" ? 365 : 30;
     const planExpiresAt = new Date(Date.now() + billingDays * 24 * 60 * 60 * 1000);
-    await prisma.user.update({
+    const user = await prisma.user.update({
       where: { id: userId },
       data: { plan: "pro", planExpiresAt, mpSubscriptionId: sub.id },
     });
+
+    const discordUrl = process.env.DISCORD_WEBHOOK_URL;
+    if (discordUrl) {
+      const label = cycle === "annual" ? "Anual (R$ 119,90)" : "Mensal (R$ 14,90)";
+      fetch(discordUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          embeds: [{
+            title: "Nova assinatura bfin Pro",
+            color: 0x22c55e,
+            fields: [
+              { name: "Usuário", value: user.email ?? userId, inline: true },
+              { name: "Plano", value: label, inline: true },
+              { name: "Expira em", value: planExpiresAt.toLocaleDateString("pt-BR"), inline: true },
+              { name: "Subscription ID", value: sub.id ?? "-", inline: false },
+            ],
+            timestamp: new Date().toISOString(),
+          }],
+        }),
+      }).catch((e) => console.error("[discord] notify failed:", e));
+    }
   } else if (sub.status === "cancelled" || sub.status === "paused") {
     await prisma.user.update({
       where: { id: userId },

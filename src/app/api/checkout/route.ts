@@ -2,6 +2,7 @@ import "server-only";
 import { auth } from "@/lib/auth";
 import { PreApproval } from "mercadopago";
 import { mpClient, PLAN_PRICES, BillingCycle } from "@/lib/mercadopago";
+import { prisma } from "@/lib/prisma";
 import type { NextRequest } from "next/server";
 
 export async function POST(request: NextRequest) {
@@ -10,33 +11,43 @@ export async function POST(request: NextRequest) {
 
   const body = await request.json();
   const cycle = body?.cycle as BillingCycle | undefined;
-  const price = cycle ? PLAN_PRICES[cycle] : undefined;
-  if (!price) return Response.json({ error: "Ciclo inválido" }, { status: 400 });
+  if (!cycle || !PLAN_PRICES[cycle]) return Response.json({ error: "Ciclo inválido" }, { status: 400 });
+
+  const planConfig = await prisma.planConfig.findUnique({ where: { id: "default" } });
+  const price = {
+    amount: cycle === "annual"
+      ? (planConfig?.annualAmount ?? PLAN_PRICES.annual.amount)
+      : (planConfig?.monthlyAmount ?? PLAN_PRICES.monthly.amount),
+    label: PLAN_PRICES[cycle].label,
+  };
 
   if (!session.user.email) {
     return Response.json({ error: "Conta sem e-mail" }, { status: 400 });
   }
 
-  const origin = process.env.AUTH_URL?.replace(/\/$/, "") ?? request.nextUrl.origin;
+  const origin = process.env.APP_URL?.replace(/\/$/, "") ?? process.env.AUTH_URL?.replace(/\/$/, "") ?? request.nextUrl.origin;
 
-  const preApproval = new PreApproval(mpClient);
-  const sub = await preApproval.create({
+  try {
+    const preApproval = new PreApproval(mpClient);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    body: {
-      reason: `bfin Pro — ${price.label}`,
-      payer_email: session.user.email,
-      auto_recurring: {
-        frequency: cycle === "annual" ? 12 : 1,
-        frequency_type: "months",
-        transaction_amount: price.amount,
-        currency_id: "BRL",
-      },
-      back_url: `${origin}/assinar?success=true`,
-      // notification_url is a valid MP API field not yet typed in SDK v2
-      notification_url: `${origin}/api/webhook/mercadopago`,
-      external_reference: `${session.user.id}:${cycle}`,
-    } as any,
-  });
-
-  return Response.json({ init_point: sub.init_point });
+    const sub = await preApproval.create({
+      body: {
+        reason: `bfin Pro — ${price.label}`,
+        payer_email: session.user.email,
+        auto_recurring: {
+          frequency: cycle === "annual" ? 12 : 1,
+          frequency_type: "months",
+          transaction_amount: price.amount,
+          currency_id: "BRL",
+        },
+        back_url: `${origin}/assinar`,
+        notification_url: `${origin}/api/webhook/mercadopago`,
+        external_reference: `${session.user.id}:${cycle}`,
+      } as any,
+    });
+    return Response.json({ init_point: sub.init_point });
+  } catch (err: any) {
+    console.error("[checkout] error:", err?.message);
+    return Response.json({ error: err?.message ?? "Erro MP" }, { status: 500 });
+  }
 }

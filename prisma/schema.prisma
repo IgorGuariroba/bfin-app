@@ -114,3 +114,10 @@ model Previsao {
   amount Float
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
+
+model PlanConfig {
+  id            String   @id @default("default")
+  monthlyAmount Float    @default(14.9)
+  annualAmount  Float    @default(119.9)
+  updatedAt     DateTime @updatedAt
+}
