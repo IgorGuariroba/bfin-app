@@ -14,7 +14,10 @@ model User {
   emailVerified  DateTime?
   image          String?
   password       String?
-  accounts       Account[]
+  plan             String    @default("free")
+  planExpiresAt    DateTime?
+  mpSubscriptionId String?
+  accounts         Account[]
   sessions       Session[]
   transactions   Transaction[]
   previsoes      Previsao[]
@@ -110,4 +113,11 @@ model Previsao {
   name   String
   amount Float
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model PlanConfig {
+  id            String   @id @default("default")
+  monthlyAmount Float    @default(14.9)
+  annualAmount  Float    @default(119.9)
+  updatedAt     DateTime @updatedAt
 }

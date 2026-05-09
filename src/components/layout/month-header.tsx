@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ChevronLeft, ChevronRight, LayoutGrid } from "lucide-react";
+import { ChevronLeft, ChevronRight, LayoutGrid, Lock } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 
@@ -35,12 +35,13 @@ interface MonthHeaderProps {
   month: string; // e.g. "Maio 2026"
   onPrev: () => void;
   onNext: () => void;
+  isPrevLocked?: boolean;
   onGridToggle?: () => void;
   onTodayClick?: () => void;
   className?: string;
 }
 
-export function MonthHeader({ month, onPrev, onNext, onGridToggle, onTodayClick, className }: MonthHeaderProps) {
+export function MonthHeader({ month, onPrev, onNext, isPrevLocked, onGridToggle, onTodayClick, className }: MonthHeaderProps) {
   const router = useRouter();
 
   const handleGrid = () => {
@@ -69,11 +70,17 @@ export function MonthHeader({ month, onPrev, onNext, onGridToggle, onTodayClick,
 
       <div className="flex items-center gap-3">
         <button
-          onClick={onPrev}
-          className="flex items-center justify-center w-8 h-8 rounded-full text-muted-foreground hover:text-ink transition-colors"
-          aria-label="Mês anterior"
+          onClick={isPrevLocked ? undefined : onPrev}
+          className={cn(
+            "flex items-center justify-center w-8 h-8 rounded-full transition-colors",
+            isPrevLocked
+              ? "text-muted-foreground/40 cursor-default"
+              : "text-muted-foreground hover:text-ink"
+          )}
+          aria-label={isPrevLocked ? "Histórico limitado — plano Pro" : "Mês anterior"}
+          title={isPrevLocked ? "Histórico além de 3 meses disponível no plano Pro" : undefined}
         >
-          <ChevronLeft size={20} />
+          {isPrevLocked ? <Lock size={16} /> : <ChevronLeft size={20} />}
         </button>
         <span className="text-base font-semibold text-ink min-w-[120px] text-center">{month}</span>
         <button

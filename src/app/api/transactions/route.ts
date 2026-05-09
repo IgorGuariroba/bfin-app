@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getEffectiveUserId } from "@/lib/effective-user";
 import type { NextRequest } from "next/server";
 import { addDays, addWeeks, addMonths } from "@/lib/date-utils";
+import { getUserPlan, isMonthAllowed } from "@/lib/plan";
 
 export async function GET(request: NextRequest) {
   const session = await auth();
@@ -15,6 +16,14 @@ export async function GET(request: NextRequest) {
   const type = searchParams.get("type");
   const from = searchParams.get("from");
   const to = searchParams.get("to");
+
+  const plan = await getUserPlan(session.user.id);
+  if (plan === "free" && month && !isMonthAllowed(month, plan)) {
+    return Response.json(
+      { error: "Histórico além de 3 meses disponível apenas no plano Pro", upgrade: true },
+      { status: 403 }
+    );
+  }
 
   const where: Record<string, unknown> = { userId };
 

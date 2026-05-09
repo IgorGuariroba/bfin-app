@@ -15,7 +15,9 @@ import {
   Sun,
   Moon,
   Monitor,
+  Lock,
 } from "lucide-react";
+import { usePlan } from "@/hooks/use-plan";
 
 type Invite = {
   id: string;
@@ -40,6 +42,7 @@ const THEME_OPTIONS = [
 export default function ConfiguracoesPage() {
   const router = useRouter();
   const { theme, setTheme } = useTheme();
+  const { plan } = usePlan();
   const [sent, setSent] = useState<Invite[]>([]);
   const [received, setReceived] = useState<ReceivedInvite[]>([]);
   const [loading, setLoading] = useState(true);
@@ -258,41 +261,57 @@ export default function ConfiguracoesPage() {
           Convidar gestor
         </h2>
         <div className="rounded-3xl bg-surface p-5 shadow-sm">
-          <form onSubmit={handleInvite} className="flex flex-col gap-3">
-            <input
-              type="email"
-              placeholder="email@exemplo.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              className="w-full rounded-xl border border-hairline bg-canvas px-4 py-3 text-sm text-ink placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
-            />
-            {error && <p className="text-xs text-red-500">{error}</p>}
-            <button
-              type="submit"
-              disabled={sending}
-              className="flex items-center justify-center gap-2 rounded-xl bg-primary py-3 font-semibold text-white disabled:opacity-60 transition-transform active:scale-95"
-            >
-              {sending ? <Loader2 size={18} className="animate-spin" /> : <UserPlus size={18} />}
-              Enviar convite
-            </button>
-          </form>
-
-          {inviteUrl && (
-            <div className="mt-4 rounded-xl bg-canvas p-3">
-              <p className="mb-2 text-xs font-semibold text-muted-foreground">
-                Link do convite:
-              </p>
-              <div className="flex items-center gap-2">
-                <p className="flex-1 truncate text-xs text-ink">{inviteUrl}</p>
-                <button
-                  onClick={copyInviteUrl}
-                  className="flex h-8 w-8 items-center justify-center rounded-lg bg-surface text-muted-foreground transition-colors hover:text-primary"
-                >
-                  {copied ? <Check size={16} className="text-green-500" /> : <Copy size={16} />}
-                </button>
+          {plan === "free" ? (
+            <div className="flex flex-col items-center gap-3 py-2 text-center">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-surface-soft">
+                <Lock size={22} className="text-muted-foreground" />
+              </div>
+              <div>
+                <p className="font-semibold text-ink">Disponível no plano Pro</p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Convide outros usuários para gerenciar sua conta com o plano Pro.
+                </p>
               </div>
             </div>
+          ) : (
+            <>
+              <form onSubmit={handleInvite} className="flex flex-col gap-3">
+                <input
+                  type="email"
+                  placeholder="email@exemplo.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  className="w-full rounded-xl border border-hairline bg-canvas px-4 py-3 text-sm text-ink placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+                />
+                {error && <p className="text-xs text-red-500">{error}</p>}
+                <button
+                  type="submit"
+                  disabled={sending}
+                  className="flex items-center justify-center gap-2 rounded-xl bg-primary py-3 font-semibold text-white disabled:opacity-60 transition-transform active:scale-95"
+                >
+                  {sending ? <Loader2 size={18} className="animate-spin" /> : <UserPlus size={18} />}
+                  Enviar convite
+                </button>
+              </form>
+
+              {inviteUrl && (
+                <div className="mt-4 rounded-xl bg-canvas p-3">
+                  <p className="mb-2 text-xs font-semibold text-muted-foreground">
+                    Link do convite:
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <p className="flex-1 truncate text-xs text-ink">{inviteUrl}</p>
+                    <button
+                      onClick={copyInviteUrl}
+                      className="flex h-8 w-8 items-center justify-center rounded-lg bg-surface text-muted-foreground transition-colors hover:text-primary"
+                    >
+                      {copied ? <Check size={16} className="text-green-500" /> : <Copy size={16} />}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </div>
       </section>
