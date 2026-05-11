@@ -137,7 +137,7 @@ export function DayRow({ entry, filter, isToday, onClick }: DayRowProps) {
               </span>
             </div>
             {/* Vertical accent bar */}
-            <div className="w-[3px] self-stretch my-2 rounded-full" style={{ backgroundColor: c.border }} />
+            <div className="w-px self-stretch my-2 rounded-full" style={{ backgroundColor: c.border }} />
           </div>
 
           {/* Categories + saldo */}
