@@ -128,15 +128,18 @@ export function DayRow({ entry, filter, isToday, onClick }: DayRowProps) {
         >
           {/* Day block + vertical accent bar */}
           <div className="flex shrink-0 items-stretch">
-            <div className="flex flex-col items-center justify-center w-14 px-1 py-3">
-              <span className="text-[10px] font-light uppercase tracking-wide text-muted-foreground leading-none">
+            <div
+              className={cn("flex flex-col items-center justify-center w-14 px-1 py-3", isToday && "rounded-l-2xl")}
+              style={isToday ? { backgroundColor: c.border } : undefined}
+            >
+              <span className={cn("text-[10px] font-light uppercase tracking-wide leading-none", isToday ? "text-white/70" : "text-muted-foreground")}>
                 {getWeekdayAbbr(entry.date)}
               </span>
-              <span className={cn("text-[28px] font-bold leading-tight tabular-nums", isToday ? "text-ink" : "text-ink/80")}>
+              <span className={cn("text-[28px] font-bold leading-tight tabular-nums", isToday ? "text-white" : "text-ink/80")}>
                 {day}
               </span>
             </div>
-            <div className="w-px self-stretch my-2 rounded-full" style={{ backgroundColor: c.border }} />
+            <div className="w-px self-stretch my-2 rounded-full" style={{ backgroundColor: isToday ? "white" : c.border }} />
           </div>
 
           {/* Categories + saldo */}
