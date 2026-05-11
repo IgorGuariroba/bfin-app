@@ -72,6 +72,7 @@ export function generateFakeTotaisData(month: string): TotaisData {
     previsaoTotal: Math.round(diarios * (0.9 + rand() * 0.2)),
     daysInMonth: days,
     daysElapsed: days,
+    prevMonth: null,
   };
 }
 

@@ -2,6 +2,13 @@
 
 import { useState, useEffect, useCallback } from "react";
 
+export type PrevMonthData = {
+  saldoAtual: number;
+  custoVida: number;
+  diarioMedio: number;
+  economiaPct: number;
+};
+
 export type TotaisData = {
   entradas: number;
   saidas: number;
@@ -17,6 +24,7 @@ export type TotaisData = {
   previsaoTotal: number;
   daysInMonth: number;
   daysElapsed: number;
+  prevMonth: PrevMonthData | null;
 };
 
 export function useTotais(month: string) {
