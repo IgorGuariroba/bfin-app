@@ -29,7 +29,7 @@ export function BottomNav() {
             return (
               <button
                 key={item.label}
-                className="flex -translate-y-5 items-center justify-center rounded-full bg-primary p-4 text-white shadow-lg active:scale-95 transition-transform"
+                className="flex -translate-y-5 items-center justify-center rounded-full bg-primary p-4 text-white shadow-lg active:scale-95 transition-transform ring-1 ring-hairline ring-offset-[3px] ring-offset-canvas"
                 onClick={() => setOpen(true)}
               >
                 <Icon size={28} strokeWidth={2.5} />
