@@ -45,7 +45,18 @@
 **Lacunas:**
 - Retrospectivo — não projeta o futuro
 - Não compara meses entre si
-- [ ] _o que melhorar?_
+- Elementos sem necessidade:
+  - [x] `MetricRow` — componente definido mas nunca usado → deletar arquivo
+  - [x] Fórmulas visuais com Dots (Performance, Custo de vida, Diário médio) — educam 1x, viram ruído permanente → removidas
+  - [x] Dot direito na barra de Economizado — redundante com o esquerdo → removido
+  - [x] Ícone `⊙` no Diário médio — críptico, substituído por label "meta:" textual
+- Perguntas sem resposta na tela atual:
+  - [ ] "Esse mês foi melhor ou pior que o anterior?"
+  - [ ] "Tô melhorando ou piorando ao longo dos meses?"
+  - [ ] "Meu % guardado tá subindo?"
+  - [ ] "O que pesou mais nas saídas? Gastei mais que o normal em alguma categoria?"
+  - [ ] "Onde posso cortar? Se eu cortar categoria X, quanto sobra?"
+  - [ ] "Tô no ritmo certo pra meta Y?"
 
 ---
 

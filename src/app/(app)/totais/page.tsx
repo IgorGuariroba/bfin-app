@@ -35,10 +35,6 @@ function Dot({ cat, size = 20 }: { cat: string; size?: number }) {
 
 const POSITIVE = "#2db55d";
 
-function Operator({ children }: { children: React.ReactNode }) {
-  return <span className="text-xs font-medium text-muted mx-0.5">{children}</span>;
-}
-
 export default function TotaisPage() {
   const { month, prev, next, label } = useMonth();
   const { isFutureLocked } = usePlan();
@@ -123,20 +119,6 @@ export default function TotaisPage() {
                   <p className="text-xs text-muted mt-0.5">{perfLabel}</p>
                 </div>
               </div>
-              {/* Formula: E - S - D - G - C = D */}
-              <div className="flex items-center gap-0.5 mt-3">
-                <Dot cat="entrada" />
-                <Operator>–</Operator>
-                <Dot cat="saida" />
-                <Operator>–</Operator>
-                <Dot cat="diario" />
-                <Operator>–</Operator>
-                <Dot cat="economia" />
-                <Operator>–</Operator>
-                <Dot cat="cartao" />
-                <Operator>=</Operator>
-                <Dot cat="diario" size={18} />
-              </div>
             </section>
 
             {/* ── Economizado ── */}
@@ -160,7 +142,6 @@ export default function TotaisPage() {
                     }}
                   />
                 </div>
-                <Dot cat="economia" />
               </div>
             </section>
 
@@ -173,16 +154,6 @@ export default function TotaisPage() {
                   <p className="text-xs text-muted mt-0.5">{custoLabel}</p>
                 </div>
               </div>
-              {/* Formula: S + D + C + D */}
-              <div className="flex items-center gap-0.5 mt-3">
-                <Dot cat="saida" />
-                <Operator>+</Operator>
-                <Dot cat="diario" />
-                <Operator>+</Operator>
-                <Dot cat="cartao" />
-                <Operator>+</Operator>
-                <Dot cat="diario" size={18} />
-              </div>
             </section>
 
             {/* ── Diário médio ── */}
@@ -191,17 +162,10 @@ export default function TotaisPage() {
                 <span className="text-base font-semibold text-ink">Diário médio</span>
                 <div className="text-right">
                   <p className="text-base font-semibold tabular-nums text-ink">{fmt(data.diarioMedio)}</p>
-                  <p className="text-xs text-muted mt-0.5 flex items-center justify-end gap-1">
-                    <span className="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full border border-muted text-[8px] text-muted">⊙</span>
-                    {fmt(data.diarioPrev)}
+                  <p className="text-xs text-muted mt-0.5">
+                    meta: {fmt(data.diarioPrev)}
                   </p>
                 </div>
-              </div>
-              {/* Formula: D / 0 */}
-              <div className="flex items-center gap-0.5 mt-3">
-                <Dot cat="diario" />
-                <Operator>/</Operator>
-                <span className="text-xs font-medium text-muted">{data.daysElapsed}</span>
               </div>
             </section>
 
