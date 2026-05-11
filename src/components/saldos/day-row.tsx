@@ -192,7 +192,7 @@ export function DayRow({ entry, filter, isToday, onClick }: DayRowProps) {
               style={{ backgroundColor: c.cardBg }}
             >
               <span className="text-[10px] font-medium text-muted-foreground leading-none text-center">
-                Saldo após o dia
+                Saldo do dia
               </span>
               <span
                 className="text-[15px] font-bold tabular-nums text-center leading-snug"
