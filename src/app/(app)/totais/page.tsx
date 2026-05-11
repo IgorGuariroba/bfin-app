@@ -126,7 +126,12 @@ export default function TotaisPage() {
 
   return (
     <div className="flex flex-col pb-20">
-      <MonthHeader month={label} onPrev={prev} onNext={next} />
+      <MonthHeader
+        month={label}
+        onPrev={prev}
+        onNext={next}
+        className="mx-3 mt-2 rounded-2xl border border-hairline shadow-sm"
+      />
 
       {loading && (
         <div className="flex items-center justify-center py-16 text-sm text-muted-foreground">
