@@ -42,17 +42,25 @@ function prevMonthLabel(month: string): string {
   return MONTH_NAMES[d.getMonth()];
 }
 
-function Delta({ current, prev, format = "money" }: { current: number; prev: number; format?: "money" | "pct" }) {
+function DeltaRow({
+  current, prev, vsLabel, invert = false, format = "money",
+}: {
+  current: number; prev: number; vsLabel: string; invert?: boolean; format?: "money" | "pct";
+}) {
   const diff = current - prev;
   if (diff === 0) return null;
   const up = diff > 0;
-  const label = format === "pct"
-    ? `${up ? "+" : ""}${diff}pp`
+  const good = invert ? !up : up;
+  const valueStr = format === "pct"
+    ? `${up ? "+" : ""}${Math.round(diff)}pp`
     : `${up ? "↑" : "↓"} ${fmt(Math.abs(diff))}`;
   return (
-    <span style={{ color: up ? POSITIVE : "var(--color-rausch)" }} className="text-xs mt-0.5 block">
-      {label}
-    </span>
+    <>
+      <span style={{ color: good ? POSITIVE : "var(--color-rausch)" }} className="text-xs mt-0.5 block">
+        {valueStr}
+      </span>
+      <span className="text-xs text-muted/60">vs {vsLabel}</span>
+    </>
   );
 }
 
@@ -166,8 +174,7 @@ export default function TotaisPage() {
                       dia {data.daysElapsed} de {data.daysInMonth}
                     </p>
                   )}
-                  {prevMonthData && <Delta current={data.saldoAtual} prev={prevMonthData.saldoAtual} />}
-                  {prevMonthData && <span className="text-xs text-muted/60">vs {prevLabel}</span>}
+                  {prevMonthData && <DeltaRow current={data.saldoAtual} prev={prevMonthData.saldoAtual} vsLabel={prevLabel} />}
                 </div>
               </div>
             </section>
@@ -179,8 +186,7 @@ export default function TotaisPage() {
                 <div className="text-right">
                   <p className="text-base font-semibold tabular-nums text-ink">{economiaPct}%</p>
                   <p className="text-xs text-muted mt-0.5">{econLabel}</p>
-                  {prevMonthData && <Delta current={economiaPct} prev={prevMonthData.economiaPct} format="pct" />}
-                  {prevMonthData && <span className="text-xs text-muted/60">vs {prevLabel}</span>}
+                  {prevMonthData && <DeltaRow current={economiaPct} prev={prevMonthData.economiaPct} vsLabel={prevLabel} format="pct" />}
                 </div>
               </div>
               {/* Progress bar */}
@@ -205,8 +211,7 @@ export default function TotaisPage() {
                 <div className="text-right">
                   <p className="text-base font-semibold tabular-nums text-ink">{fmt(data.custoVida)}</p>
                   <p className="text-xs text-muted mt-0.5">{custoLabel}</p>
-                  {prevMonthData && <Delta current={data.custoVida} prev={prevMonthData.custoVida} />}
-                  {prevMonthData && <span className="text-xs text-muted/60">vs {prevLabel}</span>}
+                  {prevMonthData && <DeltaRow current={data.custoVida} prev={prevMonthData.custoVida} vsLabel={prevLabel} invert />}
                 </div>
               </div>
             </section>
@@ -225,8 +230,7 @@ export default function TotaisPage() {
                   <p className="text-xs text-muted mt-0.5">
                     {diarioLabel} · meta: {fmt(data.diarioPrev)}
                   </p>
-                  {prevMonthData && <Delta current={data.diarioMedio} prev={prevMonthData.diarioMedio} />}
-                  {prevMonthData && <span className="text-xs text-muted/60">vs {prevLabel}</span>}
+                  {prevMonthData && <DeltaRow current={data.diarioMedio} prev={prevMonthData.diarioMedio} vsLabel={prevLabel} invert />}
                 </div>
               </div>
             </section>
