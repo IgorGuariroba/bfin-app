@@ -1,6 +1,6 @@
 "use client";
 
-import { Lock } from "lucide-react";
+import { ChevronLeft, ChevronRight, Lock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { generateFakeHorizonteEntries } from "@/lib/fake-month-data";
 
@@ -22,11 +22,10 @@ export function addMonths(month: string, n: number): string {
 
 function monthLabel(month: string): string {
   const [y, m] = month.split("-").map(Number);
-  const MONTHS = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
-  return `${MONTHS[m - 1]}/${String(y).slice(2)}`;
+  const MONTHS = ["JAN", "FEV", "MAR", "ABR", "MAI", "JUN", "JUL", "AGO", "SET", "OUT", "NOV", "DEZ"];
+  return `${MONTHS[m - 1]}/${y}`;
 }
 
-/** Color grade based on saldo value */
 function cellColor(value: number): { bg: string; text: string } {
   if (value === 0) return { bg: "#fffbeb", text: "#92400e" };
   if (value > 0) {
@@ -42,43 +41,66 @@ function cellColor(value: number): { bg: string; text: string } {
   return                 { bg: "#ef4444", text: "#ffffff" };
 }
 
-const WEEK_ABBR = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+const WEEK_DAYS = ["SEG", "TER", "QUA", "QUI", "SEX", "SÁB", "DOM"];
 
-function weekdayAbbr(month: string, day: number): string {
-  const [y, m] = month.split("-").map(Number);
-  return WEEK_ABBR[new Date(y, m - 1, day).getDay()];
-}
-
-function fmtCompact(val: number): string {
-  if (val === 0) return "R$ 0,00";
+function fmtValue(val: number): string {
   const abs = Math.abs(val);
   const sign = val < 0 ? "-" : "";
-  if (abs >= 1000) {
-    const k = abs / 1000;
-    return sign + "R$" + k.toFixed(k >= 10 ? 1 : 2).replace(".", ",") + "K";
-  }
-  return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(val);
+  const formatted = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 0 }).format(abs);
+  return `${sign}R$ ${formatted}`;
 }
 
-interface HorizonteGridProps {
-  months: [string, string, string];
-  data: MonthData[];
-  loading: boolean;
-  blockedMonths: string[];
-  onUpsell: () => void;
+type Cell = { day: number; month: string; overflow: boolean };
+
+function buildCalendarWeeks(month: string): Cell[][] {
+  const [y, mo] = month.split("-").map(Number);
+  const firstDay = new Date(y, mo - 1, 1);
+  const daysInM = new Date(y, mo, 0).getDate();
+  const daysInPrev = new Date(y, mo - 1, 0).getDate();
+  const prevMonth = addMonths(month, -1);
+  const nextMonth = addMonths(month, 1);
+
+  // Mon=0..Sun=6
+  const offset = (firstDay.getDay() + 6) % 7;
+  const cells: Cell[] = [];
+
+  for (let i = offset - 1; i >= 0; i--) {
+    cells.push({ day: daysInPrev - i, month: prevMonth, overflow: true });
+  }
+  for (let d = 1; d <= daysInM; d++) {
+    cells.push({ day: d, month, overflow: false });
+  }
+  const rem = cells.length % 7;
+  if (rem > 0) {
+    for (let d = 1; d <= 7 - rem; d++) {
+      cells.push({ day: d, month: nextMonth, overflow: true });
+    }
+  }
+
+  const weeks: Cell[][] = [];
+  for (let i = 0; i < cells.length; i += 7) {
+    weeks.push(cells.slice(i, i + 7));
+  }
+  return weeks;
 }
 
 const TODAY = new Date();
 const TODAY_MONTH = `${TODAY.getFullYear()}-${String(TODAY.getMonth() + 1).padStart(2, "0")}`;
 const TODAY_DAY = TODAY.getDate();
 
-// Cache fake data per month to avoid regeneration
 const fakeCache = new Map<string, SaldoEntry[]>();
 function getFakeEntries(month: string): SaldoEntry[] {
-  if (!fakeCache.has(month)) {
-    fakeCache.set(month, generateFakeHorizonteEntries(month));
-  }
+  if (!fakeCache.has(month)) fakeCache.set(month, generateFakeHorizonteEntries(month));
   return fakeCache.get(month)!;
+}
+
+interface HorizonteGridProps {
+  months: string[];
+  data: MonthData[];
+  loading: boolean;
+  blockedMonths: string[];
+  onUpsell: () => void;
+  onShift: (delta: number) => void;
 }
 
 export function HorizonteGrid({
@@ -87,61 +109,30 @@ export function HorizonteGrid({
   loading,
   blockedMonths,
   onUpsell,
+  onShift,
 }: HorizonteGridProps) {
   const byMonth: Record<string, Record<number, number>> = {};
   for (const md of data) {
     byMonth[md.month] = {};
-    for (const e of md.entries) {
-      byMonth[md.month][e.day] = e.accSaldo;
-    }
+    for (const e of md.entries) byMonth[md.month][e.day] = e.accSaldo;
   }
 
-  // Fill blocked months with fake data
   for (const m of blockedMonths) {
     if (!byMonth[m] || Object.keys(byMonth[m]).length === 0) {
       const fake = getFakeEntries(m);
       byMonth[m] = {};
-      for (const e of fake) {
-        byMonth[m][e.day] = e.accSaldo;
-      }
+      for (const e of fake) byMonth[m][e.day] = e.accSaldo;
     }
   }
 
-  const daysInMonth = months.map((m) => {
-    const [y, mo] = m.split("-").map(Number);
-    return new Date(y, mo, 0).getDate();
-  });
-
-  const maxDays = Math.max(...daysInMonth);
-  const isBlocked = (m: string) => blockedMonths.includes(m);
-
   return (
-    <div className="flex flex-col">
-      {/* ── Month headers ── */}
-      <div className="grid grid-cols-3 border-b border-hairline sticky top-[60px] z-20 bg-canvas">
-        {months.map((m, i) => {
-          const isCurrent = m === TODAY_MONTH;
-          const blocked = isBlocked(m);
-          return (
-            <div
-              key={m}
-              className={cn(
-                "py-2.5 text-center text-xs font-semibold tracking-[0.32px] uppercase",
-                i < 2 && "border-r border-hairline",
-                isCurrent ? "bg-ink text-on-primary" : "text-ink",
-                blocked && "relative"
-              )}
-            >
-              {blocked ? (
-                <span className="flex items-center justify-center gap-1">
-                  {monthLabel(m)} <Lock size={12} />
-                </span>
-              ) : (
-                monthLabel(m)
-              )}
-            </div>
-          );
-        })}
+    <div className="flex flex-col pb-8">
+      {/* Legend */}
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 px-4 py-3">
+        <LegendItem color="#bbf7d0" label="Saldo positivo" />
+        <LegendItem color="#fffbeb" border label="Saldo zerado" />
+        <LegendItem color="#fef2f2" label="Atenção (baixo)" />
+        <LegendItem color="#ef4444" label="Saldo negativo" />
       </div>
 
       {loading && (
@@ -150,82 +141,146 @@ export function HorizonteGrid({
         </div>
       )}
 
-      {!loading && (
-        <div>
-          {Array.from({ length: maxDays }, (_, i) => i + 1).map((day) => (
-            <div key={day} className="grid grid-cols-3 border-b border-hairline-soft">
-              {months.map((m, idx) => {
-                if (day > daysInMonth[idx]) {
-                  return (
-                    <div
-                      key={m}
-                      className={cn("h-11", idx < 2 && "border-r border-hairline-soft")}
-                    />
-                  );
-                }
+      {!loading &&
+        months.map((m) => {
+          const blocked = blockedMonths.includes(m);
+          const entries = byMonth[m] ?? {};
+          const weeks = buildCalendarWeeks(m);
 
-                const saldo = byMonth[m]?.[day] ?? 0;
-                const isToday = m === TODAY_MONTH && day === TODAY_DAY;
-                const colors = cellColor(saldo);
-                const blocked = isBlocked(m);
-
-                return (
-                  <div
-                    key={m}
-                    className={cn(
-                      "flex items-stretch h-11 relative",
-                      idx < 2 && "border-r border-hairline-soft",
-                      isToday && !blocked && "bg-ink",
-                      blocked && "blur-[3px] select-none cursor-pointer"
-                    )}
-                    onClick={blocked ? onUpsell : undefined}
+          return (
+            <div key={m} className="mx-4 mb-4 rounded-2xl border border-hairline overflow-hidden bg-canvas">
+              {/* Month header */}
+              <div className="flex items-center justify-between px-4 py-3">
+                <h2 className="text-base font-semibold text-ink">{monthLabel(m)}</h2>
+                <div className="flex items-center gap-0.5">
+                  <button
+                    onClick={() => onShift(-1)}
+                    className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-surface-strong transition-colors text-ink"
+                    aria-label="Mês anterior"
                   >
-                    {/* Label: dia + dia da semana */}
-                    <div className="flex flex-col items-center justify-center w-8 shrink-0">
-                      <span className={cn(
-                        "text-[11px] tabular-nums leading-none",
-                        isToday && !blocked ? "font-semibold text-on-primary" : "font-medium text-ink"
-                      )}>
-                        {day}
-                      </span>
-                      <span className={cn(
-                        "text-[8px] font-medium uppercase tracking-[0.24px] leading-none mt-0.5",
-                        isToday && !blocked ? "text-on-primary/60" : "text-muted-soft"
-                      )}>
-                        {weekdayAbbr(m, day)}
-                      </span>
-                    </div>
+                    <ChevronLeft size={18} />
+                  </button>
+                  <button
+                    onClick={() => onShift(1)}
+                    className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-surface-strong transition-colors text-ink"
+                    aria-label="Próximo mês"
+                  >
+                    <ChevronRight size={18} />
+                  </button>
+                </div>
+              </div>
 
-                    {/* Saldo */}
-                    <div
-                      className="flex-1 flex items-center justify-end px-1.5 text-[11px] font-semibold tabular-nums"
-                      style={isToday && !blocked
-                        ? undefined
-                        : { backgroundColor: colors.bg, color: colors.text }
-                      }
-                    >
-                      <span className={isToday && !blocked ? "text-on-primary" : undefined}>
-                        {fmtCompact(saldo)}
-                      </span>
-                    </div>
+              {/* Weekday headers */}
+              <div className="grid grid-cols-7 border-t border-hairline">
+                {WEEK_DAYS.map((d) => (
+                  <div
+                    key={d}
+                    className="py-1.5 text-center text-[10px] font-medium text-muted uppercase tracking-wide"
+                  >
+                    {d}
                   </div>
-                );
-              })}
-            </div>
-          ))}
+                ))}
+              </div>
 
-          {/* Blocked overlay row at bottom — tap target */}
-          {blockedMonths.length > 0 && (
-            <button
-              onClick={onUpsell}
-              className="flex items-center justify-center gap-2 py-4 text-sm text-ink/60 hover:text-ink/80 transition-colors"
-            >
-              <Lock size={14} />
-              <span>Meses futuros disponíveis no Pro</span>
-            </button>
-          )}
-        </div>
-      )}
+              {/* Calendar cells */}
+              <div
+                className={cn(
+                  "grid grid-cols-7 border-t border-hairline",
+                  blocked && "blur-[3px] select-none cursor-pointer"
+                )}
+                onClick={blocked ? onUpsell : undefined}
+              >
+                {weeks.map((week, wi) =>
+                  week.map((cell, di) => {
+                    const isToday =
+                      !cell.overflow &&
+                      cell.month === TODAY_MONTH &&
+                      cell.day === TODAY_DAY;
+                    const saldo = cell.overflow ? 0 : (entries[cell.day] ?? 0);
+                    const colors = cellColor(saldo);
+
+                    return (
+                      <div
+                        key={`${wi}-${di}`}
+                        className={cn(
+                          "flex flex-col items-center justify-center min-h-[52px] border-t border-l border-hairline-soft",
+                          di === 0 && "border-l-0",
+                          wi === 0 && "border-t-0",
+                          isToday && !blocked && "!bg-ink"
+                        )}
+                        style={
+                          isToday && !blocked
+                            ? undefined
+                            : { backgroundColor: cell.overflow ? "#fafafa" : colors.bg }
+                        }
+                      >
+                        <span
+                          className={cn(
+                            "text-[12px] font-semibold leading-none",
+                            cell.overflow
+                              ? "text-muted/30"
+                              : isToday && !blocked
+                              ? "text-on-primary"
+                              : "text-ink"
+                          )}
+                        >
+                          {cell.day}
+                        </span>
+                        <span
+                          className={cn(
+                            "text-[9px] leading-none mt-0.5 tabular-nums font-medium",
+                            cell.overflow
+                              ? "text-muted/30"
+                              : isToday && !blocked
+                              ? "text-on-primary"
+                              : undefined
+                          )}
+                          style={
+                            !cell.overflow && !(isToday && !blocked)
+                              ? { color: colors.text }
+                              : undefined
+                          }
+                        >
+                          {fmtValue(saldo)}
+                        </span>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+
+              {blocked && (
+                <button
+                  onClick={onUpsell}
+                  className="flex w-full items-center justify-center gap-2 py-3 text-sm text-muted border-t border-hairline hover:text-ink transition-colors"
+                >
+                  <Lock size={13} />
+                  <span>Disponível no Pro</span>
+                </button>
+              )}
+            </div>
+          );
+        })}
+    </div>
+  );
+}
+
+function LegendItem({
+  color,
+  label,
+  border,
+}: {
+  color: string;
+  label: string;
+  border?: boolean;
+}) {
+  return (
+    <div className="flex items-center gap-1.5">
+      <span
+        className={cn("w-2.5 h-2.5 rounded-full flex-shrink-0", border && "border border-hairline")}
+        style={{ backgroundColor: color }}
+      />
+      <span className="text-[11px] text-muted">{label}</span>
     </div>
   );
 }
