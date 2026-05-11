@@ -188,7 +188,7 @@ export function DayRow({ entry, filter, isToday, onClick }: DayRowProps) {
 
             {/* Saldo card */}
             <div
-              className="shrink-0 w-[118px] rounded-xl flex flex-col items-center justify-center gap-1.5 px-2 py-2.5 self-start"
+              className="shrink-0 w-[118px] rounded-xl flex flex-col items-center justify-center gap-1.5 px-2 py-2.5 self-stretch"
               style={{ backgroundColor: c.cardBg }}
             >
               <span className="text-[10px] font-medium text-muted-foreground leading-none text-center">
