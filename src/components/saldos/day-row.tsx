@@ -129,7 +129,7 @@ export function DayRow({ entry, filter, isToday, onClick }: DayRowProps) {
           {/* Day block + colored vertical bar */}
           <div className="relative flex shrink-0 items-stretch">
             <div className="flex flex-col items-center justify-center w-14 px-1 py-3 gap-0">
-              <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground leading-none">
+              <span className="text-[10px] font-light uppercase tracking-wide text-muted-foreground leading-none">
                 {getWeekdayAbbr(entry.date)}
               </span>
               <span className={cn("text-[28px] font-bold leading-tight tabular-nums", isToday ? "text-ink" : "text-ink/80")}>
