@@ -34,6 +34,11 @@ export default function SaldosPage() {
   const [upsellOpen, setUpsellOpen] = useState(false);
   const [todayStatus, setTodayStatus] = useState<DayStatus>("ok");
 
+  const statusColor =
+    todayStatus === "ok"      ? "#2db55d" :
+    todayStatus === "warning" ? "#f59e0b" :
+                                "#ff385c";
+
   const headerAccent =
     todayStatus === "ok"      ? "border-b-[#2db55d]/70" :
     todayStatus === "warning" ? "border-b-amber-400/60" :
@@ -51,6 +56,7 @@ export default function SaldosPage() {
           if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
         }}
         className={`mx-3 mt-2 rounded-2xl border border-hairline shadow-sm border-b-2 ${headerAccent}`}
+        accentColor={statusColor}
       />
 
       {/* Row 2: Dia | filtro (some com scroll) */}
