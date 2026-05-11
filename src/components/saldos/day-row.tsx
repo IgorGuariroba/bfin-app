@@ -114,7 +114,7 @@ export function DayRow({ entry, filter, isToday, onClick }: DayRowProps) {
   return (
     <div
       data-today={isToday ? "true" : undefined}
-      className="relative mx-3 my-2"
+      className="relative mx-5 my-2"
     >
       {/* Card */}
       <div
