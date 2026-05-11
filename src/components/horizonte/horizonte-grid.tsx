@@ -1,6 +1,7 @@
 "use client";
 
 import { ChevronLeft, ChevronRight, Lock } from "lucide-react";
+import { useTheme } from "next-themes";
 import { cn } from "@/lib/utils";
 import { generateFakeHorizonteEntries } from "@/lib/fake-month-data";
 
@@ -26,7 +27,21 @@ function monthLabel(month: string): string {
   return `${MONTHS[m - 1]}/${y}`;
 }
 
-function cellColor(value: number): { bg: string; text: string } {
+function cellColor(value: number, isDark: boolean): { bg: string; text: string } {
+  if (isDark) {
+    if (value === 0) return { bg: "#1c1500", text: "#fbbf24" };
+    if (value > 0) {
+      if (value >= 1000) return { bg: "#14532d", text: "#bbf7d0" };
+      if (value >= 500)  return { bg: "#0f2b1a", text: "#86efac" };
+      return                    { bg: "#0a1f12", text: "#4ade80" };
+    }
+    const abs = Math.abs(value);
+    if (abs < 200)  return { bg: "#1f0a0a", text: "#fca5a5" };
+    if (abs < 500)  return { bg: "#3b1111", text: "#fca5a5" };
+    if (abs < 1000) return { bg: "#5a1a1a", text: "#f87171" };
+    if (abs < 2000) return { bg: "#7f1d1d", text: "#fecaca" };
+    return                 { bg: "#991b1b", text: "#ffffff" };
+  }
   if (value === 0) return { bg: "#fffbeb", text: "#92400e" };
   if (value > 0) {
     if (value >= 1000) return { bg: "#bbf7d0", text: "#14532d" };
@@ -111,6 +126,8 @@ export function HorizonteGrid({
   onUpsell,
   onShift,
 }: HorizonteGridProps) {
+  const { resolvedTheme } = useTheme();
+  const isDark = resolvedTheme === "dark";
   const byMonth: Record<string, Record<number, number>> = {};
   for (const md of data) {
     byMonth[md.month] = {};
@@ -129,10 +146,10 @@ export function HorizonteGrid({
     <div className="flex flex-col pb-8">
       {/* Legend */}
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 px-4 py-3">
-        <LegendItem color="#bbf7d0" label="Saldo positivo" />
-        <LegendItem color="#fffbeb" border label="Saldo zerado" />
-        <LegendItem color="#fef2f2" label="Atenção (baixo)" />
-        <LegendItem color="#ef4444" label="Saldo negativo" />
+        <LegendItem color={isDark ? "#14532d" : "#bbf7d0"} label="Saldo positivo" />
+        <LegendItem color={isDark ? "#1c1500" : "#fffbeb"} border label="Saldo zerado" />
+        <LegendItem color={isDark ? "#1f0a0a" : "#fef2f2"} label="Atenção (baixo)" />
+        <LegendItem color="#991b1b" label="Saldo negativo" />
       </div>
 
       {loading && (
@@ -197,7 +214,7 @@ export function HorizonteGrid({
                       cell.month === TODAY_MONTH &&
                       cell.day === TODAY_DAY;
                     const saldo = cell.overflow ? 0 : (entries[cell.day] ?? 0);
-                    const colors = cellColor(saldo);
+                    const colors = cellColor(saldo, isDark);
 
                     return (
                       <div
@@ -206,12 +223,12 @@ export function HorizonteGrid({
                           "flex flex-col items-center justify-center min-h-[52px] border-t border-l border-hairline-soft",
                           di === 0 && "border-l-0",
                           wi === 0 && "border-t-0",
-                          isToday && !blocked && "!bg-ink"
+                          isToday && !blocked && "!bg-canvas shadow-sm"
                         )}
                         style={
                           isToday && !blocked
                             ? undefined
-                            : { backgroundColor: cell.overflow ? "#fafafa" : colors.bg }
+                            : { backgroundColor: cell.overflow ? (isDark ? "#141414" : "#fafafa") : colors.bg }
                         }
                       >
                         <span
@@ -220,7 +237,7 @@ export function HorizonteGrid({
                             cell.overflow
                               ? "text-muted/30"
                               : isToday && !blocked
-                              ? "text-on-primary"
+                              ? "text-destructive"
                               : "text-ink"
                           )}
                         >
@@ -232,7 +249,7 @@ export function HorizonteGrid({
                             cell.overflow
                               ? "text-muted/30"
                               : isToday && !blocked
-                              ? "text-on-primary"
+                              ? "text-destructive"
                               : undefined
                           )}
                           style={
