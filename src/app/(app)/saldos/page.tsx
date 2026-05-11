@@ -44,12 +44,20 @@ export default function SaldosPage() {
         }}
       />
 
-      {/* Column header: Dia | Filter | Saldos */}
-      <div className="sticky top-[61px] z-20 flex items-center px-4 py-2 border-b border-hairline-soft bg-canvas">
-        <span className="w-12 shrink-0 text-[11px] font-bold uppercase tracking-[0.32px] text-muted-foreground">
-          Dia
-        </span>
-        <div className="flex-1">
+      {/* Filter bar */}
+      <div className="sticky top-[61px] z-20 flex items-center gap-3 px-4 py-2 border-b border-hairline-soft bg-canvas">
+        <div className="flex items-center gap-2 text-[11px] font-medium text-muted-foreground">
+          <span className="inline-flex items-center gap-1">
+            <span className="w-2.5 h-2.5 rounded-full bg-[#2db55d]" /> Positivo
+          </span>
+          <span className="inline-flex items-center gap-1">
+            <span className="w-2.5 h-2.5 rounded-full bg-amber-500" /> Zero
+          </span>
+          <span className="inline-flex items-center gap-1">
+            <span className="w-2.5 h-2.5 rounded-full bg-[var(--color-rausch)]" /> Negativo
+          </span>
+        </div>
+        <div className="ml-auto">
           <Select value={filter} onValueChange={setFilter}>
             <SelectTrigger className="w-28 h-8 text-sm font-medium rounded-lg border-hairline bg-canvas text-ink focus:border-ink focus:ring-0">
               <SelectValue />
@@ -63,9 +71,6 @@ export default function SaldosPage() {
             </SelectContent>
           </Select>
         </div>
-        <span className="w-[140px] shrink-0 pr-3 text-right text-[11px] font-bold uppercase tracking-[0.32px] text-muted-foreground">
-          Saldos
-        </span>
       </div>
 
       <SaldosGrid

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { Lock } from "lucide-react";
-import { DayRow, type DayEntry } from "./day-row";
+import { DayRow, type DayEntry, type DayStatus } from "./day-row";
 import { generateFakeSaldosEntries } from "@/lib/fake-month-data";
 
 type ApiEntry = {
@@ -114,11 +114,23 @@ export function SaldosGrid({ month, filter, isBlocked, onUpsell, onDayClick }: S
     );
   }
 
-  const entries = applyFilter(apiData.entries, apiData.prevByType, filter);
+  const rawEntries = applyFilter(apiData.entries, apiData.prevByType, filter);
   const today = new Date();
   const [year, mon] = month.split("-").map(Number);
   const isCurrentMonth = today.getFullYear() === year && today.getMonth() + 1 === mon;
   const todayDay = isCurrentMonth ? today.getDate() : -1;
+
+  const entries: DayEntry[] = rawEntries.map((e) => {
+    let status: DayStatus;
+    if (e.accSaldo > 0) {
+      status = "ok";
+    } else if (e.accSaldo === 0) {
+      status = "warning";
+    } else {
+      status = "risk";
+    }
+    return { ...e, status };
+  });
 
   return (
     <div>
