@@ -26,7 +26,7 @@ export function MovimentacaoItem({ tipo, total, month }: MovimentacaoItemProps) 
   return (
     <Link
       href={`/movimentacoes/${tipo}?month=${month}`}
-      className="flex items-center gap-3.5 px-4 py-4 border-b border-hairline-soft hover:bg-surface-soft/60 transition-colors"
+      className="flex items-center gap-3.5 rounded-2xl border border-hairline shadow-sm bg-canvas px-4 py-4 hover:bg-surface-soft/60 transition-colors"
     >
       <span
         className="w-8 h-8 rounded-full flex items-center justify-center text-on-primary text-xs font-semibold shrink-0"
