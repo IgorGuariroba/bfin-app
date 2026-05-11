@@ -209,8 +209,8 @@ export function DayRow({ entry, filter, isToday, onClick }: DayRowProps) {
 
       </div>
 
-      {/* Status icon overlapping top-left of card */}
-      <div className="absolute -top-3 -left-1 z-10">
+      {/* Status icon overlapping left border, near top */}
+      <div className="absolute top-3 -left-3.5 z-10">
         <StatusCircle status={status} />
       </div>
     </div>
