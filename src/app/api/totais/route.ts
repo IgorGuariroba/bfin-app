@@ -28,7 +28,11 @@ export async function GET(request: NextRequest) {
   const end = new Date(year, mon, 1);
   const daysInMonth = new Date(year, mon, 0).getDate();
 
-  const [transactions, previsoes, prevAgg] = await Promise.all([
+  const prevMonStart = new Date(year, mon - 2, 1);
+  const prevMonEnd = start;
+  const prevDaysInMonth = new Date(year, mon - 1, 0).getDate();
+
+  const [transactions, previsoes, prevAgg, prevMonTx] = await Promise.all([
     prisma.transaction.findMany({
       where: { userId, date: { gte: start, lt: end } },
       select: { type: true, amount: true },
@@ -41,6 +45,10 @@ export async function GET(request: NextRequest) {
       by: ["type"],
       where: { userId, date: { lt: start } },
       _sum: { amount: true },
+    }),
+    prisma.transaction.findMany({
+      where: { userId, date: { gte: prevMonStart, lt: prevMonEnd } },
+      select: { type: true, amount: true },
     }),
   ]);
 
@@ -77,6 +85,18 @@ export async function GET(request: NextRequest) {
   const diarioMedio = daysElapsed > 0 ? totals.diario / daysElapsed : 0;
   const diarioPrev = daysInMonth > 0 ? previsaoTotal / daysInMonth : 0;
 
+  // Previous month metrics for delta display
+  const prevTotals: Record<string, number> = { entrada: 0, saida: 0, diario: 0, cartao: 0, economia: 0 };
+  for (const t of prevMonTx) prevTotals[t.type] = (prevTotals[t.type] ?? 0) + t.amount;
+  const prevCustoVida = prevTotals.saida + prevTotals.cartao + prevTotals.diario;
+  const prevPerformance = prevTotals.entrada - prevCustoVida;
+  const prevSaldoAtual = prevPerformance; // saldoAnterior excluded — apples-to-apples performance comparison
+  const prevDiarioMedio = prevDaysInMonth > 0 ? prevTotals.diario / prevDaysInMonth : 0;
+  const prevEconomiaPct = prevTotals.entrada > 0
+    ? Math.min(100, Math.round((prevTotals.economia / prevTotals.entrada) * 100))
+    : 0;
+  const hasPrevData = prevMonTx.length > 0;
+
   return Response.json({
     entradas: totals.entrada,
     saidas: totals.saida,
@@ -92,5 +112,11 @@ export async function GET(request: NextRequest) {
     previsaoTotal,
     daysInMonth,
     daysElapsed,
+    prevMonth: hasPrevData ? {
+      saldoAtual: prevSaldoAtual,
+      custoVida: prevCustoVida,
+      diarioMedio: prevDiarioMedio,
+      economiaPct: prevEconomiaPct,
+    } : null,
   });
 }
