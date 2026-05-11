@@ -72,6 +72,27 @@ export default function TotaisPage() {
         : "Acima da renda"
       : "";
 
+  const diarioPct =
+    data && data.diarioPrev > 0
+      ? Math.round((data.diarioMedio / data.diarioPrev - 1) * 100)
+      : 0;
+
+  const diarioColor =
+    data && data.diarioMedio > data.diarioPrev
+      ? "var(--color-rausch)"
+      : POSITIVE;
+
+  const diarioLabel =
+    data && data.diarioPrev > 0
+      ? diarioPct === 0
+        ? "na meta"
+        : diarioPct > 0
+          ? `+${diarioPct}% da meta`
+          : `${diarioPct}% da meta`
+      : "";
+
+  const isPartialMonth = data ? data.daysElapsed < data.daysInMonth : false;
+
   return (
     <div className="flex flex-col pb-20">
       <MonthHeader month={label} onPrev={prev} onNext={next} />
@@ -117,6 +138,11 @@ export default function TotaisPage() {
                     {data.saldoAtual < 0 ? "– " : ""}{fmt(Math.abs(data.saldoAtual))}
                   </p>
                   <p className="text-xs text-muted mt-0.5">{perfLabel}</p>
+                  {isPartialMonth && (
+                    <p className="text-xs text-muted mt-0.5">
+                      dia {data.daysElapsed} de {data.daysInMonth}
+                    </p>
+                  )}
                 </div>
               </div>
             </section>
@@ -161,9 +187,14 @@ export default function TotaisPage() {
               <div className="flex items-start justify-between">
                 <span className="text-base font-semibold text-ink">Diário médio</span>
                 <div className="text-right">
-                  <p className="text-base font-semibold tabular-nums text-ink">{fmt(data.diarioMedio)}</p>
+                  <p
+                    className="text-base font-semibold tabular-nums"
+                    style={{ color: diarioColor }}
+                  >
+                    {fmt(data.diarioMedio)}
+                  </p>
                   <p className="text-xs text-muted mt-0.5">
-                    meta: {fmt(data.diarioPrev)}
+                    {diarioLabel} · meta: {fmt(data.diarioPrev)}
                   </p>
                 </div>
               </div>
