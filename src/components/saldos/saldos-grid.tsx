@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { Lock } from "lucide-react";
-import { DayRow, type DayEntry } from "./day-row";
+import { DayRow, type DayEntry, type DayStatus } from "./day-row";
 import { generateFakeSaldosEntries } from "@/lib/fake-month-data";
 
 type ApiEntry = {
@@ -41,9 +41,10 @@ interface SaldosGridProps {
   isBlocked: boolean;
   onUpsell: () => void;
   onDayClick: (date: string) => void;
+  onTodayStatus?: (status: DayStatus) => void;
 }
 
-export function SaldosGrid({ month, filter, isBlocked, onUpsell, onDayClick }: SaldosGridProps) {
+export function SaldosGrid({ month, filter, isBlocked, onUpsell, onDayClick, onTodayStatus }: SaldosGridProps) {
   const [apiData, setApiData] = useState<ApiResponse | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -75,6 +76,19 @@ export function SaldosGrid({ month, filter, isBlocked, onUpsell, onDayClick }: S
       if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
     }
   }, [month, loading, apiData]);
+
+  // Reporta status do dia atual — sempre antes dos early returns
+  useEffect(() => {
+    if (!apiData || !onTodayStatus) return;
+    const today = new Date();
+    const [year, mon] = month.split("-").map(Number);
+    const isCurrentMonth = today.getFullYear() === year && today.getMonth() + 1 === mon;
+    if (!isCurrentMonth) return;
+    const todayEntry = apiData.entries.find((e) => e.day === today.getDate());
+    if (!todayEntry) return;
+    const s = todayEntry.accSaldo > 0 ? "ok" : todayEntry.accSaldo === 0 ? "warning" : "risk";
+    onTodayStatus(s);
+  }, [apiData, month, onTodayStatus]);
 
   // Blocked month: fake data with blur overlay
   if (isBlocked) {
@@ -114,11 +128,23 @@ export function SaldosGrid({ month, filter, isBlocked, onUpsell, onDayClick }: S
     );
   }
 
-  const entries = applyFilter(apiData.entries, apiData.prevByType, filter);
+  const rawEntries = applyFilter(apiData.entries, apiData.prevByType, filter);
   const today = new Date();
   const [year, mon] = month.split("-").map(Number);
   const isCurrentMonth = today.getFullYear() === year && today.getMonth() + 1 === mon;
   const todayDay = isCurrentMonth ? today.getDate() : -1;
+
+  const entries: DayEntry[] = rawEntries.map((e) => {
+    let status: DayStatus;
+    if (e.accSaldo > 0) {
+      status = "ok";
+    } else if (e.accSaldo === 0) {
+      status = "warning";
+    } else {
+      status = "risk";
+    }
+    return { ...e, status };
+  });
 
   return (
     <div>
