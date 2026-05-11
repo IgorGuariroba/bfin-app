@@ -121,14 +121,14 @@ export function DayRow({ entry, filter, isToday, onClick }: DayRowProps) {
         className="relative rounded-2xl border bg-canvas overflow-hidden"
         style={{ borderColor: c.border }}
       >
-        {/* Main row */}
-        <button
+        {/* Main row — div, não button, pois contém button interno */}
+        <div
           onClick={onClick}
-          className="w-full flex text-left transition-colors hover:bg-surface-soft/40"
+          className="w-full flex cursor-pointer transition-colors hover:bg-surface-soft/40"
         >
-          {/* Day block + colored vertical bar */}
-          <div className="relative flex shrink-0 items-stretch">
-            <div className="flex flex-col items-center justify-center w-14 px-1 py-3 gap-0">
+          {/* Day block + vertical accent bar */}
+          <div className="flex shrink-0 items-stretch">
+            <div className="flex flex-col items-center justify-center w-14 px-1 py-3">
               <span className="text-[10px] font-light uppercase tracking-wide text-muted-foreground leading-none">
                 {getWeekdayAbbr(entry.date)}
               </span>
@@ -136,7 +136,6 @@ export function DayRow({ entry, filter, isToday, onClick }: DayRowProps) {
                 {day}
               </span>
             </div>
-            {/* Vertical accent bar */}
             <div className="w-px self-stretch my-2 rounded-full" style={{ backgroundColor: c.border }} />
           </div>
 
@@ -149,7 +148,6 @@ export function DayRow({ entry, filter, isToday, onClick }: DayRowProps) {
                 const color = CAT_COLORS[type as keyof typeof CAT_COLORS] ?? "#999";
                 const label = CAT_LABELS[type as keyof typeof CAT_LABELS] ?? type;
                 const Icon = CAT_ICONS[type] ?? TrendingUp;
-
                 return (
                   <div key={type} className="flex items-center gap-2 h-[26px]">
                     <span
@@ -205,7 +203,7 @@ export function DayRow({ entry, filter, isToday, onClick }: DayRowProps) {
               <StatusBadge status={status} />
             </div>
           </div>
-        </button>
+        </div>
 
       </div>
 
