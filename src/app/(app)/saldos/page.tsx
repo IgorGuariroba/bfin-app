@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/select";
 
 const FILTER_OPTIONS = [
-  { value: "all", label: "Todas" },
+  { value: "all", label: "Todas categorias" },
   { value: "entrada", label: "Entradas" },
   { value: "saida", label: "Saídas" },
   { value: "diario", label: "Diário" },
@@ -44,33 +44,36 @@ export default function SaldosPage() {
         }}
       />
 
-      {/* Filter bar */}
-      <div className="sticky top-[61px] z-20 flex items-center gap-3 px-4 py-2 border-b border-hairline-soft bg-canvas">
-        <div className="flex items-center gap-2 text-[11px] font-medium text-muted-foreground">
-          <span className="inline-flex items-center gap-1">
-            <span className="w-2.5 h-2.5 rounded-full bg-[#2db55d]" /> Positivo
-          </span>
-          <span className="inline-flex items-center gap-1">
-            <span className="w-2.5 h-2.5 rounded-full bg-amber-500" /> Zero
-          </span>
-          <span className="inline-flex items-center gap-1">
-            <span className="w-2.5 h-2.5 rounded-full bg-[var(--color-rausch)]" /> Negativo
-          </span>
-        </div>
-        <div className="ml-auto">
-          <Select value={filter} onValueChange={setFilter}>
-            <SelectTrigger className="w-28 h-8 text-sm font-medium rounded-lg border-hairline bg-canvas text-ink focus:border-ink focus:ring-0">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {FILTER_OPTIONS.map((opt) => (
-                <SelectItem key={opt.value} value={opt.value}>
-                  {opt.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+      {/* Row 2 sticky: Dias | filtro */}
+      <div className="sticky top-[61px] z-20 flex items-center justify-between px-4 py-2 border-b border-hairline-soft bg-canvas">
+        <span className="text-[11px] font-bold tracking-[0.32px] text-muted-foreground">
+          Dia
+        </span>
+        <Select value={filter} onValueChange={setFilter}>
+          <SelectTrigger className="w-44 h-8 text-sm font-medium rounded-lg border-hairline bg-canvas text-ink focus:border-ink focus:ring-0">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {FILTER_OPTIONS.map((opt) => (
+              <SelectItem key={opt.value} value={opt.value}>
+                {opt.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Row 3 não-sticky: legenda (some com scroll) */}
+      <div className="flex items-center gap-4 px-4 py-2 border-b border-hairline-soft bg-canvas">
+        <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground">
+          <span className="w-2.5 h-2.5 rounded-full bg-[#2db55d]" /> Positivo
+        </span>
+        <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground">
+          <span className="w-2.5 h-2.5 rounded-full bg-amber-500" /> Zero
+        </span>
+        <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground">
+          <span className="w-2.5 h-2.5 rounded-full bg-[var(--color-rausch)]" /> Negativo
+        </span>
       </div>
 
       <SaldosGrid
