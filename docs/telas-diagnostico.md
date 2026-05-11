@@ -74,4 +74,35 @@
 
 ## Ideias / próximos passos
 
-- [ ] _listar aqui_
+### Totais — propostas de melhoria
+
+**Camada 1 — Quick wins**
+- [ ] Diário médio vira semáforo: vermelho quando acima da meta + mostrar `+X%` acima
+- [ ] Contexto temporal em Performance: `dia 11 de 31` ou barra de progresso do mês
+
+**Camada 2 — Reorganização visual**
+- [ ] Performance vira hero: número grande centralizado, cor dominante (como header de Saldos)
+- [ ] Fundir Economizado + Economias: aparecem duas vezes com a mesma informação — manter só em um lugar
+
+**Camada 3 — Feature nova**
+- [ ] Delta vs mês anterior em cada métrica (`↑ R$ 800 vs abril`) — responde "tô melhorando?" sem sair da tela
+
+**Estrutura proposta:**
+```
+[ Maio 2026 — dia 11 de 31 ████░░░░░░ ]
+
+        R$ 3.492,95  ← hero, verde
+        Sobrou dinheiro
+        ↑ R$ 1.200 vs abril
+
+────────────────────────────────
+Economizado    0%    Nada guardado
+Custo de vida  R$ 6.507,05  ↑ vs abril
+Diário médio   R$ 136,36 ⚠ +134% da meta   ← vermelho
+
+────────────────────────────────
+Movimentações do mês
+E  Entradas    R$ 10.000,00  >
+S  Saídas      R$  5.007,05  >
+D  Diários     R$  1.500,00  >
+```
