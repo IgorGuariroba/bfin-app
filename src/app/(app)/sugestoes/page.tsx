@@ -87,7 +87,7 @@ export default function SugestoesPage() {
                   <span
                     className={
                       "flex h-8 w-8 items-center justify-center rounded-full shrink-0 " +
-                      (active ? "bg-ink text-on-primary" : "bg-surface-strong text-ink")
+                      (active ? "bg-ink text-canvas" : "bg-surface-strong text-ink")
                     }
                   >
                     <Icon size={18} />
