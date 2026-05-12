@@ -77,7 +77,7 @@ function StatusCircle({ status }: { status: DayStatus }) {
 function StatusBadge({ status }: { status: DayStatus }) {
   if (status === "ok") {
     return (
-      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold border border-[#2db55d]/40 text-[#2db55d] bg-white">
+      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold border border-[#2db55d]/40 text-[#2db55d] bg-canvas">
         <Check size={10} strokeWidth={3} />
         Tudo certo
       </span>
@@ -85,14 +85,14 @@ function StatusBadge({ status }: { status: DayStatus }) {
   }
   if (status === "warning") {
     return (
-      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold border border-amber-400/40 text-amber-600 bg-white">
+      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold border border-amber-400/40 text-amber-600 bg-canvas">
         <AlertCircle size={10} />
         Atenção
       </span>
     );
   }
   return (
-    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold border border-[#ff385c]/40 text-[#ff385c] bg-white">
+    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold border border-[#ff385c]/40 text-[#ff385c] bg-canvas">
       <AlertCircle size={10} />
       Risco
     </span>
@@ -139,7 +139,7 @@ export function DayRow({ entry, filter, isToday, onClick }: DayRowProps) {
                 {day}
               </span>
             </div>
-            <div className="w-px self-stretch my-2 rounded-full" style={{ backgroundColor: isToday ? "white" : c.border }} />
+            <div className="w-px self-stretch my-2 rounded-full" style={{ backgroundColor: isToday ? "var(--canvas)" : c.border }} />
           </div>
 
           {/* Categories + saldo */}
