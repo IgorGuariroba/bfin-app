@@ -91,7 +91,7 @@ export default function PrevisaoPage() {
 
   return (
     <div className="flex flex-col h-[100dvh] bg-[var(--color-surface-soft)] relative">
-      <BackHeader title="Previsão de diário" action={<button className="flex items-center justify-center w-8 h-8 bg-[#f2f2f2] hover:bg-[#e8e8e8] rounded-full transition-colors text-[#222222]" onClick={openNew}><Plus size={18} strokeWidth={2} /></button>} />
+      <BackHeader title="Previsão de diário" action={<button className="flex items-center justify-center w-8 h-8 bg-surface-strong hover:bg-surface-soft rounded-full transition-colors text-ink" onClick={openNew}><Plus size={18} strokeWidth={2} /></button>} />
 
       <div className="flex-1 overflow-y-auto flex flex-col bg-[var(--color-surface-soft)]">
         {loading ? (
@@ -100,11 +100,11 @@ export default function PrevisaoPage() {
           <div className="flex-1 flex flex-col items-center justify-center p-10 px-8 gap-3.5 text-center min-h-[200px]">
             <button
               onClick={openNew}
-              className="w-16 h-16 rounded-full bg-[#e8e6e2] flex items-center justify-center shrink-0 hover:bg-[#dfddda] transition-colors"
+              className="w-16 h-16 rounded-full bg-surface-strong flex items-center justify-center shrink-0 hover:bg-hairline transition-colors text-muted"
             >
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                <line x1="12" y1="5" x2="12" y2="19" stroke="#999" strokeWidth="2" strokeLinecap="round"/>
-                <line x1="5" y1="12" x2="19" y2="12" stroke="#999" strokeWidth="2" strokeLinecap="round"/>
+                <line x1="12" y1="5" x2="12" y2="19" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                <line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
               </svg>
             </button>
             <div className="text-sm text-[var(--color-muted)] leading-relaxed max-w-[220px]">
@@ -130,15 +130,15 @@ export default function PrevisaoPage() {
         <div className="bg-[var(--color-canvas)] mt-auto">
           <div className="p-4 pt-4 px-4 pb-0">
             <div className="flex justify-between items-center py-1.5">
-              <span className="text-[14px] text-[#6a6a6a]">Total mensal</span>
-              <span className="text-[14px] font-[600] text-[#222222] tabular-nums">{fmt(totalPrevisao)}</span>
+              <span className="text-[14px] text-muted">Total mensal</span>
+              <span className="text-[14px] font-[600] text-ink tabular-nums">{fmt(totalPrevisao)}</span>
             </div>
             <div className="flex justify-between items-center py-1.5">
-              <span className="text-[14px] text-[#6a6a6a]">Dividido por</span>
+              <span className="text-[14px] text-muted">Dividido por</span>
               <div className="relative inline-flex items-center">
-                <div className="flex items-center gap-1 px-3 py-1.5 rounded-full border border-[#dddddd] bg-[#f7f7f7] text-[14px] font-[500] text-[#222222] pointer-events-none select-none">
+                <div className="flex items-center gap-1 px-3 py-1.5 rounded-full border border-hairline bg-surface-soft text-[14px] font-[500] text-ink pointer-events-none select-none">
                   <span>{days} dias</span>
-                  <ChevronDown size={13} strokeWidth={2} className="text-[#6a6a6a]" />
+                  <ChevronDown size={13} strokeWidth={2} className="text-muted" />
                 </div>
                 <select
                   value={days}
@@ -151,15 +151,15 @@ export default function PrevisaoPage() {
                 </select>
               </div>
             </div>
-            <div className="h-[1px] bg-[#ebebeb] my-3" />
+            <div className="h-[1px] bg-hairline-soft my-3" />
             <div className="flex justify-between items-center py-1">
               <span></span>
-              <span className="text-[22px] font-[500] tracking-[-0.44px] text-[#222222] tabular-nums">{fmt(diarioDisponivel)}</span>
+              <span className="text-[22px] font-[500] tracking-[-0.44px] text-ink tabular-nums">{fmt(diarioDisponivel)}</span>
             </div>
             <button
               onClick={handleApplyPrevisao}
               disabled={applying}
-              className="w-full mt-4 h-12 rounded-[8px] text-white font-[500] text-base transition-colors disabled:opacity-70 bg-[#ff385c] active:bg-[#e00b41] flex items-center justify-center gap-2"
+              className="w-full mt-4 h-12 rounded-[8px] text-white font-[500] text-base transition-colors disabled:opacity-70 bg-rausch active:bg-rausch-active flex items-center justify-center gap-2"
             >
               {applying ? "Aplicando..." : "Lançar nos saldos do mês"}
             </button>
