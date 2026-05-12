@@ -35,7 +35,7 @@ export function SwipeableItem({ id, name, amount, onDelete, onEdit }: SwipeableI
   if (isDeleting) return null;
 
   return (
-    <div className="relative w-full overflow-hidden border-b border-[#ebebeb] bg-[#ff385c]">
+    <div className="relative w-full overflow-hidden border-b border-hairline-soft bg-rausch">
       {/* Background Delete Action */}
       <div className="absolute inset-y-0 right-0 w-[100px] flex items-center justify-center">
         <div className="flex flex-col items-center gap-[3px] text-white font-[Inter,-apple-system,system-ui,sans-serif]">
@@ -57,15 +57,15 @@ export function SwipeableItem({ id, name, amount, onDelete, onEdit }: SwipeableI
         dragElastic={0.1}
         animate={controls}
         onClick={() => onEdit?.(id)}
-        className="relative bg-[#ffffff] flex items-center justify-between px-4 py-[14px] w-full cursor-pointer hover:bg-[#f7f7f7] transition-colors"
+        className="relative bg-canvas flex items-center justify-between px-4 py-[14px] w-full cursor-pointer hover:bg-surface-soft transition-colors"
       >
         <div className="flex-1 min-w-0 pr-4">
-          <span className="text-[16px] font-[600] text-[#222222] truncate block">
+          <span className="text-[16px] font-[600] text-ink truncate block">
             {name}
           </span>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          <span className="text-[14px] font-[400] tabular-nums text-[#222222]">
+          <span className="text-[14px] font-[400] tabular-nums text-ink">
             {fmt(amount)}
           </span>
           {/* Arrow is revealed in prototype, but framer-motion handles x dynamically, we skip the left arrow for simplicity or just keep it clean */}

@@ -85,13 +85,13 @@ export function PrevisaoForm({ open, onOpenChange, onSuccess, editItem }: Previs
             value={amountStr}
             onChange={handleAmountChange}
             placeholder="0,00"
-            className="text-[28px] font-extrabold tracking-[-0.5px] bg-transparent border-none outline-none text-[var(--color-ink)] placeholder:text-[#c8c8c8] flex-1 min-w-0"
+            className="text-[28px] font-extrabold tracking-[-0.5px] bg-transparent border-none outline-none text-[var(--color-ink)] placeholder:text-muted-soft flex-1 min-w-0"
           />
         </div>
         
         <button
           onClick={() => onOpenChange(false)}
-          className="flex items-center justify-center w-8 h-8 bg-[#f2f2f2] hover:bg-[#e8e8e8] rounded-full transition-colors self-start shrink-0 text-[#222222]"
+          className="flex items-center justify-center w-8 h-8 bg-surface-strong hover:bg-surface-soft rounded-full transition-colors self-start shrink-0 text-ink"
           aria-label="Close"
         >
           <X size={24} />
@@ -100,8 +100,8 @@ export function PrevisaoForm({ open, onOpenChange, onSuccess, editItem }: Previs
 
       {/* Description row */}
       <div className="flex items-center gap-2.5 px-5 py-4 border-b border-[var(--color-hairline-soft)]">
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="shrink-0">
-          <path d="M11 2L14 5L4.5 14.5H1.5V11.5L11 2Z" stroke="#bbb" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="shrink-0 text-muted-soft">
+          <path d="M11 2L14 5L4.5 14.5H1.5V11.5L11 2Z" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
         </svg>
         <input
           type="text"
@@ -120,7 +120,7 @@ export function PrevisaoForm({ open, onOpenChange, onSuccess, editItem }: Previs
         <button
           onClick={handleSubmit}
           disabled={submitting}
-          className="w-full h-12 bg-[#ff385c] active:bg-[#e00b41] text-white border-none rounded-[8px] text-base font-[500] cursor-pointer transition-colors disabled:bg-[#ffd1da] disabled:cursor-not-allowed"
+          className="w-full h-12 bg-rausch active:bg-rausch-active text-white border-none rounded-[8px] text-base font-[500] cursor-pointer transition-colors disabled:bg-rausch-disabled disabled:cursor-not-allowed"
         >
           {submitting ? "Salvando..." : editItem ? "Salvar gasto" : "Adicionar gasto mensal"}
         </button>

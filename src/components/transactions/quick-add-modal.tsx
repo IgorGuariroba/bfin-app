@@ -167,7 +167,7 @@ export function QuickAddModal() {
 
         {/* ─── Value header ─── */}
         <div className="flex items-center px-5 pt-5 pb-4">
-          <span className="text-[28px] font-[700] text-[#929292] mr-1 select-none">R$</span>
+          <span className="text-[28px] font-[700] text-muted-soft mr-1 select-none">R$</span>
           <input
             ref={valueRef}
             type="text"
@@ -175,12 +175,12 @@ export function QuickAddModal() {
             value={displayValue}
             onChange={handleValueChange}
             placeholder="0,00"
-            className="flex-1 text-[28px] font-[700] bg-transparent outline-none placeholder:text-[#c8c8c8] caret-[#222222] text-[#222222]"
+            className="flex-1 text-[28px] font-[700] bg-transparent outline-none placeholder:text-muted-soft caret-ink text-ink"
             autoFocus
           />
           <button
             onClick={handleClose}
-            className="w-8 h-8 flex items-center justify-center bg-[#f2f2f2] hover:bg-[#e8e8e8] rounded-full text-[#222222] transition-colors"
+            className="w-8 h-8 flex items-center justify-center bg-surface-strong hover:bg-surface-soft rounded-full text-ink transition-colors"
           >
             <X size={18} />
           </button>
@@ -203,18 +203,18 @@ export function QuickAddModal() {
               >
                 {CAT_INITIALS[type]}
               </span>
-              <span className="flex-1 text-[16px] text-[#222222] font-[500]">{CAT_LABELS[type]}</span>
-              <ChevronDown size={16} className="text-[#6a6a6a]" />
+              <span className="flex-1 text-[16px] text-ink font-[500]">{CAT_LABELS[type]}</span>
+              <ChevronDown size={16} className="text-muted" />
             </button>
             {typeOpen && (
-              <div className="absolute left-0 right-0 top-full z-10 bg-white rounded-[8px] border border-[#ebebeb] overflow-hidden -mt-1" style={{boxShadow:"rgba(0,0,0,0.02) 0 0 0 1px,rgba(0,0,0,0.04) 0 2px 6px 0,rgba(0,0,0,0.1) 0 4px 8px 0"}}>
+              <div className="absolute left-0 right-0 top-full z-10 bg-canvas rounded-[8px] border border-hairline-soft overflow-hidden -mt-1" style={{boxShadow:"rgba(0,0,0,0.02) 0 0 0 1px,rgba(0,0,0,0.04) 0 2px 6px 0,rgba(0,0,0,0.1) 0 4px 8px 0"}}>
                 {CATEGORIES.map((cat) => (
                   <button
                     key={cat}
                     onClick={() => { setType(cat); setTypeOpen(false); }}
                     className={cn(
-                      "flex items-center gap-3 w-full px-4 py-3 text-left hover:bg-[#f7f7f7] transition-colors",
-                      type === cat && "bg-[#f7f7f7]"
+                      "flex items-center gap-3 w-full px-4 py-3 text-left hover:bg-surface-soft transition-colors",
+                      type === cat && "bg-surface-soft"
                     )}
                   >
                     <span
@@ -223,7 +223,7 @@ export function QuickAddModal() {
                     >
                       {CAT_INITIALS[cat]}
                     </span>
-                    <span className="text-[14px] text-[#222222]">{CAT_LABELS[cat]}</span>
+                    <span className="text-[14px] text-ink">{CAT_LABELS[cat]}</span>
                   </button>
                 ))}
               </div>
@@ -234,13 +234,13 @@ export function QuickAddModal() {
 
           {/* Description */}
           <div className="flex items-center gap-3.5 py-4">
-            <Pencil size={18} className="text-[#6a6a6a] flex-shrink-0" />
+            <Pencil size={18} className="text-muted flex-shrink-0" />
             <input
               type="text"
               placeholder="Descrição"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="flex-1 text-[16px] text-[#222222] bg-transparent outline-none placeholder:text-[#929292]"
+              className="flex-1 text-[16px] text-ink bg-transparent outline-none placeholder:text-muted-soft"
             />
           </div>
 
@@ -248,10 +248,10 @@ export function QuickAddModal() {
 
           {/* Date */}
           <div className="relative flex items-center gap-3.5 w-full py-4 text-left">
-            <CalendarDays size={18} className="text-[#6a6a6a] flex-shrink-0" />
-            <span className="flex-1 text-[16px] text-[#222222]">Data</span>
-            <span className="text-[14px] text-[#6a6a6a]">{fmtDateDisplay(date)}</span>
-            <ChevronDown size={14} className="text-[#6a6a6a] ml-0.5" />
+            <CalendarDays size={18} className="text-muted flex-shrink-0" />
+            <span className="flex-1 text-[16px] text-ink">Data</span>
+            <span className="text-[14px] text-muted">{fmtDateDisplay(date)}</span>
+            <ChevronDown size={14} className="text-muted ml-0.5" />
             <input
               type="date"
               value={date}
@@ -273,19 +273,19 @@ export function QuickAddModal() {
               onClick={() => { setRepeatOpen(!repeatOpen); setTypeOpen(false); setRepeatEndOpen(false); }}
               className="flex items-center gap-3.5 w-full py-4 text-left"
             >
-              <CalendarClock size={18} className="text-[#6a6a6a] flex-shrink-0" />
-              <span className="flex-1 text-[16px] text-[#222222]">{repeatLabel}</span>
-              <ChevronDown size={14} className="text-[#6a6a6a]" />
+              <CalendarClock size={18} className="text-muted flex-shrink-0" />
+              <span className="flex-1 text-[16px] text-ink">{repeatLabel}</span>
+              <ChevronDown size={14} className="text-muted" />
             </button>
             {repeatOpen && (
-              <div className="absolute left-0 right-0 top-full z-10 bg-white rounded-[8px] border border-[#ebebeb] overflow-hidden -mt-1" style={{boxShadow:"rgba(0,0,0,0.02) 0 0 0 1px,rgba(0,0,0,0.04) 0 2px 6px 0,rgba(0,0,0,0.1) 0 4px 8px 0"}}>
+              <div className="absolute left-0 right-0 top-full z-10 bg-canvas rounded-[8px] border border-hairline-soft overflow-hidden -mt-1" style={{boxShadow:"rgba(0,0,0,0.02) 0 0 0 1px,rgba(0,0,0,0.04) 0 2px 6px 0,rgba(0,0,0,0.1) 0 4px 8px 0"}}>
                 {REPEAT_OPTS.map((opt) => (
                   <button
                     key={opt.value}
                     onClick={() => { setRepeat(opt.value); setRepeatOpen(false); }}
                     className={cn(
-                      "flex items-center w-full px-4 py-3 text-left text-[14px] text-[#222222] hover:bg-[#f7f7f7] transition-colors",
-                      repeat === opt.value && "bg-[#f7f7f7] font-[500]"
+                      "flex items-center w-full px-4 py-3 text-left text-[14px] text-ink hover:bg-surface-soft transition-colors",
+                      repeat === opt.value && "bg-surface-soft font-[500]"
                     )}
                   >
                     {opt.label}
@@ -300,26 +300,26 @@ export function QuickAddModal() {
             <div className="relative">
               <div className="border-t border-hairline-soft" />
               <div className="flex items-center gap-3.5 py-4">
-                <RefreshCw size={18} className="text-[#6a6a6a] flex-shrink-0" />
+                <RefreshCw size={18} className="text-muted flex-shrink-0" />
                 <button
                   onClick={() => { setRepeatEndOpen(!repeatEndOpen); setTypeOpen(false); setRepeatOpen(false); }}
-                  className="flex-1 text-left flex items-center gap-1 text-[16px] text-[#222222]"
+                  className="flex-1 text-left flex items-center gap-1 text-[16px] text-ink"
                 >
                   {repeatEnd === "count" ? "Número de vezes" : "A perder de vista"}
-                  <ChevronDown size={12} className="text-[#6a6a6a]" />
+                  <ChevronDown size={12} className="text-muted" />
                 </button>
                 {repeatEnd === "count" && (
                   <div className="flex items-center gap-0">
                     <button
                       onClick={() => setRepeatCount((n) => Math.max(2, n - 1))}
-                      className="w-9 h-9 flex items-center justify-center rounded-[8px] border border-[#dddddd] text-[#6a6a6a] active:bg-[#f7f7f7] transition-colors"
+                      className="w-9 h-9 flex items-center justify-center rounded-[8px] border border-hairline text-muted active:bg-surface-soft transition-colors"
                     >
                       <Minus size={14} />
                     </button>
-                    <span className="w-10 text-center text-[16px] font-[600] text-[#222222]">{repeatCount}</span>
+                    <span className="w-10 text-center text-[16px] font-[600] text-ink">{repeatCount}</span>
                     <button
                       onClick={() => setRepeatCount((n) => Math.min(60, n + 1))}
-                      className="w-9 h-9 flex items-center justify-center rounded-[8px] border border-[#dddddd] text-[#6a6a6a] active:bg-[#f7f7f7] transition-colors"
+                      className="w-9 h-9 flex items-center justify-center rounded-[8px] border border-hairline text-muted active:bg-surface-soft transition-colors"
                     >
                       <Plus size={14} />
                     </button>
@@ -327,12 +327,12 @@ export function QuickAddModal() {
                 )}
               </div>
               {repeatEndOpen && (
-                <div className="absolute left-0 right-0 top-full z-10 bg-white rounded-[8px] border border-[#ebebeb] overflow-hidden -mt-1" style={{boxShadow:"rgba(0,0,0,0.02) 0 0 0 1px,rgba(0,0,0,0.04) 0 2px 6px 0,rgba(0,0,0,0.1) 0 4px 8px 0"}}>
+                <div className="absolute left-0 right-0 top-full z-10 bg-canvas rounded-[8px] border border-hairline-soft overflow-hidden -mt-1" style={{boxShadow:"rgba(0,0,0,0.02) 0 0 0 1px,rgba(0,0,0,0.04) 0 2px 6px 0,rgba(0,0,0,0.1) 0 4px 8px 0"}}>
                   <button
                     onClick={() => { setRepeatEnd("count"); setRepeatEndOpen(false); }}
                     className={cn(
-                      "flex items-center w-full px-4 py-3 text-left text-[14px] text-[#222222] hover:bg-[#f7f7f7] transition-colors",
-                      repeatEnd === "count" && "bg-[#f7f7f7] font-[500]"
+                      "flex items-center w-full px-4 py-3 text-left text-[14px] text-ink hover:bg-surface-soft transition-colors",
+                      repeatEnd === "count" && "bg-surface-soft font-[500]"
                     )}
                   >
                     Número de vezes
@@ -340,8 +340,8 @@ export function QuickAddModal() {
                   <button
                     onClick={() => { setRepeatEnd("forever"); setRepeatEndOpen(false); }}
                     className={cn(
-                      "flex items-center w-full px-4 py-3 text-left text-[14px] text-[#222222] hover:bg-[#f7f7f7] transition-colors",
-                      repeatEnd === "forever" && "bg-[#f7f7f7] font-[500]"
+                      "flex items-center w-full px-4 py-3 text-left text-[14px] text-ink hover:bg-surface-soft transition-colors",
+                      repeatEnd === "forever" && "bg-surface-soft font-[500]"
                     )}
                   >
                     A perder de vista
@@ -356,8 +356,8 @@ export function QuickAddModal() {
           {/* Tags */}
           <div className="py-4">
             <div className="flex items-center gap-3.5">
-              <Tag size={18} className="text-[#6a6a6a] flex-shrink-0" />
-              <span className="text-[16px] text-[#929292]">Tags</span>
+              <Tag size={18} className="text-muted flex-shrink-0" />
+              <span className="text-[16px] text-muted-soft">Tags</span>
             </div>
             {tags.length > 0 && (
               <div className="flex flex-wrap gap-2 mt-3 pl-[30px]">
@@ -369,7 +369,7 @@ export function QuickAddModal() {
                       "px-[10px] py-[4px] rounded-full text-[11px] font-[600] transition-all",
                       selectedTagIds.includes(tag.id)
                         ? "text-white"
-                        : "bg-[#f7f7f7] text-[#6a6a6a]"
+                        : "bg-surface-soft text-muted"
                     )}
                     style={selectedTagIds.includes(tag.id) ? { backgroundColor: tag.color } : undefined}
                   >
