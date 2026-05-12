@@ -128,7 +128,7 @@ export default function SugestoesPage() {
         <button
           type="submit"
           disabled={!canSubmit}
-          className="h-12 rounded-lg bg-primary text-on-primary text-base font-medium hover:bg-rausch-active disabled:bg-rausch-disabled disabled:cursor-not-allowed transition-colors"
+          className="h-12 rounded-lg bg-primary text-on-primary text-base font-medium hover:bg-rausch-active disabled:bg-rausch-disabled disabled:text-rausch-active disabled:cursor-not-allowed transition-colors"
         >
           {loading ? "Enviando..." : "Enviar sugestão"}
         </button>
