@@ -68,7 +68,7 @@ export function DayDetail({ date, onClose, onNavigate }: DayDetailProps) {
   const shortDate = useMemo(() => (date ? fmtShortDate(date) : ""), [date]);
 
   /* Active filter info */
-  const filterColor = filterTipo === "all" ? "#6a6a6a" : (CAT_COLORS[filterTipo as Category] ?? "#6a6a6a");
+  const filterColor = filterTipo === "all" ? "var(--muted)" : (CAT_COLORS[filterTipo as Category] ?? "var(--muted)");
   const filterLabel = filterTipo === "all" ? "Todas" : (CAT_LABELS[filterTipo as Category] ?? "Todas");
   const filterInitial = filterTipo === "all" ? "T" : (CAT_INITIALS[filterTipo] ?? "T");
 
@@ -140,7 +140,7 @@ export function DayDetail({ date, onClose, onNavigate }: DayDetailProps) {
           </button>
 
           {filterOpen && (
-            <div className="absolute left-4 right-4 top-full z-20 bg-white rounded-xl shadow-lg border border-hairline-soft overflow-hidden mt-1">
+            <div className="absolute left-4 right-4 top-full z-20 bg-canvas rounded-xl shadow-lg border border-hairline-soft overflow-hidden mt-1">
               {/* "Todas" option */}
               <button
                 onClick={() => { setFilterTipo("all"); setFilterOpen(false); }}
@@ -202,7 +202,7 @@ export function DayDetail({ date, onClose, onNavigate }: DayDetailProps) {
             <ul className="flex flex-col">
               {transactions.map((tx) => {
                 const cat = tx.type as Category;
-                const color = CAT_COLORS[cat] ?? "#999";
+                const color = CAT_COLORS[cat] ?? "var(--muted)";
                 const initial = CAT_INITIALS[cat] ?? "?";
                 const txDate = typeof tx.date === "string"
                   ? tx.date.slice(0, 10)
