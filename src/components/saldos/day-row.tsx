@@ -139,7 +139,7 @@ export function DayRow({ entry, filter, isToday, onClick }: DayRowProps) {
                 {day}
               </span>
             </div>
-            <div className="w-px self-stretch my-2 rounded-full" style={{ backgroundColor: isToday ? "white" : c.border }} />
+            <div className="w-px self-stretch my-2 rounded-full" style={{ backgroundColor: isToday ? "var(--canvas)" : c.border }} />
           </div>
 
           {/* Categories + saldo */}
