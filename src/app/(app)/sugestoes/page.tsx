@@ -58,14 +58,14 @@ export default function SugestoesPage() {
       <form onSubmit={handleSubmit} className="flex flex-col gap-6 px-4 py-6">
         <div>
           <h2 className="text-xl font-semibold text-ink mb-1">Conte o que você acha</h2>
-          <p className="text-sm text-ink/80 leading-relaxed">
+          <p className="text-sm text-body-text leading-relaxed">
             Sua opinião ajuda a evoluir o app. Compartilhe ideias, problemas ou melhorias.
           </p>
         </div>
 
         {/* Category selector */}
         <div className="space-y-3">
-          <p className="text-[11px] font-bold text-ink uppercase tracking-[0.32px] px-1">
+          <p className="text-[11px] font-semibold text-ink uppercase tracking-[0.32px] px-1">
             Categoria
           </p>
           <div className="grid grid-cols-2 gap-3">
@@ -77,7 +77,7 @@ export default function SugestoesPage() {
                   type="button"
                   onClick={() => setCategory(id)}
                   className={
-                    "flex items-center gap-3 rounded-xl border p-3 text-left transition-colors " +
+                    "flex items-center gap-3 rounded-[14px] border p-3 text-left transition-colors " +
                     (active
                       ? "border-ink bg-canvas"
                       : "border-hairline-soft bg-canvas hover:border-hairline")
@@ -86,8 +86,8 @@ export default function SugestoesPage() {
                 >
                   <span
                     className={
-                      "flex h-9 w-9 items-center justify-center rounded-full shrink-0 " +
-                      (active ? "bg-ink text-on-primary" : "bg-surface-strong text-ink")
+                      "flex h-8 w-8 items-center justify-center rounded-full shrink-0 " +
+                      (active ? "bg-ink text-canvas" : "bg-surface-strong text-ink")
                     }
                   >
                     <Icon size={18} />
@@ -103,7 +103,7 @@ export default function SugestoesPage() {
         <div className="space-y-2">
           <label
             htmlFor="message"
-            className="block text-[11px] font-bold text-ink uppercase tracking-[0.32px] px-1"
+            className="block text-[11px] font-semibold text-ink uppercase tracking-[0.32px] px-1"
           >
             Mensagem
           </label>
@@ -128,7 +128,7 @@ export default function SugestoesPage() {
         <button
           type="submit"
           disabled={!canSubmit}
-          className="h-12 rounded-lg bg-primary text-on-primary text-base font-medium hover:bg-rausch-active disabled:bg-rausch-disabled disabled:cursor-not-allowed transition-colors"
+          className="h-12 rounded-lg bg-primary text-on-primary text-base font-medium hover:bg-rausch-active disabled:bg-rausch-disabled disabled:text-rausch-active disabled:cursor-not-allowed transition-colors"
         >
           {loading ? "Enviando..." : "Enviar sugestão"}
         </button>
