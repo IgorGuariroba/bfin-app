@@ -4,8 +4,6 @@ import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 
-const ADMIN_EMAIL = "1g0r.guari@gmail.com";
-
 export default function AdminPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -17,7 +15,7 @@ export default function AdminPage() {
 
   useEffect(() => {
     if (status === "loading") return;
-    if (session?.user?.email !== ADMIN_EMAIL) {
+    if (!session?.user?.isAdmin) {
       router.replace("/saldos");
       return;
     }
@@ -45,7 +43,7 @@ export default function AdminPage() {
     setMessage(res.ok ? "Salvo com sucesso!" : "Erro ao salvar.");
   }
 
-  if (status === "loading" || session?.user?.email !== ADMIN_EMAIL) return null;
+  if (status === "loading" || !session?.user?.isAdmin) return null;
 
   return (
     <div className="max-w-md mx-auto mt-12 p-6 space-y-6">
