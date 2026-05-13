@@ -47,8 +47,10 @@ As violações abaixo são **sempre críticas** neste repositório.
 ### Prisma
 
 - Não instanciar `new PrismaClient()` em código novo. Usar `prisma` exportado de `src/lib/prisma.ts` (singleton, evita esgotar pool de conexões em dev).
-- Migration com `DROP COLUMN`, `DROP TABLE`, `ALTER ... DROP`, ou rename de coluna existente é crítica — exige plano de rollback e idealmente migration multi-passo (add → backfill → drop em release posterior).
-- Query em loop sobre coleção (sintoma N+1) num path quente: usar `findMany({ where: { id: { in: [...] } } })` ou `include` em vez de iterar.
+- Migration **destrutiva** é crítica: `DROP COLUMN`, `DROP TABLE`, `ALTER ... DROP`, `ALTER COLUMN ... TYPE` incompatível, rename de coluna populada, ou `ALTER COLUMN ... SET NOT NULL` em tabela com linhas e sem default. Exige plano de rollback.
+- Migrations **não destrutivas não são críticas** mesmo que envolvam alteração de constraint: `CREATE INDEX` (inclusive `UNIQUE`), `CREATE TABLE`, `ADD COLUMN` nullable ou com default. Em particular, adicionar `@unique`/`UNIQUE INDEX` em coluna falha rápido e ruidosamente se houver duplicata pré-existente — não causa perda silenciosa de dados. **Não reporte como crítico.**
+- Quando uma migration toca uma tabela introduzida no mesmo PR ou em PR imediatamente anterior ainda não deployado, não há "dados existentes em produção". **Não reporte risco hipotético de perda de dados nesse cenário.**
+- Query em loop sobre coleção (sintoma N+1) é crítica apenas em **path quente**: código interno chamado dentro de outro loop, job batch processando coleção grande, ou loop sobre `findMany` resultado com `n > 50`. Webhook acionado por uma mensagem individual de usuário (1-3 itens típicos por chamada) **não é path quente** — não reporte N+1 nele.
 
 ### WhatsApp (rotas `/api/whatsapp/*`)
 
