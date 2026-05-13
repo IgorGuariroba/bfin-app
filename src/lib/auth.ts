@@ -5,6 +5,7 @@ import { PrismaAdapter } from "@auth/prisma-adapter";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { ensureSystemTags } from "@/lib/seed-system-tags";
+import { isAdmin } from "@/lib/admin";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma),
@@ -69,12 +70,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (user) {
         token.id = user.id;
       }
+      token.isAdmin = isAdmin(token.email);
       return token;
     },
     async session({ session, token }) {
       if (token.id) {
         session.user.id = token.id as string;
       }
+      session.user.isAdmin = Boolean(token.isAdmin);
       return session;
     },
   },

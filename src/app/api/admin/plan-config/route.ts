@@ -1,12 +1,11 @@
 import "server-only";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-
-const ADMIN_EMAIL = "1g0r.guari@gmail.com";
+import { isAdmin } from "@/lib/admin";
 
 async function requireAdmin() {
   const session = await auth();
-  if (session?.user?.email !== ADMIN_EMAIL) return null;
+  if (!isAdmin(session?.user?.email)) return null;
   return session;
 }
 
