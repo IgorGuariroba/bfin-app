@@ -28,6 +28,49 @@ Considere crítico:
 - Preferências de paradigma (functional vs imperativo, etc.).
 - Sugestões de bibliotecas alternativas.
 
+## Regras específicas do projeto bfin
+
+As violações abaixo são **sempre críticas** neste repositório.
+
+### Autenticação e autorização
+
+- **Comparar `session.user.email` com string literal** para checar admin é proibido. Use `session.user.isAdmin` no client/server component, ou `isAdmin(email)` de `src/lib/admin.ts` em rotas API. Comparações tipo `email === "alguem@dominio.com"` em rota administrativa são bug de segurança.
+- Toda rota em `src/app/api/admin/**` precisa chamar `auth()` e bloquear não-admin com `403`.
+- Rotas que recebem `userId`/`accountMemberId` em path ou body devem validar que o caller é dono ou membro autorizado (risco de IDOR).
+
+### Server-only e secrets
+
+- Arquivos em `src/lib` que tocam DB, secrets de env (`process.env.*` sensível) ou chamam APIs autenticadas devem importar `'server-only'` no topo.
+- Variável referenciada em client component (`"use client"`) precisa do prefixo `NEXT_PUBLIC_`. Referenciar `process.env.X` sem prefixo no client retorna `undefined` em runtime — é bug, não estilo.
+- Nunca logar secret (token, password hash, refresh_token, app_secret).
+
+### Prisma
+
+- Não instanciar `new PrismaClient()` em código novo. Usar `prisma` exportado de `src/lib/prisma.ts` (singleton, evita esgotar pool de conexões em dev).
+- Migration com `DROP COLUMN`, `DROP TABLE`, `ALTER ... DROP`, ou rename de coluna existente é crítica — exige plano de rollback e idealmente migration multi-passo (add → backfill → drop em release posterior).
+- Query em loop sobre coleção (sintoma N+1) num path quente: usar `findMany({ where: { id: { in: [...] } } })` ou `include` em vez de iterar.
+
+### WhatsApp (rotas `/api/whatsapp/*`)
+
+- Endpoint `POST /api/whatsapp/webhook` **deve** validar `X-Hub-Signature-256` (HMAC SHA256 do body bruto com `WHATSAPP_APP_SECRET`) antes de processar. Falta ou bypass da verificação = crítico.
+- Persistência de mensagem do webhook deve ser idempotente via `wamid @unique` (insert com handling de duplicata). Sem isso, retry do Meta gera mensagem duplicada na conversa.
+- Resposta do handler do webhook deve ser `200` em até alguns segundos. Trabalho pesado precisa ser enfileirado ou disparado em fire-and-forget.
+
+### LGPD / PII de Contact
+
+- Telefone (`WhatsappContact.phone`, E.164) é PII. Não expor em endpoint público sem autenticação de admin. Não logar.
+- Pedido de exclusão (intent `APAGAR`) deve apagar `WhatsappContact` em cascata (`onDelete: Cascade` no schema já garante).
+
+### TypeScript
+
+- `any` ou `as any` em código novo é crítico — escapa do typesystem inteiro e mascara bugs reais. Se o tipo é genuinamente desconhecido, use `unknown` e estreite com type guards.
+- `// @ts-ignore` / `// @ts-expect-error` sem comentário explicando o motivo é crítico.
+
+### Valores monetários
+
+- Manter `Float` consistente com schema (`Transaction.amount`, `PlanConfig.monthlyAmount`). Não converter para `number` perdendo precisão em conta sensível.
+- Formatação para usuário em `pt-BR`: `new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' })`.
+
 ## Forma do comentário
 
 - Direto e curto. Sem preâmbulo (`"Olá, notei que..."`).

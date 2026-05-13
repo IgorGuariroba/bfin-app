@@ -7,3 +7,14 @@ code_review:
     help: false
     summary: false
     code_review: true
+ignore_patterns:
+  - "prisma/migrations/**"
+  - "src/generated/**"
+  - "public/**"
+  - "bfin.html"
+  - "**/*.lock"
+  - "**/*.lockb"
+  - "package-lock.json"
+  - "tsconfig.tsbuildinfo"
+  - ".next/**"
+  - "node_modules/**"
