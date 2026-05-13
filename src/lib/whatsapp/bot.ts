@@ -138,8 +138,8 @@ async function setStatus(conversationId: string, status: string): Promise<void> 
 }
 
 async function handleDelete(conversationId: string, contactId: string, to: string): Promise<void> {
-  await sendText(to, DELETE_CONFIRMED_TEXT);
   await prisma.whatsappContact.delete({ where: { id: contactId } });
+  await sendText(to, DELETE_CONFIRMED_TEXT);
 }
 
 export type HandleResult = { deleted: boolean };
