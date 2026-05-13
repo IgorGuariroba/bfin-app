@@ -19,22 +19,37 @@ export async function POST(request: Request, ctx: { params: Promise<{ id: string
   });
   if (!conversation) return Response.json({ error: "Not found" }, { status: 404 });
 
-  const { wamid } = await sendText(conversation.contact.phone, body);
-
-  const message = await prisma.whatsappMessage.create({
+  const pending = await prisma.whatsappMessage.create({
     data: {
       conversationId: id,
       direction: "outbound",
       sender: "admin",
       body,
-      wamid: wamid ?? null,
+      wamid: null,
     },
   });
 
-  await prisma.whatsappConversation.update({
-    where: { id },
-    data: { lastMessageAt: new Date(), status: "human" },
-  });
+  let wamid: string | undefined;
+  try {
+    const result = await sendText(conversation.contact.phone, body);
+    wamid = result.wamid;
+  } catch (err) {
+    return Response.json(
+      { error: "Falha ao enviar pelo WhatsApp", messageId: pending.id },
+      { status: 502 },
+    );
+  }
+
+  const [message] = await prisma.$transaction([
+    prisma.whatsappMessage.update({
+      where: { id: pending.id },
+      data: { wamid: wamid ?? null },
+    }),
+    prisma.whatsappConversation.update({
+      where: { id },
+      data: { lastMessageAt: new Date(), status: "human" },
+    }),
+  ]);
 
   return Response.json({ message });
 }
