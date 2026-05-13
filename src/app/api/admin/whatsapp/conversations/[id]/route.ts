@@ -11,10 +11,11 @@ export async function GET(_: Request, ctx: { params: Promise<{ id: string }> }) 
     where: { id },
     include: {
       contact: { select: { id: true, phone: true, name: true, createdAt: true } },
-      messages: { orderBy: { createdAt: "asc" }, take: 500 },
+      messages: { orderBy: { createdAt: "desc" }, take: 500 },
     },
   });
 
   if (!conversation) return Response.json({ error: "Not found" }, { status: 404 });
+  conversation.messages.reverse();
   return Response.json(conversation);
 }

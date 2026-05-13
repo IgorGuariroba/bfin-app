@@ -33,11 +33,9 @@ export async function POST(request: Request, ctx: { params: Promise<{ id: string
   try {
     const result = await sendText(conversation.contact.phone, body);
     wamid = result.wamid;
-  } catch (err) {
-    return Response.json(
-      { error: "Falha ao enviar pelo WhatsApp", messageId: pending.id },
-      { status: 502 },
-    );
+  } catch {
+    await prisma.whatsappMessage.delete({ where: { id: pending.id } }).catch(() => null);
+    return Response.json({ error: "Falha ao enviar pelo WhatsApp" }, { status: 502 });
   }
 
   const [message] = await prisma.$transaction([
