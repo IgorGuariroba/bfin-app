@@ -150,6 +150,11 @@ export async function handleIncomingMessage(message: IncomingMessage): Promise<H
   const persisted = await persistInbound(conv.id, message);
   if (persisted.duplicate) return { deleted: false };
 
+  if (message.kind === "text" && message.text && isDeleteKeyword(message.text)) {
+    await handleDelete(conv.id, conv.contactId, message.from);
+    return { deleted: true };
+  }
+
   if (conv.status === "human") return { deleted: false };
 
   if (await isRateLimited(conv.id)) {
@@ -166,11 +171,6 @@ export async function handleIncomingMessage(message: IncomingMessage): Promise<H
   if (conv.messageCount === 0) {
     await sendMenu(message.from, conv.id, WELCOME_TEXT);
     return { deleted: false };
-  }
-
-  if (message.kind === "text" && message.text && isDeleteKeyword(message.text)) {
-    await handleDelete(conv.id, conv.contactId, message.from);
-    return { deleted: true };
   }
 
   let intent: IntentId | null = null;
