@@ -123,16 +123,16 @@ model PlanConfig {
 }
 
 model WhatsappContact {
-  id            String                 @id @default(cuid())
-  phone         String                 @unique
-  name          String?
-  createdAt     DateTime               @default(now())
-  conversations WhatsappConversation[]
+  id           String                @id @default(cuid())
+  phone        String                @unique
+  name         String?
+  createdAt    DateTime              @default(now())
+  conversation WhatsappConversation?
 }
 
 model WhatsappConversation {
   id            String            @id @default(cuid())
-  contactId     String
+  contactId     String            @unique
   status        String            @default("bot")
   lastMessageAt DateTime          @default(now())
   createdAt     DateTime          @default(now())
@@ -140,7 +140,6 @@ model WhatsappConversation {
   messages      WhatsappMessage[]
 
   @@index([status, lastMessageAt])
-  @@index([contactId])
 }
 
 model WhatsappMessage {

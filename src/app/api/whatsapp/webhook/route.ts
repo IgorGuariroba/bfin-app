@@ -1,7 +1,7 @@
 import "server-only";
 import { NextRequest } from "next/server";
 import { verifyMetaSignature } from "@/lib/whatsapp/signature";
-import { handleIncomingMessage, type IncomingMessage } from "@/lib/whatsapp/bot";
+import { processBatch, type IncomingMessage } from "@/lib/whatsapp/bot";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -88,23 +88,23 @@ export async function POST(request: NextRequest) {
     return new Response("ok", { status: 200 });
   }
 
-  const tasks: Promise<void>[] = [];
+  const incoming: IncomingMessage[] = [];
   for (const entry of payload.entry ?? []) {
     for (const change of entry.changes ?? []) {
       const value = change.value;
       if (!value?.messages?.length) continue;
       const profileName = value.contacts?.[0]?.profile?.name;
       for (const msg of value.messages) {
-        const parsed = parseIncoming(msg, profileName);
-        tasks.push(
-          handleIncomingMessage(parsed).catch((err) => {
-            console.error("[whatsapp webhook] erro processando mensagem", parsed.wamid, err);
-          }),
-        );
+        incoming.push(parseIncoming(msg, profileName));
       }
     }
   }
 
-  await Promise.all(tasks);
+  if (incoming.length > 0) {
+    void processBatch(incoming).catch((err) => {
+      console.error("[whatsapp webhook] erro no processBatch", err);
+    });
+  }
+
   return new Response("ok", { status: 200 });
 }

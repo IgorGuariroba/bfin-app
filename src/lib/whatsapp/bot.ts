@@ -42,34 +42,30 @@ async function upsertContactAndConversation(
     create: { phone, name: profileName ?? null },
   });
 
-  const existing = await prisma.whatsappConversation.findFirst({
+  const conversation = await prisma.whatsappConversation.upsert({
     where: { contactId: contact.id },
-    orderBy: { createdAt: "desc" },
+    update: {},
+    create: { contactId: contact.id, status: "bot" },
   });
 
-  if (existing) {
-    const reopened =
-      existing.status === "closed"
-        ? await prisma.whatsappConversation.update({
-            where: { id: existing.id },
-            data: { status: "bot", lastMessageAt: new Date() },
-          })
-        : existing;
-    const messageCount = await prisma.whatsappMessage.count({
-      where: { conversationId: reopened.id },
+  if (conversation.status === "closed") {
+    await prisma.whatsappConversation.update({
+      where: { id: conversation.id },
+      data: { status: "bot", lastMessageAt: new Date() },
     });
-    return {
-      id: reopened.id,
-      contactId: contact.id,
-      status: reopened.status,
-      messageCount,
-    };
+    conversation.status = "bot";
   }
 
-  const created = await prisma.whatsappConversation.create({
-    data: { contactId: contact.id, status: "bot" },
+  const messageCount = await prisma.whatsappMessage.count({
+    where: { conversationId: conversation.id },
   });
-  return { id: created.id, contactId: contact.id, status: "bot", messageCount: 0 };
+
+  return {
+    id: conversation.id,
+    contactId: contact.id,
+    status: conversation.status,
+    messageCount,
+  };
 }
 
 async function persistInbound(
@@ -146,13 +142,15 @@ async function handleDelete(conversationId: string, contactId: string, to: strin
   await prisma.whatsappContact.delete({ where: { id: contactId } });
 }
 
-export async function handleIncomingMessage(message: IncomingMessage): Promise<void> {
+export type HandleResult = { deleted: boolean };
+
+export async function handleIncomingMessage(message: IncomingMessage): Promise<HandleResult> {
   const conv = await upsertContactAndConversation(message.from, message.profileName);
 
   const persisted = await persistInbound(conv.id, message);
-  if (persisted.duplicate) return;
+  if (persisted.duplicate) return { deleted: false };
 
-  if (conv.status === "human") return;
+  if (conv.status === "human") return { deleted: false };
 
   if (await isRateLimited(conv.id)) {
     if (conv.status !== "rate_limited") {
@@ -160,19 +158,19 @@ export async function handleIncomingMessage(message: IncomingMessage): Promise<v
       const { wamid } = await sendText(message.from, RATE_LIMITED_TEXT);
       await persistOutbound(conv.id, RATE_LIMITED_TEXT, "bot", wamid);
     }
-    return;
+    return { deleted: false };
   }
 
-  if (conv.status === "waiting_human") return;
+  if (conv.status === "waiting_human") return { deleted: false };
 
   if (conv.messageCount === 0) {
     await sendMenu(message.from, conv.id, WELCOME_TEXT);
-    return;
+    return { deleted: false };
   }
 
   if (message.kind === "text" && message.text && isDeleteKeyword(message.text)) {
     await handleDelete(conv.id, conv.contactId, message.from);
-    return;
+    return { deleted: true };
   }
 
   let intent: IntentId | null = null;
@@ -186,11 +184,39 @@ export async function handleIncomingMessage(message: IncomingMessage): Promise<v
     const { wamid } = await sendText(message.from, FALLBACK_TEXT);
     await persistOutbound(conv.id, FALLBACK_TEXT, "bot", wamid);
     await setStatus(conv.id, "waiting_human");
-    return;
+    return { deleted: false };
   }
 
   await respondIntent(message.from, conv.id, intent);
   if (isHandoffIntent(intent)) {
     await setStatus(conv.id, "waiting_human");
   }
+  return { deleted: false };
+}
+
+export async function processBatch(messages: IncomingMessage[]): Promise<void> {
+  const byPhone = new Map<string, IncomingMessage[]>();
+  for (const m of messages) {
+    const list = byPhone.get(m.from) ?? [];
+    list.push(m);
+    byPhone.set(m.from, list);
+  }
+
+  await Promise.all(
+    Array.from(byPhone.values()).map(async (group) => {
+      let deleted = false;
+      for (const msg of group) {
+        if (deleted) {
+          console.warn("[whatsapp bot] ignorando mensagem pós-APAGAR no mesmo lote", msg.wamid);
+          continue;
+        }
+        try {
+          const result = await handleIncomingMessage(msg);
+          if (result.deleted) deleted = true;
+        } catch (err) {
+          console.error("[whatsapp bot] erro processando", msg.wamid, err);
+        }
+      }
+    }),
+  );
 }
