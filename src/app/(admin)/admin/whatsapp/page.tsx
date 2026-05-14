@@ -1,11 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Trash2, Send } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
-import { AdminBackLink } from "@/components/admin/admin-back-link";
+import { Card } from "@/components/ui/card";
+import { ConfirmDialog } from "@/components/admin/confirm-dialog";
 
 type ConversationListItem = {
   id: string;
@@ -64,7 +66,6 @@ export default function AdminWhatsappPage() {
   const [filter, setFilter] = useState<string>("");
   const [reply, setReply] = useState("");
   const [sending, setSending] = useState(false);
-  const [error, setError] = useState("");
 
   const fetchList = useCallback(async () => {
     const qs = filter ? `?status=${filter}` : "";
@@ -104,7 +105,6 @@ export default function AdminWhatsappPage() {
     e.preventDefault();
     if (!selectedId || !reply.trim()) return;
     setSending(true);
-    setError("");
     try {
       const res = await fetch(`/api/admin/whatsapp/conversations/${selectedId}/reply`, {
         method: "POST",
@@ -113,7 +113,7 @@ export default function AdminWhatsappPage() {
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        setError(data?.error ?? "Erro ao enviar");
+        toast.error(data?.error ?? "Erro ao enviar");
       } else {
         setReply("");
         fetchDetail(selectedId);
@@ -126,14 +126,13 @@ export default function AdminWhatsappPage() {
 
   async function handleStatus(newStatus: string) {
     if (!selectedId) return;
-    setError("");
     const res = await fetch(`/api/admin/whatsapp/conversations/${selectedId}/status`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status: newStatus }),
     });
     if (!res.ok) {
-      setError("Erro ao atualizar status");
+      toast.error("Erro ao atualizar status");
     } else {
       fetchDetail(selectedId);
       fetchList();
@@ -142,123 +141,125 @@ export default function AdminWhatsappPage() {
 
   async function handleDeleteContact() {
     if (!detail?.contact.id) return;
-    if (!confirm(`Apagar contato ${detail.contact.phone} e todas as conversas? Ação irreversível (LGPD).`)) return;
     const res = await fetch(`/api/admin/whatsapp/contacts/${detail.contact.id}`, { method: "DELETE" });
     if (res.ok) {
+      toast.success("Contato apagado");
       setSelectedId(null);
       setDetail(null);
       fetchList();
     } else {
-      setError("Erro ao apagar contato");
+      toast.error("Erro ao apagar contato");
     }
   }
 
   return (
-    <div className="mx-auto max-w-6xl px-4 pt-6 pb-24 md:px-6">
-      <AdminBackLink />
-
-      <div className="mb-6">
+    <div className="mx-auto max-w-7xl space-y-6">
+      <div>
         <h1 className="text-[24px] font-semibold leading-tight tracking-[-0.2px] text-ink">WhatsApp</h1>
-        <p className="mt-1 text-[14px] text-muted">Conversas e atendimento.</p>
+        <p className="mt-1 text-[14px] text-muted">Atendimento de conversas.</p>
       </div>
 
-      <div className="flex h-[calc(100vh-12rem)] flex-col gap-3 md:flex-row">
-        <Card className="flex w-full flex-col rounded-[14px] py-0 md:w-80 md:shrink-0">
-          <CardContent className="flex h-full flex-col gap-2 p-3">
-            <div className="flex flex-wrap gap-1 text-xs">
-              {(["", "waiting_human", "bot", "human", "closed", "rate_limited"] as const).map((s) => {
-                const label = s === "" ? `Todas (${conversations.length})` : `${STATUS_LABEL[s]} (${counts[s] ?? 0})`;
-                return (
-                  <Button
-                    key={s || "all"}
-                    type="button"
-                    size="sm"
-                    variant={filter === s ? "default" : "outline"}
-                    onClick={() => setFilter(s)}
-                    className="h-7 rounded-full px-3 text-xs"
-                  >
-                    {label}
-                  </Button>
-                );
-              })}
-            </div>
+      <div className="flex flex-wrap gap-2">
+        {(["", "waiting_human", "bot", "human", "closed", "rate_limited"] as const).map((s) => {
+          const label = s === "" ? `Todas (${conversations.length})` : `${STATUS_LABEL[s]} (${counts[s] ?? 0})`;
+          return (
+            <Button
+              key={s || "all"}
+              type="button"
+              size="sm"
+              variant={filter === s ? "default" : "outline"}
+              onClick={() => setFilter(s)}
+            >
+              {label}
+            </Button>
+          );
+        })}
+      </div>
 
-            <ul className="flex-1 overflow-y-auto">
-              {conversations.length === 0 && (
-                <li className="p-3 text-sm text-muted">Nenhuma conversa.</li>
-              )}
-              {conversations.map((c) => (
-                <li key={c.id}>
-                  <button
-                    type="button"
-                    onClick={() => setSelectedId(c.id)}
-                    className={`w-full rounded-md border-b border-hairline-soft p-2 text-left transition-colors ${
-                      selectedId === c.id ? "bg-surface-strong" : "hover:bg-surface-soft"
-                    }`}
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="truncate text-sm font-medium text-ink">{c.contact.name ?? c.contact.phone}</span>
-                      <StatusBadge status={c.status} />
-                    </div>
-                    <div className="truncate text-xs text-muted">
-                      {c.lastMessage ? c.lastMessage.body : "—"}
-                    </div>
-                    <div className="text-[10px] text-muted">{fmtTime(c.lastMessageAt)}</div>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </CardContent>
+      <div className="grid h-[calc(100vh-14rem)] gap-4 lg:grid-cols-[320px_1fr]">
+        <Card className="rounded-[14px] overflow-hidden py-0">
+          <ul className="h-full overflow-y-auto">
+            {conversations.length === 0 && (
+              <li className="p-6 text-center text-sm text-muted">Nenhuma conversa.</li>
+            )}
+            {conversations.map((c) => (
+              <li key={c.id}>
+                <button
+                  type="button"
+                  onClick={() => setSelectedId(c.id)}
+                  className={`w-full border-b border-hairline-soft p-3 text-left transition-colors ${
+                    selectedId === c.id ? "bg-surface-strong" : "hover:bg-surface-soft"
+                  }`}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="truncate text-sm font-medium text-ink">{c.contact.name ?? c.contact.phone}</span>
+                    <StatusBadge status={c.status} />
+                  </div>
+                  <div className="mt-1 truncate text-xs text-muted">
+                    {c.lastMessage ? c.lastMessage.body : "—"}
+                  </div>
+                  <div className="mt-0.5 text-[10px] text-muted">{fmtTime(c.lastMessageAt)}</div>
+                </button>
+              </li>
+            ))}
+          </ul>
         </Card>
 
-        <Card className="flex flex-1 flex-col overflow-hidden rounded-[14px] py-0">
-          <CardContent className="flex h-full flex-col p-3">
-            {!detail ? (
-              <div className="flex flex-1 items-center justify-center text-sm text-muted">
-                Selecione uma conversa.
-              </div>
-            ) : (
-              <>
-                <header className="flex items-center justify-between gap-2 border-b border-hairline pb-2">
-                  <div>
-                    <div className="font-medium text-ink">{detail.contact.name ?? detail.contact.phone}</div>
-                    <div className="text-xs text-muted">{detail.contact.phone}</div>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <StatusBadge status={detail.status} />
-                    {detail.status !== "closed" && (
-                      <Button size="sm" variant="outline" onClick={() => handleStatus("closed")}>Encerrar</Button>
-                    )}
-                    {detail.status === "closed" && (
-                      <Button size="sm" variant="outline" onClick={() => handleStatus("bot")}>Reabrir</Button>
-                    )}
-                    {detail.status === "rate_limited" && (
-                      <Button size="sm" variant="outline" onClick={() => handleStatus("bot")}>Liberar bot</Button>
-                    )}
-                    <Button size="sm" variant="destructive" onClick={handleDeleteContact}>Apagar (LGPD)</Button>
-                  </div>
-                </header>
+        <Card className="flex flex-col overflow-hidden rounded-[14px] py-0">
+          {!detail ? (
+            <div className="flex flex-1 items-center justify-center text-sm text-muted">
+              Selecione uma conversa.
+            </div>
+          ) : (
+            <>
+              <header className="flex flex-wrap items-center justify-between gap-2 border-b border-hairline p-4">
+                <div>
+                  <div className="font-medium text-ink">{detail.contact.name ?? detail.contact.phone}</div>
+                  <div className="text-xs text-muted">{detail.contact.phone}</div>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <StatusBadge status={detail.status} />
+                  {detail.status !== "closed" && (
+                    <Button size="sm" variant="outline" onClick={() => handleStatus("closed")}>Encerrar</Button>
+                  )}
+                  {detail.status === "closed" && (
+                    <Button size="sm" variant="outline" onClick={() => handleStatus("bot")}>Reabrir</Button>
+                  )}
+                  {detail.status === "rate_limited" && (
+                    <Button size="sm" variant="outline" onClick={() => handleStatus("bot")}>Liberar bot</Button>
+                  )}
+                  <ConfirmDialog
+                    trigger={
+                      <Button size="sm" variant="destructive">
+                        <Trash2 size={14} />
+                        Apagar
+                      </Button>
+                    }
+                    title="Apagar contato (LGPD)"
+                    description={`Apagar contato ${detail.contact.phone} e todas as conversas? Ação irreversível.`}
+                    confirmLabel="Apagar definitivamente"
+                    onConfirm={handleDeleteContact}
+                  />
+                </div>
+              </header>
 
-                <MessageList messages={detail.messages} />
+              <MessageList messages={detail.messages} />
 
-                <form onSubmit={handleReply} className="flex flex-col gap-2 border-t border-hairline pt-2">
-                  {error && <div className="text-xs text-destructive">{error}</div>}
-                  <div className="flex gap-2">
-                    <Input
-                      value={reply}
-                      onChange={(e) => setReply(e.target.value)}
-                      placeholder="Responder como humano…"
-                      maxLength={4096}
-                      disabled={sending}
-                    />
-                    <Button type="submit" disabled={sending || !reply.trim()}>
-                      {sending ? "Enviando…" : "Enviar"}
-                    </Button>
-                  </div>
-                </form>
-              </>
-            )}
-          </CardContent>
+              <form onSubmit={handleReply} className="flex gap-2 border-t border-hairline p-3">
+                <Input
+                  value={reply}
+                  onChange={(e) => setReply(e.target.value)}
+                  placeholder="Responder como humano…"
+                  maxLength={4096}
+                  disabled={sending}
+                />
+                <Button type="submit" disabled={sending || !reply.trim()}>
+                  <Send size={14} />
+                  {sending ? "Enviando…" : "Enviar"}
+                </Button>
+              </form>
+            </>
+          )}
         </Card>
       </div>
     </div>
@@ -272,7 +273,7 @@ function MessageList({ messages }: { messages: Message[] }) {
   }, [messages.length]);
 
   return (
-    <div ref={ref} className="flex-1 space-y-2 overflow-y-auto py-2">
+    <div ref={ref} className="flex-1 space-y-2 overflow-y-auto p-4">
       {messages.map((m) => {
         const isOutbound = m.direction === "outbound";
         const senderLabel = m.sender === "admin" ? "Você" : m.sender === "bot" ? "Bot" : "Contato";
