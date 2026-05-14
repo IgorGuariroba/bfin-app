@@ -63,7 +63,8 @@ const FAQ = [
 export default async function PrecosPage() {
   const { monthly, annual } = await getPrices();
   const annualMonthly = annual / 12;
-  const savings = Math.round(((monthly - annualMonthly) / monthly) * 100);
+  const savings =
+    monthly > 0 ? Math.round(((monthly - annualMonthly) / monthly) * 100) : 0;
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-12">
