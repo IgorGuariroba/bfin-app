@@ -1,5 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
+import { LandingFooter } from "@/components/landing/landing-footer";
+import { LandingHeader } from "@/components/landing/landing-header";
 import { WhatsAppFloatingButton } from "@/components/landing/whatsapp-floating-button";
 import {
   Wallet,
@@ -79,42 +81,7 @@ const faqs = [
 export function LandingPage() {
   return (
     <div className="min-h-screen bg-canvas pb-20 text-ink md:pb-0">
-      <header className="sticky top-0 z-40 border-b border-hairline bg-canvas">
-        <div className="mx-auto flex h-20 max-w-[1280px] items-center justify-between px-6">
-          <Link href="/" className="flex items-center gap-2">
-            <Image
-              src="/icon.png"
-              alt="bfin"
-              width={32}
-              height={32}
-              className="rounded"
-            />
-            <span className="text-[22px] font-bold tracking-tight text-rausch">
-              bfin
-            </span>
-          </Link>
-          <nav className="hidden items-center gap-8 md:flex">
-            <Link
-              href="#features"
-              className="text-base font-semibold text-ink hover:underline underline-offset-4"
-            >
-              Recursos
-            </Link>
-            <Link
-              href="#faq"
-              className="text-base font-semibold text-ink hover:underline underline-offset-4"
-            >
-              FAQ
-            </Link>
-          </nav>
-          <Link
-            href="/login"
-            className="inline-flex h-12 items-center justify-center rounded-lg bg-rausch px-6 text-base font-medium text-white transition-colors hover:bg-rausch-active"
-          >
-            Entrar
-          </Link>
-        </div>
-      </header>
+      <LandingHeader />
 
       <main>
         <section className="border-b border-hairline-soft">
@@ -342,33 +309,7 @@ export function LandingPage() {
         </section>
       </main>
 
-      <footer className="border-t border-hairline bg-canvas">
-        <div className="mx-auto max-w-[1280px] px-6 py-12">
-          <div className="flex flex-col items-center justify-between gap-6 text-[13px] text-muted md:flex-row">
-            <div className="flex items-center gap-2">
-              <Image
-                src="/icon.png"
-                alt="bfin"
-                width={20}
-                height={20}
-                className="rounded"
-              />
-              <span>© {new Date().getFullYear()} bfin · Beta no Brasil</span>
-            </div>
-            <nav className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
-              <Link href="#features" className="hover:underline">
-                Recursos
-              </Link>
-              <Link href="#faq" className="hover:underline">
-                FAQ
-              </Link>
-              <Link href="/login" className="hover:underline">
-                Entrar
-              </Link>
-            </nav>
-          </div>
-        </div>
-      </footer>
+      <LandingFooter />
 
       <div className="fixed inset-x-0 bottom-0 z-50 border-t border-hairline bg-canvas/95 px-4 py-3 backdrop-blur md:hidden">
         <Link
