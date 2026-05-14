@@ -42,7 +42,7 @@ export default async function AdminDashboardPage() {
     }),
   ]);
 
-  const mrr = planConfig ? proUsers * Number(planConfig.monthlyAmount) : 0;
+  const mrr = planConfig ? proUsers * planConfig.monthlyAmount : 0;
 
   return (
     <div className="mx-auto max-w-7xl space-y-6">
