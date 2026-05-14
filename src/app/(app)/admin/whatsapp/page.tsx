@@ -1,11 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import { AdminBackLink } from "@/components/admin/admin-back-link";
 
 type ConversationListItem = {
   id: string;
@@ -58,9 +58,6 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 export default function AdminWhatsappPage() {
-  const { data: session, status: sessionStatus } = useSession();
-  const router = useRouter();
-
   const [conversations, setConversations] = useState<ConversationListItem[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [detail, setDetail] = useState<ConversationDetail | null>(null);
@@ -85,18 +82,10 @@ export default function AdminWhatsappPage() {
   }, []);
 
   useEffect(() => {
-    if (sessionStatus === "loading") return;
-    if (!session?.user?.isAdmin) {
-      router.replace("/saldos");
-    }
-  }, [session, sessionStatus, router]);
-
-  useEffect(() => {
-    if (!session?.user?.isAdmin) return;
     fetchList();
     const intv = setInterval(fetchList, POLL_MS);
     return () => clearInterval(intv);
-  }, [session, fetchList]);
+  }, [fetchList]);
 
   useEffect(() => {
     if (!selectedId) return;
@@ -164,99 +153,114 @@ export default function AdminWhatsappPage() {
     }
   }
 
-  if (sessionStatus === "loading" || !session?.user?.isAdmin) return null;
-
   return (
-    <div className="flex h-[calc(100vh-5rem)] flex-col gap-3 p-4 md:flex-row">
-      <aside className="flex w-full flex-col gap-2 border rounded-lg p-3 md:w-80 md:shrink-0">
-        <h1 className="text-lg font-semibold">WhatsApp</h1>
+    <div className="mx-auto max-w-6xl px-4 pt-6 pb-24 md:px-6">
+      <AdminBackLink />
 
-        <div className="flex flex-wrap gap-1 text-xs">
-          {(["", "waiting_human", "bot", "human", "closed", "rate_limited"] as const).map((s) => {
-            const label = s === "" ? `Todas (${conversations.length})` : `${STATUS_LABEL[s]} (${counts[s] ?? 0})`;
-            return (
-              <button
-                key={s || "all"}
-                onClick={() => setFilter(s)}
-                className={`rounded-full px-2 py-1 ${filter === s ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}
-              >
-                {label}
-              </button>
-            );
-          })}
-        </div>
+      <div className="mb-6">
+        <h1 className="text-[24px] font-semibold leading-tight tracking-[-0.2px] text-ink">WhatsApp</h1>
+        <p className="mt-1 text-[14px] text-muted">Conversas e atendimento.</p>
+      </div>
 
-        <ul className="flex-1 overflow-y-auto">
-          {conversations.length === 0 && (
-            <li className="text-sm text-muted-foreground p-3">Nenhuma conversa.</li>
-          )}
-          {conversations.map((c) => (
-            <li key={c.id}>
-              <button
-                onClick={() => setSelectedId(c.id)}
-                className={`w-full text-left p-2 rounded-md border-b ${selectedId === c.id ? "bg-muted" : "hover:bg-muted/50"}`}
-              >
-                <div className="flex items-center justify-between gap-2">
-                  <span className="font-medium text-sm truncate">{c.contact.name ?? c.contact.phone}</span>
-                  <StatusBadge status={c.status} />
-                </div>
-                <div className="text-xs text-muted-foreground truncate">
-                  {c.lastMessage ? c.lastMessage.body : "—"}
-                </div>
-                <div className="text-[10px] text-muted-foreground">{fmtTime(c.lastMessageAt)}</div>
-              </button>
-            </li>
-          ))}
-        </ul>
-      </aside>
+      <div className="flex h-[calc(100vh-12rem)] flex-col gap-3 md:flex-row">
+        <Card className="flex w-full flex-col rounded-[14px] py-0 md:w-80 md:shrink-0">
+          <CardContent className="flex h-full flex-col gap-2 p-3">
+            <div className="flex flex-wrap gap-1 text-xs">
+              {(["", "waiting_human", "bot", "human", "closed", "rate_limited"] as const).map((s) => {
+                const label = s === "" ? `Todas (${conversations.length})` : `${STATUS_LABEL[s]} (${counts[s] ?? 0})`;
+                return (
+                  <Button
+                    key={s || "all"}
+                    type="button"
+                    size="sm"
+                    variant={filter === s ? "default" : "outline"}
+                    onClick={() => setFilter(s)}
+                    className="h-7 rounded-full px-3 text-xs"
+                  >
+                    {label}
+                  </Button>
+                );
+              })}
+            </div>
 
-      <section className="flex flex-1 flex-col border rounded-lg p-3 overflow-hidden">
-        {!detail ? (
-          <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
-            Selecione uma conversa.
-          </div>
-        ) : (
-          <>
-            <header className="flex items-center justify-between gap-2 pb-2 border-b">
-              <div>
-                <div className="font-medium">{detail.contact.name ?? detail.contact.phone}</div>
-                <div className="text-xs text-muted-foreground">{detail.contact.phone}</div>
+            <ul className="flex-1 overflow-y-auto">
+              {conversations.length === 0 && (
+                <li className="p-3 text-sm text-muted">Nenhuma conversa.</li>
+              )}
+              {conversations.map((c) => (
+                <li key={c.id}>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedId(c.id)}
+                    className={`w-full rounded-md border-b border-hairline-soft p-2 text-left transition-colors ${
+                      selectedId === c.id ? "bg-surface-strong" : "hover:bg-surface-soft"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="truncate text-sm font-medium text-ink">{c.contact.name ?? c.contact.phone}</span>
+                      <StatusBadge status={c.status} />
+                    </div>
+                    <div className="truncate text-xs text-muted">
+                      {c.lastMessage ? c.lastMessage.body : "—"}
+                    </div>
+                    <div className="text-[10px] text-muted">{fmtTime(c.lastMessageAt)}</div>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
+
+        <Card className="flex flex-1 flex-col overflow-hidden rounded-[14px] py-0">
+          <CardContent className="flex h-full flex-col p-3">
+            {!detail ? (
+              <div className="flex flex-1 items-center justify-center text-sm text-muted">
+                Selecione uma conversa.
               </div>
-              <div className="flex items-center gap-2">
-                <StatusBadge status={detail.status} />
-                {detail.status !== "closed" && (
-                  <Button size="sm" variant="outline" onClick={() => handleStatus("closed")}>Encerrar</Button>
-                )}
-                {detail.status === "closed" && (
-                  <Button size="sm" variant="outline" onClick={() => handleStatus("bot")}>Reabrir</Button>
-                )}
-                {detail.status === "rate_limited" && (
-                  <Button size="sm" variant="outline" onClick={() => handleStatus("bot")}>Liberar bot</Button>
-                )}
-                <Button size="sm" variant="destructive" onClick={handleDeleteContact}>Apagar (LGPD)</Button>
-              </div>
-            </header>
+            ) : (
+              <>
+                <header className="flex items-center justify-between gap-2 border-b border-hairline pb-2">
+                  <div>
+                    <div className="font-medium text-ink">{detail.contact.name ?? detail.contact.phone}</div>
+                    <div className="text-xs text-muted">{detail.contact.phone}</div>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <StatusBadge status={detail.status} />
+                    {detail.status !== "closed" && (
+                      <Button size="sm" variant="outline" onClick={() => handleStatus("closed")}>Encerrar</Button>
+                    )}
+                    {detail.status === "closed" && (
+                      <Button size="sm" variant="outline" onClick={() => handleStatus("bot")}>Reabrir</Button>
+                    )}
+                    {detail.status === "rate_limited" && (
+                      <Button size="sm" variant="outline" onClick={() => handleStatus("bot")}>Liberar bot</Button>
+                    )}
+                    <Button size="sm" variant="destructive" onClick={handleDeleteContact}>Apagar (LGPD)</Button>
+                  </div>
+                </header>
 
-            <MessageList messages={detail.messages} />
+                <MessageList messages={detail.messages} />
 
-            <form onSubmit={handleReply} className="flex flex-col gap-2 pt-2 border-t">
-              {error && <div className="text-xs text-destructive">{error}</div>}
-              <div className="flex gap-2">
-                <Input
-                  value={reply}
-                  onChange={(e) => setReply(e.target.value)}
-                  placeholder="Responder como humano…"
-                  maxLength={4096}
-                  disabled={sending}
-                />
-                <Button type="submit" disabled={sending || !reply.trim()}>
-                  {sending ? "Enviando…" : "Enviar"}
-                </Button>
-              </div>
-            </form>
-          </>
-        )}
-      </section>
+                <form onSubmit={handleReply} className="flex flex-col gap-2 border-t border-hairline pt-2">
+                  {error && <div className="text-xs text-destructive">{error}</div>}
+                  <div className="flex gap-2">
+                    <Input
+                      value={reply}
+                      onChange={(e) => setReply(e.target.value)}
+                      placeholder="Responder como humano…"
+                      maxLength={4096}
+                      disabled={sending}
+                    />
+                    <Button type="submit" disabled={sending || !reply.trim()}>
+                      {sending ? "Enviando…" : "Enviar"}
+                    </Button>
+                  </div>
+                </form>
+              </>
+            )}
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
@@ -268,21 +272,25 @@ function MessageList({ messages }: { messages: Message[] }) {
   }, [messages.length]);
 
   return (
-    <div ref={ref} className="flex-1 overflow-y-auto py-2 space-y-2">
+    <div ref={ref} className="flex-1 space-y-2 overflow-y-auto py-2">
       {messages.map((m) => {
         const isOutbound = m.direction === "outbound";
         const senderLabel = m.sender === "admin" ? "Você" : m.sender === "bot" ? "Bot" : "Contato";
         return (
           <div key={m.id} className={`flex ${isOutbound ? "justify-end" : "justify-start"}`}>
-            <div className={`max-w-[75%] rounded-lg px-3 py-2 text-sm ${isOutbound ? "bg-primary text-primary-foreground" : "bg-muted"}`}>
-              <div className="text-[10px] opacity-70 mb-0.5">{senderLabel} · {fmtTime(m.createdAt)}</div>
+            <div
+              className={`max-w-[75%] rounded-lg px-3 py-2 text-sm ${
+                isOutbound ? "bg-primary text-primary-foreground" : "bg-surface-strong text-ink"
+              }`}
+            >
+              <div className="mb-0.5 text-[10px] opacity-70">{senderLabel} · {fmtTime(m.createdAt)}</div>
               <div className="whitespace-pre-wrap break-words">{m.body}</div>
             </div>
           </div>
         );
       })}
       {messages.length === 0 && (
-        <div className="text-center text-xs text-muted-foreground">Sem mensagens ainda.</div>
+        <div className="text-center text-xs text-muted">Sem mensagens ainda.</div>
       )}
     </div>
   );

@@ -3,6 +3,8 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireBlogAdmin } from "@/lib/blog-admin";
 import { CommentsModeration } from "@/components/blog/comments-moderation";
+import { Button } from "@/components/ui/button";
+import { AdminBackLink } from "@/components/admin/admin-back-link";
 
 export default async function AdminCommentsPage({
   searchParams,
@@ -22,24 +24,27 @@ export default async function AdminCommentsPage({
     },
   });
 
-  return (
-    <div className="mx-auto max-w-4xl p-6 md:p-10">
-      <Link href="/admin/blog" className="text-sm text-body-text hover:text-ink">
-        ← Voltar
-      </Link>
-      <h1 className="mt-3 mb-8 text-[28px] font-bold tracking-tight text-ink">Comentários</h1>
+  const tabs = [
+    { value: "pending", label: "Pendentes" },
+    { value: "approved", label: "Aprovados" },
+    { value: "rejected", label: "Rejeitados" },
+  ] as const;
 
-      <nav className="mb-8 flex flex-wrap gap-2 text-sm">
-        {(["pending", "approved", "rejected"] as const).map((s) => (
-          <Link
-            key={s}
-            href={`/admin/blog/comentarios?status=${s}`}
-            className={`inline-flex h-9 items-center rounded-full border px-4 font-medium transition-colors ${
-              filter === s ? "border-ink bg-ink text-canvas" : "border-hairline text-ink hover:bg-surface-soft"
-            }`}
+  return (
+    <div className="mx-auto max-w-4xl px-4 pt-6 pb-24 md:px-6">
+      <AdminBackLink href="/admin/blog" />
+      <h1 className="mb-6 text-[24px] font-semibold leading-tight tracking-[-0.2px] text-ink">Comentários</h1>
+
+      <nav className="mb-6 flex flex-wrap gap-2">
+        {tabs.map((t) => (
+          <Button
+            key={t.value}
+            asChild
+            size="sm"
+            variant={filter === t.value ? "default" : "outline"}
           >
-            {s === "pending" ? "Pendentes" : s === "approved" ? "Aprovados" : "Rejeitados"}
-          </Link>
+            <Link href={`/admin/blog/comentarios?status=${t.value}`}>{t.label}</Link>
+          </Button>
         ))}
       </nav>
 

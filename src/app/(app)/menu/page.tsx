@@ -1,7 +1,7 @@
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { User, CalendarClock, Settings, Lightbulb, HelpCircle, ChevronRight, Zap } from "lucide-react";
+import { User, CalendarClock, Settings, Lightbulb, HelpCircle, ChevronRight, Zap, Shield } from "lucide-react";
 import { LogoutButton } from "./logout-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -53,6 +53,23 @@ export default async function MenuPage() {
 
       {/* Menu items */}
       <div className="flex flex-col gap-3 mb-8">
+        {user.isAdmin && (
+          <Card className="rounded-[14px] py-0 border-rausch-active/30">
+            <CardContent className="p-0">
+              <Link
+                href="/admin"
+                className="flex items-center gap-3 p-4 active:scale-95 transition-transform"
+              >
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-rausch-active text-on-primary shrink-0">
+                  <Shield size={20} />
+                </div>
+                <span className="flex-1 text-[16px] font-semibold leading-[1.25] text-ink">Painel admin</span>
+                <ChevronRight size={20} className="text-muted" />
+              </Link>
+            </CardContent>
+          </Card>
+        )}
+
         {plan === "free" && (
           <Button
             variant="default"
