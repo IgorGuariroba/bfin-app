@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Check } from "lucide-react";
 import { prisma } from "@/lib/prisma";
+import { PLAN_PRICES } from "@/lib/mercadopago";
 import { Button } from "@/components/ui/button";
 
 export const metadata: Metadata = {
@@ -17,16 +18,18 @@ export const metadata: Metadata = {
   },
 };
 
-const fmt = (v: number) =>
-  v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+const currencyFormatter = new Intl.NumberFormat("pt-BR", {
+  style: "currency",
+  currency: "BRL",
+});
+const fmt = (v: number) => currencyFormatter.format(v);
 
 async function getPrices() {
-  const config = await prisma.planConfig.upsert({
-    where: { id: "default" },
-    update: {},
-    create: { id: "default", monthlyAmount: 14.9, annualAmount: 119.9 },
-  });
-  return { monthly: config.monthlyAmount, annual: config.annualAmount };
+  const config = await prisma.planConfig.findUnique({ where: { id: "default" } });
+  return {
+    monthly: config?.monthlyAmount ?? PLAN_PRICES.monthly.amount,
+    annual: config?.annualAmount ?? PLAN_PRICES.annual.amount,
+  };
 }
 
 const FREE_FEATURES = [
