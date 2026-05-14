@@ -3,6 +3,8 @@ import { SITE_URL } from "@/lib/site-url";
 import { prisma } from "@/lib/prisma";
 import { POST_CATEGORIES, categorySlug } from "@/lib/blog";
 
+export const dynamic = "force-dynamic";
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
 
