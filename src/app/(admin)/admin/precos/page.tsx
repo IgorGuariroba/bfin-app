@@ -20,8 +20,9 @@ export default function AdminPrecosPage() {
     fetch("/api/admin/plan-config")
       .then((r) => r.json())
       .then((d) => {
-        setMonthly(String(d.monthlyAmount));
-        setAnnual(String(d.annualAmount));
+        if (!d) return;
+        setMonthly(d.monthlyAmount != null ? String(d.monthlyAmount) : "");
+        setAnnual(d.annualAmount != null ? String(d.annualAmount) : "");
         if (d.updatedAt) setUpdatedAt(d.updatedAt);
       })
       .catch(() => toast.error("Erro ao carregar preços"))
