@@ -47,6 +47,10 @@ export default function AdminPage() {
 
   return (
     <div className="max-w-md mx-auto mt-12 p-6 space-y-6">
+      <nav className="flex gap-2 text-sm">
+        <a href="/admin/blog" className="rounded-md border border-hairline px-3 py-2">Blog</a>
+        <a href="/admin/whatsapp" className="rounded-md border border-hairline px-3 py-2">WhatsApp</a>
+      </nav>
       <h1 className="text-2xl font-bold">Admin — Preços do plano Pro</h1>
       <form onSubmit={handleSave} className="space-y-4">
         <div className="space-y-1">

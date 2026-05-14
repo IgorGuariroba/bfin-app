@@ -1,0 +1,120 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+import { prisma } from "@/lib/prisma";
+import { LandingHeader } from "@/components/landing/landing-header";
+import { LandingFooter } from "@/components/landing/landing-footer";
+import { POST_CATEGORIES, categorySlug, postExcerpt, readingMinutes } from "@/lib/blog";
+
+export const metadata: Metadata = {
+  title: "Blog · bfin",
+  description: "Educação financeira, dicas práticas, novidades do produto e leituras de mercado.",
+  alternates: { canonical: "/blog" },
+  openGraph: {
+    title: "Blog · bfin",
+    description: "Educação financeira, dicas práticas, novidades do produto e leituras de mercado.",
+    url: "/blog",
+  },
+};
+
+const dateFmt = new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "short", year: "numeric" });
+
+export default async function BlogIndexPage() {
+  const posts = await prisma.post.findMany({
+    where: { status: "published" },
+    orderBy: { publishedAt: "desc" },
+    select: {
+      id: true,
+      slug: true,
+      title: true,
+      excerpt: true,
+      content: true,
+      coverImageUrl: true,
+      category: true,
+      publishedAt: true,
+      author: { select: { name: true } },
+    },
+  });
+
+  return (
+    <div className="min-h-screen bg-canvas text-ink">
+      <LandingHeader />
+      <main>
+        <section className="border-b border-hairline-soft">
+          <div className="mx-auto max-w-3xl px-6 py-16 md:py-24 text-center">
+            <span className="inline-flex items-center rounded-full border border-hairline bg-canvas px-3 py-1 text-[11px] font-semibold tracking-wide text-ink">
+              BLOG
+            </span>
+            <h1 className="mt-6 text-[36px] font-bold tracking-tight leading-[1.1] md:text-[44px]">
+              Aprenda a cuidar do seu <span className="text-rausch">dinheiro</span>
+            </h1>
+            <p className="mt-4 text-base text-body-text">
+              Conteúdo prático sobre finanças pessoais e novidades do bfin.
+            </p>
+          </div>
+        </section>
+
+        <section className="border-b border-hairline-soft py-8">
+          <div className="mx-auto max-w-5xl px-6">
+            <nav className="flex flex-wrap gap-2 text-sm">
+              <Link href="/blog" className="rounded-full border border-ink bg-ink px-3 py-1 text-canvas">
+                Todas
+              </Link>
+              {POST_CATEGORIES.map((c) => (
+                <Link
+                  key={c}
+                  href={`/blog/categoria/${categorySlug(c)}`}
+                  className="rounded-full border border-hairline px-3 py-1 text-ink hover:bg-surface-soft"
+                >
+                  {c}
+                </Link>
+              ))}
+            </nav>
+          </div>
+        </section>
+
+        <section className="py-16 md:py-20">
+          <div className="mx-auto max-w-5xl px-6">
+            {posts.length === 0 ? (
+              <p className="text-center text-body-text">Nenhum post publicado ainda.</p>
+            ) : (
+              <ul className="grid gap-8 md:grid-cols-2">
+                {posts.map((p) => (
+                  <li key={p.id} className="rounded-[14px] border border-hairline bg-canvas overflow-hidden">
+                    {p.coverImageUrl && (
+                      <Link href={`/blog/${p.slug}`} className="block aspect-[16/9] overflow-hidden">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={p.coverImageUrl} alt="" className="size-full object-cover" />
+                      </Link>
+                    )}
+                    <div className="p-6">
+                      <div className="flex items-center gap-3 text-xs text-body-text">
+                        <Link
+                          href={`/blog/categoria/${categorySlug(p.category as (typeof POST_CATEGORIES)[number])}`}
+                          className="font-semibold text-rausch hover:underline"
+                        >
+                          {p.category}
+                        </Link>
+                        <span>·</span>
+                        <span>{readingMinutes(p.content)} min</span>
+                      </div>
+                      <h2 className="mt-3 text-xl font-bold tracking-tight">
+                        <Link href={`/blog/${p.slug}`} className="hover:text-rausch">
+                          {p.title}
+                        </Link>
+                      </h2>
+                      <p className="mt-2 text-sm text-body-text">{postExcerpt(p)}</p>
+                      <div className="mt-4 text-xs text-body-text">
+                        {p.author.name} · {p.publishedAt ? dateFmt.format(p.publishedAt) : ""}
+                      </div>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </section>
+      </main>
+      <LandingFooter />
+    </div>
+  );
+}

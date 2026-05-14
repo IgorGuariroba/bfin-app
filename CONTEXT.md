@@ -36,6 +36,27 @@ _Avoid_: membro, colaborador.
 `User` cujo `email` está em `ADMIN_EMAILS` (env var). Tem acesso a telas administrativas (`/admin/*`).
 _Avoid_: superuser, root.
 
+### Blog (marketing/SEO)
+
+**Post**:
+Artigo de marketing publicado em `/blog/[slug]`. Conteúdo em Markdown salvo no banco. Slug imutável após `published`. Autor = `User` Admin.
+_Avoid_: artigo, matéria, conteúdo.
+
+**Topic**:
+Rótulo livre aplicado a `Post` (string). Renomeado de "tag" para não colidir com [[Tag]] de [[Transaction]]. Exposto em `/blog/topico/[slug]`.
+_Avoid_: tag (reservado p/ Transaction), label.
+
+**Category**:
+Classificação única e obrigatória de `Post`, enum fixo no código: `Educação Financeira` | `Produto` | `Mercado` | `Dicas`. Mudança = deploy. Não confundir com "categoria" do _Avoid_ de [[Tag]] — escopo distinto (blog).
+_Avoid_: seção, tema.
+
+**PostStatus**:
+Ciclo de vida do `Post`: `draft` (só admin) → `published` (público em `/blog`) → `archived` (some da listagem, URL retorna 410).
+
+**PostComment**:
+Comentário em `Post` feito por `User` logado. Status: `pending` | `approved` | `rejected`. Moderado em `/admin/blog/comentarios`. Visitante anônimo lê `approved`; comentar exige signup (CTA implícito).
+_Avoid_: review, resposta.
+
 ### Atendimento WhatsApp
 
 **Contact**:
@@ -66,6 +87,9 @@ _Avoid_: opção, comando.
 - Uma **Conversation** acumula muitas mensagens nas duas direções (inbound do `Contact`, outbound do Bot ou Admin).
 - **Admin** atua sobre **Conversation** somente após **Handoff**.
 - **Bot** consulta **PlanConfig** ao responder a intent `price`.
+- Um **Post** tem um **Category** (obrigatório) e muitos **Topic** (livres).
+- Um **Post** tem um autor (`User` Admin).
+- Um **Post** acumula muitos **PostComment** de **User** logados.
 
 ## Example dialogue
 

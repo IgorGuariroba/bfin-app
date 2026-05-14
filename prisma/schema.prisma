@@ -24,6 +24,8 @@ model User {
   tags           Tag[]
   ownedMembers   AccountMember[] @relation("OwnedMembers")
   memberOf       AccountMember[] @relation("MemberOf")
+  posts          Post[]
+  postComments   PostComment[]
 }
 
 model AccountMember {
@@ -120,6 +122,50 @@ model PlanConfig {
   monthlyAmount Float    @default(14.9)
   annualAmount  Float    @default(119.9)
   updatedAt     DateTime @updatedAt
+}
+
+model Post {
+  id              String        @id @default(cuid())
+  slug            String        @unique
+  title           String
+  excerpt         String
+  content         String
+  coverImageUrl   String?
+  category        String
+  status          String        @default("draft")
+  metaTitle       String?
+  metaDescription String?
+  authorId        String
+  publishedAt     DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  author          User          @relation(fields: [authorId], references: [id], onDelete: Restrict)
+  topics          PostTopic[]   @relation("PostTopics")
+  comments        PostComment[]
+
+  @@index([status, publishedAt])
+  @@index([category, status])
+}
+
+model PostTopic {
+  id    String @id @default(cuid())
+  slug  String @unique
+  name  String @unique
+  posts Post[] @relation("PostTopics")
+}
+
+model PostComment {
+  id        String   @id @default(cuid())
+  postId    String
+  userId    String
+  body      String
+  status    String   @default("pending")
+  createdAt DateTime @default(now())
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([postId, status, createdAt])
+  @@index([status, createdAt])
 }
 
 model WhatsappContact {

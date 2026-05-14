@@ -56,13 +56,16 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     authorized({ auth, request: { nextUrl } }) {
       const isLoggedIn = !!auth?.user;
       const isOnLogin = nextUrl.pathname.startsWith("/login");
+      const isOnBlog = nextUrl.pathname === "/blog" || nextUrl.pathname.startsWith("/blog/");
 
       if (isOnLogin) {
         if (isLoggedIn) return Response.redirect(new URL("/saldos", nextUrl));
         return true;
       }
 
-      // Proteger rotas (app) por padrão. 
+      if (isOnBlog) return true;
+
+      // Proteger rotas (app) por padrão.
       // Futuras rotas públicas devem ser excluídas aqui ou via matcher do middleware.
       return isLoggedIn;
     },

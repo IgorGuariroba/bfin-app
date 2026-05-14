@@ -25,6 +25,12 @@ export function LandingHeader() {
             Recursos
           </Link>
           <Link
+            href="/blog"
+            className="text-base font-semibold text-ink hover:underline underline-offset-4"
+          >
+            Blog
+          </Link>
+          <Link
             href="/#faq"
             className="text-base font-semibold text-ink hover:underline underline-offset-4"
           >
