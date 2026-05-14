@@ -1,0 +1,87 @@
+import { Prisma } from "@/generated/prisma/client";
+import { prisma } from "@/lib/prisma";
+import { requireBlogAdmin } from "@/lib/blog-admin";
+import { POST_CATEGORIES, POST_STATUSES, slugify, type PostCategory, type PostStatus } from "@/lib/blog";
+
+export async function GET() {
+  if (!(await requireBlogAdmin())) return Response.json({ error: "Forbidden" }, { status: 403 });
+  const posts = await prisma.post.findMany({
+    orderBy: { updatedAt: "desc" },
+    include: { author: { select: { name: true } }, topics: { select: { id: true, name: true } } },
+  });
+  return Response.json(posts);
+}
+
+export async function POST(req: Request) {
+  const session = await requireBlogAdmin();
+  if (!session) return Response.json({ error: "Forbidden" }, { status: 403 });
+
+  const data = await req.json().catch(() => null);
+  const title = typeof data?.title === "string" ? data.title.trim() : "";
+  const content = typeof data?.content === "string" ? data.content : "";
+  const excerpt = typeof data?.excerpt === "string" ? data.excerpt.trim() : "";
+  const category = typeof data?.category === "string" ? data.category : "";
+  const coverImageUrl = typeof data?.coverImageUrl === "string" && data.coverImageUrl.trim() ? data.coverImageUrl.trim() : null;
+  const metaTitle = typeof data?.metaTitle === "string" && data.metaTitle.trim() ? data.metaTitle.trim() : null;
+  const metaDescription = typeof data?.metaDescription === "string" && data.metaDescription.trim() ? data.metaDescription.trim() : null;
+  const topicIds: string[] = Array.isArray(data?.topicIds) ? data.topicIds.filter((s: unknown) => typeof s === "string") : [];
+
+  if (!title || !content || !excerpt) {
+    return Response.json({ error: "Título, resumo e conteúdo são obrigatórios" }, { status: 400 });
+  }
+  if (!(POST_CATEGORIES as readonly string[]).includes(category)) {
+    return Response.json({ error: "Categoria inválida" }, { status: 400 });
+  }
+
+  let status: PostStatus = "draft";
+  if (typeof data?.status === "string") {
+    if (!(POST_STATUSES as readonly string[]).includes(data.status)) {
+      return Response.json({ error: "Status inválido" }, { status: 400 });
+    }
+    status = data.status as PostStatus;
+  }
+
+  let validTopicIds: string[] = [];
+  if (topicIds.length > 0) {
+    const found = await prisma.postTopic.findMany({
+      where: { id: { in: topicIds } },
+      select: { id: true },
+    });
+    validTopicIds = found.map((t) => t.id);
+    if (validTopicIds.length !== topicIds.length) {
+      return Response.json({ error: "Um ou mais tópicos não existem" }, { status: 400 });
+    }
+  }
+
+  const baseSlug = slugify(title) || "post";
+  let slug = baseSlug;
+  for (let attempt = 1; attempt <= 10; attempt += 1) {
+    try {
+      const post = await prisma.post.create({
+        data: {
+          slug,
+          title,
+          excerpt,
+          content,
+          coverImageUrl,
+          category: category as PostCategory,
+          status,
+          publishedAt: status === "published" ? new Date() : null,
+          metaTitle,
+          metaDescription,
+          authorId: session.user!.id!,
+          topics: { connect: validTopicIds.map((id) => ({ id })) },
+        },
+      });
+      return Response.json(post, { status: 201 });
+    } catch (err) {
+      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
+        slug = `${baseSlug}-${attempt + 1}`;
+        continue;
+      }
+      throw err;
+    }
+  }
+  return Response.json({ error: "Não foi possível gerar slug único" }, { status: 409 });
+}
+
