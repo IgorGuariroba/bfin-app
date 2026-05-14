@@ -1,91 +1,64 @@
-"use client";
+import Link from "next/link";
+import { ChevronRight, DollarSign, FileText, MessageCircle } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
 
-import { useEffect, useState } from "react";
-import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
+const items = [
+  {
+    icon: DollarSign,
+    label: "Preços",
+    description: "Configurar valores do plano Pro",
+    href: "/admin/precos",
+  },
+  {
+    icon: FileText,
+    label: "Blog",
+    description: "Posts, tópicos e comentários",
+    href: "/admin/blog",
+  },
+  {
+    icon: MessageCircle,
+    label: "WhatsApp",
+    description: "Conversas e atendimento",
+    href: "/admin/whatsapp",
+  },
+];
 
 export default function AdminPage() {
-  const { data: session, status } = useSession();
-  const router = useRouter();
-
-  const [monthly, setMonthly] = useState("");
-  const [annual, setAnnual] = useState("");
-  const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState("");
-
-  useEffect(() => {
-    if (status === "loading") return;
-    if (!session?.user?.isAdmin) {
-      router.replace("/saldos");
-      return;
-    }
-    fetch("/api/admin/plan-config")
-      .then((r) => r.json())
-      .then((d) => {
-        setMonthly(String(d.monthlyAmount));
-        setAnnual(String(d.annualAmount));
-      });
-  }, [session, status, router]);
-
-  async function handleSave(e: React.FormEvent) {
-    e.preventDefault();
-    setSaving(true);
-    setMessage("");
-    const res = await fetch("/api/admin/plan-config", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        monthlyAmount: parseFloat(monthly),
-        annualAmount: parseFloat(annual),
-      }),
-    });
-    setSaving(false);
-    setMessage(res.ok ? "Salvo com sucesso!" : "Erro ao salvar.");
-  }
-
-  if (status === "loading" || !session?.user?.isAdmin) return null;
-
   return (
-    <div className="max-w-md mx-auto mt-12 p-6 space-y-6">
-      <nav className="flex gap-2 text-sm">
-        <a href="/admin/blog" className="rounded-md border border-hairline px-3 py-2">Blog</a>
-        <a href="/admin/whatsapp" className="rounded-md border border-hairline px-3 py-2">WhatsApp</a>
-      </nav>
-      <h1 className="text-2xl font-bold">Admin — Preços do plano Pro</h1>
-      <form onSubmit={handleSave} className="space-y-4">
-        <div className="space-y-1">
-          <label className="text-sm font-medium">Mensal (R$)</label>
-          <input
-            type="number"
-            step="0.01"
-            min="0"
-            value={monthly}
-            onChange={(e) => setMonthly(e.target.value)}
-            className="w-full border rounded-md px-3 py-2 text-sm"
-            required
-          />
-        </div>
-        <div className="space-y-1">
-          <label className="text-sm font-medium">Anual (R$)</label>
-          <input
-            type="number"
-            step="0.01"
-            min="0"
-            value={annual}
-            onChange={(e) => setAnnual(e.target.value)}
-            className="w-full border rounded-md px-3 py-2 text-sm"
-            required
-          />
-        </div>
-        <button
-          type="submit"
-          disabled={saving}
-          className="w-full bg-primary text-primary-foreground rounded-md px-4 py-2 text-sm font-medium disabled:opacity-50"
-        >
-          {saving ? "Salvando..." : "Salvar"}
-        </button>
-        {message && <p className="text-sm text-center">{message}</p>}
-      </form>
+    <div className="mx-auto max-w-md px-4 pt-12 pb-24">
+      <header className="mb-6">
+        <h1 className="text-[24px] font-semibold leading-tight tracking-[-0.2px] text-ink">
+          Painel admin
+        </h1>
+        <p className="mt-1 text-[14px] text-muted">Configurações e gestão da aplicação.</p>
+      </header>
+
+      <div className="flex flex-col gap-3">
+        {items.map((item) => {
+          const Icon = item.icon;
+          return (
+            <Card key={item.href} className="rounded-[14px] py-0">
+              <CardContent className="p-0">
+                <Link
+                  href={item.href}
+                  className="flex items-center gap-3 p-4 active:scale-[0.98] transition-transform"
+                >
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-surface-strong text-ink">
+                    <Icon size={20} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[16px] font-semibold leading-[1.25] text-ink">
+                      {item.label}
+                    </p>
+                    <p className="text-[13px] text-muted truncate">{item.description}</p>
+                  </div>
+                  <ChevronRight size={20} className="text-muted shrink-0" />
+                </Link>
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
     </div>
   );
 }
