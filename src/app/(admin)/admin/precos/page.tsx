@@ -8,6 +8,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 const dateFmt = new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" });
+const brl = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
+
+type PlanConfigResponse = {
+  monthlyAmount?: number | string;
+  annualAmount?: number | string;
+  updatedAt?: string;
+};
 
 export default function AdminPrecosPage() {
   const [monthly, setMonthly] = useState("");
@@ -18,7 +25,7 @@ export default function AdminPrecosPage() {
 
   useEffect(() => {
     fetch("/api/admin/plan-config")
-      .then((r) => r.json())
+      .then((r) => r.json() as Promise<PlanConfigResponse | null>)
       .then((d) => {
         if (!d) return;
         setMonthly(d.monthlyAmount != null ? String(d.monthlyAmount) : "");
@@ -42,7 +49,7 @@ export default function AdminPrecosPage() {
         }),
       });
       if (res.ok) {
-        const d = await res.json().catch(() => null);
+        const d = (await res.json().catch(() => null)) as PlanConfigResponse | null;
         if (d?.updatedAt) setUpdatedAt(d.updatedAt);
         toast.success("Preços atualizados");
       } else {
@@ -103,7 +110,7 @@ export default function AdminPrecosPage() {
                 />
                 {discount > 0 && (
                   <p className="text-xs text-muted">
-                    Desconto de <strong>{discount}%</strong> vs. {(monthlyNum * 12).toFixed(2).replace(".", ",")}/ano
+                    Desconto de <strong>{discount}%</strong> vs. {brl.format(monthlyNum * 12)}/ano
                   </p>
                 )}
               </div>

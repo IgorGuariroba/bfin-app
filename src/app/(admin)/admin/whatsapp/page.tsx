@@ -72,7 +72,7 @@ export default function AdminWhatsappPage() {
       const qs = filter ? `?status=${filter}` : "";
       const res = await fetch(`/api/admin/whatsapp/conversations${qs}`);
       if (!res.ok) return;
-      const data = await res.json();
+      const data = (await res.json()) as { conversations: ConversationListItem[] };
       setConversations(data.conversations);
     } catch {
       // silent: polling — próximo tick tenta de novo
@@ -120,7 +120,7 @@ export default function AdminWhatsappPage() {
         body: JSON.stringify({ body: reply }),
       });
       if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
+        const data = (await res.json().catch(() => ({}))) as { error?: string };
         toast.error(data?.error ?? "Erro ao enviar");
       } else {
         setReply("");
