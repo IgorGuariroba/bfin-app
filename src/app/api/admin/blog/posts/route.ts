@@ -1,7 +1,7 @@
 import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireBlogAdmin } from "@/lib/blog-admin";
-import { POST_CATEGORIES, slugify, type PostCategory } from "@/lib/blog";
+import { POST_CATEGORIES, POST_STATUSES, slugify, type PostCategory, type PostStatus } from "@/lib/blog";
 
 export async function GET() {
   if (!(await requireBlogAdmin())) return Response.json({ error: "Forbidden" }, { status: 403 });
@@ -33,6 +33,26 @@ export async function POST(req: Request) {
     return Response.json({ error: "Categoria inválida" }, { status: 400 });
   }
 
+  let status: PostStatus = "draft";
+  if (typeof data?.status === "string") {
+    if (!(POST_STATUSES as readonly string[]).includes(data.status)) {
+      return Response.json({ error: "Status inválido" }, { status: 400 });
+    }
+    status = data.status as PostStatus;
+  }
+
+  let validTopicIds: string[] = [];
+  if (topicIds.length > 0) {
+    const found = await prisma.postTopic.findMany({
+      where: { id: { in: topicIds } },
+      select: { id: true },
+    });
+    validTopicIds = found.map((t) => t.id);
+    if (validTopicIds.length !== topicIds.length) {
+      return Response.json({ error: "Um ou mais tópicos não existem" }, { status: 400 });
+    }
+  }
+
   const baseSlug = slugify(title) || "post";
   let slug = baseSlug;
   for (let attempt = 1; attempt <= 10; attempt += 1) {
@@ -45,11 +65,12 @@ export async function POST(req: Request) {
           content,
           coverImageUrl,
           category: category as PostCategory,
-          status: "draft",
+          status,
+          publishedAt: status === "published" ? new Date() : null,
           metaTitle,
           metaDescription,
           authorId: session.user!.id!,
-          topics: { connect: topicIds.map((id) => ({ id })) },
+          topics: { connect: validTopicIds.map((id) => ({ id })) },
         },
       });
       return Response.json(post, { status: 201 });

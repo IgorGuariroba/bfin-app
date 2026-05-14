@@ -56,18 +56,7 @@ export function PostEditor({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-      if (res.ok && nextStatus && nextStatus !== "draft") {
-        const created = await res.json();
-        res = await fetch(`/api/admin/blog/posts/${created.id}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ status: nextStatus }),
-        });
-        if (res.ok) {
-          router.push(`/admin/blog/${created.id}/editar`);
-          return;
-        }
-      } else if (res.ok) {
+      if (res.ok) {
         const created = await res.json();
         router.push(`/admin/blog/${created.id}/editar`);
         return;
