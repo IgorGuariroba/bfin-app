@@ -42,3 +42,8 @@ next-env.d.ts
 
 /src/generated/prisma
 .playwright-mcp/
+
+# Local agent/skill artifacts
+.agents/
+.claude/skills/
+skills-lock.json
