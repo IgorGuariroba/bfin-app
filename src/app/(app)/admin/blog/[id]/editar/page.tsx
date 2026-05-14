@@ -18,14 +18,14 @@ export default async function EditPostPage({ params }: { params: Promise<{ id: s
   if (!post) notFound();
 
   return (
-    <div className="mx-auto max-w-5xl p-6">
+    <div className="mx-auto max-w-5xl p-6 md:p-10">
       <Link href="/admin/blog" className="text-sm text-body-text hover:text-ink">
         ← Voltar
       </Link>
-      <div className="mt-2 mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Editar post</h1>
+      <div className="mt-3 mb-8 flex items-center justify-between gap-4">
+        <h1 className="text-[28px] font-bold tracking-tight text-ink">Editar post</h1>
         {post.status === "published" && (
-          <Link href={`/blog/${post.slug}`} target="_blank" className="text-sm text-rausch hover:underline">
+          <Link href={`/blog/${post.slug}`} target="_blank" className="text-sm font-medium text-rausch hover:underline">
             Ver publicado ↗
           </Link>
         )}

@@ -39,13 +39,13 @@ export function CommentForm({ postId }: { postId: string }) {
         rows={4}
         maxLength={2000}
         required
-        className="w-full rounded-md border border-hairline bg-canvas px-3 py-2 text-sm"
+        className="w-full rounded-lg border border-hairline bg-canvas px-3 py-3 text-[16px] text-ink placeholder:text-muted focus:outline-none focus:border-ink focus:border-2"
         placeholder="Compartilhe sua opinião..."
       />
       <button
         type="submit"
         disabled={submitting || body.trim().length < 3}
-        className="inline-flex h-10 items-center justify-center rounded-lg bg-ink px-5 text-sm font-medium text-canvas disabled:opacity-50"
+        className="inline-flex h-12 items-center justify-center rounded-lg bg-rausch px-6 text-[16px] font-medium text-on-primary hover:bg-rausch-active disabled:bg-rausch-disabled disabled:cursor-not-allowed"
       >
         {submitting ? "Enviando..." : "Enviar comentário"}
       </button>

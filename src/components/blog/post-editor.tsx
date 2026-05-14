@@ -98,14 +98,14 @@ export function PostEditor({
             value={form.title}
             onChange={(e) => update("title", e.target.value)}
             placeholder="Título do post"
-            className="w-full border border-hairline rounded-md px-3 py-2 text-lg font-semibold"
+            className="w-full rounded-lg border border-hairline bg-canvas px-4 py-3 text-[22px] font-semibold tracking-tight text-ink placeholder:text-muted focus:outline-none focus:border-ink focus:border-2"
           />
           <textarea
             value={form.excerpt}
             onChange={(e) => update("excerpt", e.target.value)}
             placeholder="Resumo (aparece na listagem e meta description)"
             rows={2}
-            className="w-full border border-hairline rounded-md px-3 py-2 text-sm"
+            className="w-full rounded-lg border border-hairline bg-canvas px-4 py-3 text-[14px] text-ink placeholder:text-muted focus:outline-none focus:border-ink focus:border-2"
           />
           <div data-color-mode="light" className="rounded-md overflow-hidden border border-hairline">
             <MDEditor
@@ -120,14 +120,14 @@ export function PostEditor({
 
         <aside className="space-y-4 text-sm">
           <div>
-            <label className="block font-medium mb-1">Status</label>
-            <div className="rounded-md bg-surface-soft px-3 py-2">
-              {form.status}
+            <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-muted">Status</label>
+            <div className="flex items-center justify-between rounded-lg bg-surface-soft px-3 py-2.5 text-sm text-ink">
+              <span className="font-medium">{form.status}</span>
               {mode === "edit" && form.status === "draft" && (
                 <button
                   type="button"
                   onClick={() => save("published")}
-                  className="ml-3 text-rausch hover:underline"
+                  className="font-medium text-rausch hover:underline"
                 >
                   publicar
                 </button>
@@ -136,7 +136,7 @@ export function PostEditor({
                 <button
                   type="button"
                   onClick={() => save("archived")}
-                  className="ml-3 text-rausch hover:underline"
+                  className="font-medium text-rausch hover:underline"
                 >
                   arquivar
                 </button>
@@ -145,7 +145,7 @@ export function PostEditor({
                 <button
                   type="button"
                   onClick={() => save("published")}
-                  className="ml-3 text-rausch hover:underline"
+                  className="font-medium text-rausch hover:underline"
                 >
                   republicar
                 </button>
@@ -154,11 +154,11 @@ export function PostEditor({
           </div>
 
           <div>
-            <label className="block font-medium mb-1">Categoria</label>
+            <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-muted">Categoria</label>
             <select
               value={form.category}
               onChange={(e) => update("category", e.target.value as PostCategory)}
-              className="w-full border border-hairline rounded-md px-3 py-2"
+              className="h-12 w-full rounded-lg border border-hairline bg-canvas px-3 text-sm text-ink focus:outline-none focus:border-ink focus:border-2"
             >
               {POST_CATEGORIES.map((c) => (
                 <option key={c} value={c}>{c}</option>
@@ -167,17 +167,17 @@ export function PostEditor({
           </div>
 
           <div>
-            <label className="block font-medium mb-1">Imagem de capa (URL)</label>
+            <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-muted">Imagem de capa (URL)</label>
             <input
               value={form.coverImageUrl}
               onChange={(e) => update("coverImageUrl", e.target.value)}
               placeholder="https://..."
-              className="w-full border border-hairline rounded-md px-3 py-2"
+              className="h-12 w-full rounded-lg border border-hairline bg-canvas px-3 text-sm text-ink placeholder:text-muted focus:outline-none focus:border-ink focus:border-2"
             />
           </div>
 
           <div>
-            <label className="block font-medium mb-1">Tópicos</label>
+            <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-muted">Tópicos</label>
             <div className="flex flex-wrap gap-2">
               {allTopics.length === 0 && (
                 <p className="text-xs text-body-text">
@@ -200,21 +200,21 @@ export function PostEditor({
             </div>
           </div>
 
-          <details className="rounded-md border border-hairline p-3">
-            <summary className="cursor-pointer font-medium">SEO custom</summary>
+          <details className="rounded-lg border border-hairline p-3">
+            <summary className="cursor-pointer text-sm font-medium text-ink">SEO custom</summary>
             <div className="mt-3 space-y-3">
               <input
                 value={form.metaTitle}
                 onChange={(e) => update("metaTitle", e.target.value)}
                 placeholder="Meta title"
-                className="w-full border border-hairline rounded-md px-3 py-2 text-xs"
+                className="h-11 w-full rounded-lg border border-hairline bg-canvas px-3 text-xs text-ink placeholder:text-muted focus:outline-none focus:border-ink focus:border-2"
               />
               <textarea
                 value={form.metaDescription}
                 onChange={(e) => update("metaDescription", e.target.value)}
                 placeholder="Meta description"
                 rows={3}
-                className="w-full border border-hairline rounded-md px-3 py-2 text-xs"
+                className="w-full rounded-lg border border-hairline bg-canvas px-3 py-2 text-xs text-ink placeholder:text-muted focus:outline-none focus:border-ink focus:border-2"
               />
             </div>
           </details>
@@ -224,7 +224,7 @@ export function PostEditor({
               type="button"
               onClick={() => save()}
               disabled={saving}
-              className="rounded-md bg-ink text-canvas px-4 py-2 text-sm font-medium disabled:opacity-50"
+              className="inline-flex h-12 items-center justify-center rounded-lg border border-ink bg-canvas px-6 text-sm font-medium text-ink hover:bg-surface-soft disabled:opacity-50"
             >
               {saving ? "Salvando..." : "Salvar"}
             </button>
@@ -233,7 +233,7 @@ export function PostEditor({
                 type="button"
                 onClick={() => save("published")}
                 disabled={saving}
-                className="rounded-md bg-rausch text-white px-4 py-2 text-sm font-medium disabled:opacity-50"
+                className="inline-flex h-12 items-center justify-center rounded-lg bg-rausch px-6 text-sm font-medium text-on-primary hover:bg-rausch-active disabled:bg-rausch-disabled disabled:cursor-not-allowed"
               >
                 Salvar e publicar
               </button>
@@ -242,7 +242,7 @@ export function PostEditor({
               <button
                 type="button"
                 onClick={remove}
-                className="rounded-md border border-hairline text-rausch px-4 py-2 text-sm"
+                className="inline-flex h-12 items-center justify-center rounded-lg border border-hairline px-6 text-sm font-medium text-error hover:bg-surface-soft"
               >
                 Excluir
               </button>

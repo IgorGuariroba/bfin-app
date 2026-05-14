@@ -45,7 +45,7 @@ export default async function BlogCategoryPage({ params }: { params: Promise<{ s
         <Link href="/blog" className="text-sm text-body-text hover:text-ink">
           ← Todas as categorias
         </Link>
-        <h1 className="mt-4 text-[34px] font-bold tracking-tight md:text-[42px]">
+        <h1 className="mt-4 text-[28px] font-bold tracking-tight text-ink md:text-[32px]">
           {category}
         </h1>
         <p className="mt-2 text-body-text">{posts.length} {posts.length === 1 ? "artigo" : "artigos"}</p>

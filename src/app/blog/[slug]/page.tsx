@@ -54,11 +54,11 @@ export default async function PostPage({ params }: { params: Promise<{ slug: str
       <div className="min-h-screen bg-canvas text-ink">
         <LandingHeader />
         <main className="mx-auto max-w-3xl px-6 py-24 text-center">
-          <h1 className="text-2xl font-bold">Post arquivado</h1>
+          <h1 className="text-[28px] font-bold tracking-tight text-ink">Post arquivado</h1>
           <p className="mt-3 text-body-text">
             Este conteúdo foi arquivado e não está mais disponível.
           </p>
-          <Link href="/blog" className="mt-6 inline-block text-rausch hover:underline">
+          <Link href="/blog" className="mt-6 inline-block font-medium text-rausch hover:underline">
             ← Voltar ao blog
           </Link>
         </main>
@@ -87,7 +87,7 @@ export default async function PostPage({ params }: { params: Promise<{ slug: str
           >
             {post.category}
           </Link>
-          <h1 className="mt-3 text-[34px] font-bold tracking-tight leading-[1.1] md:text-[42px]">
+          <h1 className="mt-3 text-[28px] font-bold leading-[1.1] tracking-tight text-ink md:text-[34px]">
             {post.title}
           </h1>
           <p className="mt-4 text-lg text-body-text">{postExcerpt(post)}</p>
@@ -154,7 +154,7 @@ export default async function PostPage({ params }: { params: Promise<{ slug: str
                   </p>
                   <Link
                     href="/login"
-                    className="mt-3 inline-flex h-10 items-center justify-center rounded-lg bg-rausch px-5 text-sm font-medium text-white hover:bg-rausch-active"
+                    className="mt-4 inline-flex h-12 items-center justify-center rounded-lg bg-rausch px-6 text-[16px] font-medium text-on-primary hover:bg-rausch-active"
                   >
                     Entrar
                   </Link>

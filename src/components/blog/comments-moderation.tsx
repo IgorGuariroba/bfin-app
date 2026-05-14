@@ -56,16 +56,16 @@ export function CommentsModeration({ comments }: { comments: Comment[] }) {
             </div>
             <div className="flex gap-2 text-xs">
               {c.status !== "approved" && (
-                <button onClick={() => setStatus(c.id, "approved")} className="rounded-md bg-ink px-3 py-1 text-canvas">
+                <button onClick={() => setStatus(c.id, "approved")} className="h-9 rounded-lg bg-rausch px-3 font-medium text-on-primary hover:bg-rausch-active">
                   Aprovar
                 </button>
               )}
               {c.status !== "rejected" && (
-                <button onClick={() => setStatus(c.id, "rejected")} className="rounded-md border border-hairline px-3 py-1">
+                <button onClick={() => setStatus(c.id, "rejected")} className="h-9 rounded-lg border border-ink px-3 font-medium text-ink hover:bg-surface-soft">
                   Rejeitar
                 </button>
               )}
-              <button onClick={() => remove(c.id)} className="rounded-md border border-hairline px-3 py-1 text-rausch">
+              <button onClick={() => remove(c.id)} className="h-9 rounded-lg border border-hairline px-3 font-medium text-error hover:bg-surface-soft">
                 Excluir
               </button>
             </div>

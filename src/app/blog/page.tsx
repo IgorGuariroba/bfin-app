@@ -40,11 +40,11 @@ export default async function BlogIndexPage() {
       <LandingHeader />
       <main>
         <section className="border-b border-hairline-soft">
-          <div className="mx-auto max-w-3xl px-6 py-16 md:py-24 text-center">
-            <span className="inline-flex items-center rounded-full border border-hairline bg-canvas px-3 py-1 text-[11px] font-semibold tracking-wide text-ink">
-              BLOG
+          <div className="mx-auto max-w-3xl px-6 py-16 md:py-20 text-center">
+            <span className="inline-flex items-center rounded-full border border-hairline bg-canvas px-2.5 py-1 text-[8px] font-bold uppercase tracking-[0.32px] text-ink">
+              Blog
             </span>
-            <h1 className="mt-6 text-[36px] font-bold tracking-tight leading-[1.1] md:text-[44px]">
+            <h1 className="mt-6 text-[28px] font-bold leading-[1.1] tracking-tight text-ink md:text-[32px]">
               Aprenda a cuidar do seu <span className="text-rausch">dinheiro</span>
             </h1>
             <p className="mt-4 text-base text-body-text">
@@ -56,14 +56,14 @@ export default async function BlogIndexPage() {
         <section className="border-b border-hairline-soft py-8">
           <div className="mx-auto max-w-5xl px-6">
             <nav className="flex flex-wrap gap-2 text-sm">
-              <Link href="/blog" className="rounded-full border border-ink bg-ink px-3 py-1 text-canvas">
+              <Link href="/blog" className="inline-flex h-9 items-center rounded-full border border-ink bg-ink px-4 font-medium text-canvas">
                 Todas
               </Link>
               {POST_CATEGORIES.map((c) => (
                 <Link
                   key={c}
                   href={`/blog/categoria/${categorySlug(c)}`}
-                  className="rounded-full border border-hairline px-3 py-1 text-ink hover:bg-surface-soft"
+                  className="inline-flex h-9 items-center rounded-full border border-hairline bg-canvas px-4 font-medium text-ink hover:bg-surface-soft"
                 >
                   {c}
                 </Link>

@@ -20,56 +20,67 @@ export default async function AdminBlogPage() {
   });
 
   return (
-    <div className="mx-auto max-w-5xl p-6">
-      <div className="mb-6 flex items-center justify-between">
+    <div className="mx-auto max-w-5xl p-6 md:p-10">
+      <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold">Blog</h1>
-          <p className="text-sm text-body-text">Gerenciar posts, tópicos e comentários.</p>
+          <h1 className="text-[28px] font-bold tracking-tight text-ink">Blog</h1>
+          <p className="mt-1 text-sm text-body-text">Gerenciar posts, tópicos e comentários.</p>
         </div>
-        <div className="flex gap-2">
-          <Link href="/admin/blog/topicos" className="rounded-md border border-hairline px-3 py-2 text-sm">
+        <div className="flex flex-wrap gap-2">
+          <Link href="/admin/blog/topicos" className="inline-flex h-10 items-center rounded-lg border border-hairline bg-canvas px-4 text-sm font-medium text-ink hover:bg-surface-soft">
             Tópicos
           </Link>
-          <Link href="/admin/blog/comentarios" className="rounded-md border border-hairline px-3 py-2 text-sm">
+          <Link href="/admin/blog/comentarios" className="inline-flex h-10 items-center rounded-lg border border-hairline bg-canvas px-4 text-sm font-medium text-ink hover:bg-surface-soft">
             Comentários
           </Link>
-          <Link href="/admin/blog/novo" className="rounded-md bg-ink px-3 py-2 text-sm text-canvas">
+          <Link href="/admin/blog/novo" className="inline-flex h-10 items-center rounded-lg bg-rausch px-4 text-sm font-medium text-on-primary hover:bg-rausch-active">
             Novo post
           </Link>
         </div>
       </div>
 
       {posts.length === 0 ? (
-        <p className="text-body-text">Nenhum post ainda.</p>
+        <div className="rounded-xl border border-hairline bg-surface-soft p-10 text-center">
+          <p className="text-body-text">Nenhum post ainda.</p>
+          <Link href="/admin/blog/novo" className="mt-4 inline-flex h-10 items-center rounded-lg bg-rausch px-4 text-sm font-medium text-on-primary hover:bg-rausch-active">
+            Criar primeiro post
+          </Link>
+        </div>
       ) : (
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-hairline text-left text-xs uppercase text-body-text">
-              <th className="py-2">Título</th>
-              <th>Categoria</th>
-              <th>Status</th>
-              <th>Autor</th>
-              <th>Atualizado</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {posts.map((p) => (
-              <tr key={p.id} className="border-b border-hairline-soft">
-                <td className="py-3 font-medium">{p.title}</td>
-                <td>{p.category}</td>
-                <td>{STATUS_LABEL[p.status] ?? p.status}</td>
-                <td>{p.author.name}</td>
-                <td>{dateFmt.format(p.updatedAt)}</td>
-                <td className="text-right">
-                  <Link href={`/admin/blog/${p.id}/editar`} className="text-rausch hover:underline">
-                    Editar
-                  </Link>
-                </td>
+        <div className="overflow-hidden rounded-xl border border-hairline bg-canvas">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-hairline text-left text-[11px] font-semibold uppercase tracking-wider text-muted">
+                <th className="px-4 py-3">Título</th>
+                <th className="px-4">Categoria</th>
+                <th className="px-4">Status</th>
+                <th className="px-4">Autor</th>
+                <th className="px-4">Atualizado</th>
+                <th className="px-4"></th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {posts.map((p) => (
+                <tr key={p.id} className="border-b border-hairline-soft text-ink last:border-b-0 hover:bg-surface-soft">
+                  <td className="px-4 py-3 font-medium">{p.title}</td>
+                  <td className="px-4 text-body-text">{p.category}</td>
+                  <td className="px-4">
+                    <span className="inline-flex items-center rounded-full border border-hairline bg-canvas px-2 py-0.5 text-[11px] font-semibold text-ink">
+                      {STATUS_LABEL[p.status] ?? p.status}
+                    </span>
+                  </td>
+                  <td className="px-4 text-body-text">{p.author.name}</td>
+                  <td className="px-4 text-body-text">{dateFmt.format(p.updatedAt)}</td>
+                  <td className="px-4 text-right">
+                    <Link href={`/admin/blog/${p.id}/editar`} className="font-medium text-rausch hover:underline">
+                      Editar
+                    </Link>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </div>
   );

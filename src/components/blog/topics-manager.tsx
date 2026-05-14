@@ -43,12 +43,12 @@ export function TopicsManager({ initial }: { initial: Topic[] }) {
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="Nome do tópico (ex: investimentos)"
-          className="flex-1 border border-hairline rounded-md px-3 py-2 text-sm"
+          className="h-12 flex-1 rounded-lg border border-hairline bg-canvas px-3 text-[16px] text-ink placeholder:text-muted focus:outline-none focus:border-ink focus:border-2"
         />
         <button
           type="submit"
           disabled={submitting || !name.trim()}
-          className="rounded-md bg-ink text-canvas px-4 py-2 text-sm disabled:opacity-50"
+          className="h-12 rounded-lg bg-rausch px-6 text-[14px] font-medium text-on-primary hover:bg-rausch-active disabled:bg-rausch-disabled disabled:cursor-not-allowed"
         >
           Criar
         </button>
@@ -59,8 +59,8 @@ export function TopicsManager({ initial }: { initial: Topic[] }) {
       ) : (
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-hairline text-left text-xs uppercase text-body-text">
-              <th className="py-2">Nome</th>
+            <tr className="border-b border-hairline text-left text-[11px] font-semibold uppercase tracking-wider text-muted">
+              <th className="py-3">Nome</th>
               <th>Slug</th>
               <th>Posts</th>
               <th></th>
@@ -68,12 +68,12 @@ export function TopicsManager({ initial }: { initial: Topic[] }) {
           </thead>
           <tbody>
             {initial.map((t) => (
-              <tr key={t.id} className="border-b border-hairline-soft">
-                <td className="py-3">{t.name}</td>
+              <tr key={t.id} className="border-b border-hairline-soft text-ink">
+                <td className="py-3 font-medium">{t.name}</td>
                 <td className="text-body-text">{t.slug}</td>
                 <td>{t.postCount}</td>
                 <td className="text-right">
-                  <button onClick={() => remove(t.id, t.postCount)} className="text-rausch hover:underline">
+                  <button onClick={() => remove(t.id, t.postCount)} className="text-error hover:text-error font-medium hover:underline">
                     Excluir
                   </button>
                 </td>
