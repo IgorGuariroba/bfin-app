@@ -1,8 +1,6 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { Plus } from "lucide-react";
 import { prisma } from "@/lib/prisma";
-import { requireBlogAdmin } from "@/lib/blog-admin";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -23,8 +21,6 @@ const STATUS_VARIANT: Record<string, "default" | "secondary" | "outline"> = {
 };
 
 export default async function AdminBlogPage() {
-  if (!(await requireBlogAdmin())) redirect("/saldos");
-
   const [posts, pendingComments] = await Promise.all([
     prisma.post.findMany({
       orderBy: { updatedAt: "desc" },

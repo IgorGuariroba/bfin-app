@@ -1,14 +1,12 @@
 import Link from "next/link";
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import { ExternalLink } from "lucide-react";
 import { prisma } from "@/lib/prisma";
-import { requireBlogAdmin } from "@/lib/blog-admin";
 import { PostEditor } from "@/components/blog/post-editor";
 import type { PostCategory, PostStatus } from "@/lib/blog";
 import { Button } from "@/components/ui/button";
 
 export default async function EditPostPage({ params }: { params: Promise<{ id: string }> }) {
-  if (!(await requireBlogAdmin())) redirect("/saldos");
   const { id } = await params;
   const [post, topics] = await Promise.all([
     prisma.post.findUnique({

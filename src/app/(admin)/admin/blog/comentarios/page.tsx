@@ -1,7 +1,5 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { requireBlogAdmin } from "@/lib/blog-admin";
 import { CommentsModeration } from "@/components/blog/comments-moderation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -11,7 +9,6 @@ export default async function AdminCommentsPage({
 }: {
   searchParams: Promise<{ status?: string }>;
 }) {
-  if (!(await requireBlogAdmin())) redirect("/saldos");
   const { status } = await searchParams;
   const filter = status === "approved" || status === "rejected" ? status : "pending";
 

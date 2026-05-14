@@ -1,11 +1,8 @@
-import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { requireBlogAdmin } from "@/lib/blog-admin";
 import { PostEditor } from "@/components/blog/post-editor";
 import { POST_CATEGORIES } from "@/lib/blog";
 
 export default async function NewPostPage() {
-  if (!(await requireBlogAdmin())) redirect("/saldos");
   const topics = await prisma.postTopic.findMany({
     orderBy: { name: "asc" },
     select: { id: true, name: true },

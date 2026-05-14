@@ -1,10 +1,7 @@
-import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { requireBlogAdmin } from "@/lib/blog-admin";
 import { TopicsManager } from "@/components/blog/topics-manager";
 
 export default async function AdminTopicsPage() {
-  if (!(await requireBlogAdmin())) redirect("/saldos");
   const topics = await prisma.postTopic.findMany({
     orderBy: { name: "asc" },
     include: { _count: { select: { posts: true } } },

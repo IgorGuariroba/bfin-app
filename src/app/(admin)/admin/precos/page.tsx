@@ -30,21 +30,26 @@ export default function AdminPrecosPage() {
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
-    const res = await fetch("/api/admin/plan-config", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        monthlyAmount: parseFloat(monthly),
-        annualAmount: parseFloat(annual),
-      }),
-    });
-    setSaving(false);
-    if (res.ok) {
-      const d = await res.json().catch(() => null);
-      if (d?.updatedAt) setUpdatedAt(d.updatedAt);
-      toast.success("Preços atualizados");
-    } else {
-      toast.error("Erro ao salvar preços");
+    try {
+      const res = await fetch("/api/admin/plan-config", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          monthlyAmount: parseFloat(monthly),
+          annualAmount: parseFloat(annual),
+        }),
+      });
+      if (res.ok) {
+        const d = await res.json().catch(() => null);
+        if (d?.updatedAt) setUpdatedAt(d.updatedAt);
+        toast.success("Preços atualizados");
+      } else {
+        toast.error("Erro ao salvar preços");
+      }
+    } catch {
+      toast.error("Erro de conexão ao salvar");
+    } finally {
+      setSaving(false);
     }
   }
 
