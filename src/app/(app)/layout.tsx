@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { DelegatedAccountBanner } from "@/components/layout/delegated-account-banner";
 import { AddModalProvider } from "@/lib/add-modal-context";
@@ -6,6 +7,10 @@ import { PlanProvider } from "@/components/providers/plan-provider";
 import { auth } from "@/lib/auth";
 import { getDelegationInfo } from "@/lib/effective-user";
 import { getUserPlan } from "@/lib/plan";
+
+export const metadata: Metadata = {
+  robots: { index: false, follow: false },
+};
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
