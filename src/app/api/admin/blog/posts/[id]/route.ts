@@ -71,6 +71,6 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   if (!(await requireBlogAdmin())) return Response.json({ error: "Forbidden" }, { status: 403 });
   const { id } = await params;
-  await prisma.post.delete({ where: { id } });
+  await prisma.post.deleteMany({ where: { id } });
   return Response.json({ ok: true });
 }
