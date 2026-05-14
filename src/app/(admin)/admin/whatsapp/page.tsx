@@ -68,18 +68,26 @@ export default function AdminWhatsappPage() {
   const [sending, setSending] = useState(false);
 
   const fetchList = useCallback(async () => {
-    const qs = filter ? `?status=${filter}` : "";
-    const res = await fetch(`/api/admin/whatsapp/conversations${qs}`);
-    if (!res.ok) return;
-    const data = await res.json();
-    setConversations(data.conversations);
+    try {
+      const qs = filter ? `?status=${filter}` : "";
+      const res = await fetch(`/api/admin/whatsapp/conversations${qs}`);
+      if (!res.ok) return;
+      const data = await res.json();
+      setConversations(data.conversations);
+    } catch {
+      // silent: polling — próximo tick tenta de novo
+    }
   }, [filter]);
 
   const fetchDetail = useCallback(async (id: string) => {
-    const res = await fetch(`/api/admin/whatsapp/conversations/${id}`);
-    if (!res.ok) return;
-    const data = (await res.json()) as ConversationDetail;
-    setDetail(data);
+    try {
+      const res = await fetch(`/api/admin/whatsapp/conversations/${id}`);
+      if (!res.ok) return;
+      const data = (await res.json()) as ConversationDetail;
+      setDetail(data);
+    } catch {
+      // silent: polling — próximo tick tenta de novo
+    }
   }, []);
 
   useEffect(() => {
@@ -126,29 +134,37 @@ export default function AdminWhatsappPage() {
 
   async function handleStatus(newStatus: string) {
     if (!selectedId) return;
-    const res = await fetch(`/api/admin/whatsapp/conversations/${selectedId}/status`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status: newStatus }),
-    });
-    if (!res.ok) {
-      toast.error("Erro ao atualizar status");
-    } else {
-      fetchDetail(selectedId);
-      fetchList();
+    try {
+      const res = await fetch(`/api/admin/whatsapp/conversations/${selectedId}/status`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: newStatus }),
+      });
+      if (!res.ok) {
+        toast.error("Erro ao atualizar status");
+      } else {
+        fetchDetail(selectedId);
+        fetchList();
+      }
+    } catch {
+      toast.error("Erro de conexão");
     }
   }
 
   async function handleDeleteContact() {
     if (!detail?.contact.id) return;
-    const res = await fetch(`/api/admin/whatsapp/contacts/${detail.contact.id}`, { method: "DELETE" });
-    if (res.ok) {
-      toast.success("Contato apagado");
-      setSelectedId(null);
-      setDetail(null);
-      fetchList();
-    } else {
-      toast.error("Erro ao apagar contato");
+    try {
+      const res = await fetch(`/api/admin/whatsapp/contacts/${detail.contact.id}`, { method: "DELETE" });
+      if (res.ok) {
+        toast.success("Contato apagado");
+        setSelectedId(null);
+        setDetail(null);
+        fetchList();
+      } else {
+        toast.error("Erro ao apagar contato");
+      }
+    } catch {
+      toast.error("Erro de conexão");
     }
   }
 

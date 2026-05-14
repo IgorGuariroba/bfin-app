@@ -24,6 +24,7 @@ export default function AdminPrecosPage() {
         setAnnual(String(d.annualAmount));
         if (d.updatedAt) setUpdatedAt(d.updatedAt);
       })
+      .catch(() => toast.error("Erro ao carregar preços"))
       .finally(() => setLoading(false));
   }, []);
 
