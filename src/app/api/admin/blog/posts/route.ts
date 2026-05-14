@@ -1,3 +1,4 @@
+import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireBlogAdmin } from "@/lib/blog-admin";
 import { POST_CATEGORIES, slugify, type PostCategory } from "@/lib/blog";
@@ -34,28 +35,32 @@ export async function POST(req: Request) {
 
   const baseSlug = slugify(title) || "post";
   let slug = baseSlug;
-  let n = 1;
-  while (await prisma.post.findUnique({ where: { slug } })) {
-    n += 1;
-    slug = `${baseSlug}-${n}`;
+  for (let attempt = 1; attempt <= 10; attempt += 1) {
+    try {
+      const post = await prisma.post.create({
+        data: {
+          slug,
+          title,
+          excerpt,
+          content,
+          coverImageUrl,
+          category: category as PostCategory,
+          status: "draft",
+          metaTitle,
+          metaDescription,
+          authorId: session.user!.id!,
+          topics: { connect: topicIds.map((id) => ({ id })) },
+        },
+      });
+      return Response.json(post, { status: 201 });
+    } catch (err) {
+      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
+        slug = `${baseSlug}-${attempt + 1}`;
+        continue;
+      }
+      throw err;
+    }
   }
-
-  const post = await prisma.post.create({
-    data: {
-      slug,
-      title,
-      excerpt,
-      content,
-      coverImageUrl,
-      category: category as PostCategory,
-      status: "draft",
-      metaTitle,
-      metaDescription,
-      authorId: session.user!.id!,
-      topics: { connect: topicIds.map((id) => ({ id })) },
-    },
-  });
-
-  return Response.json(post, { status: 201 });
+  return Response.json({ error: "Não foi possível gerar slug único" }, { status: 409 });
 }
 
