@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import { Geist_Mono } from "next/font/google";
 import { Providers } from "@/components/providers";
 import { ServiceWorkerRegistration } from "@/components/pwa/sw-register";
+import { SITE_URL } from "@/lib/site-url";
 import "./globals.css";
 
 const inter = Inter({
@@ -27,10 +28,11 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://bfincont.com.br"),
+  metadataBase: new URL(SITE_URL),
   title: "bfin · Controle financeiro pessoal",
   description:
     "Organize gastos, metas e investimentos num só lugar. Simples, rápido, no seu bolso.",
+  alternates: { canonical: "/" },
   applicationName: "bfin",
   appleWebApp: {
     capable: true,
