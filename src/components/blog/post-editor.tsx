@@ -2,7 +2,11 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
 import { POST_CATEGORIES, POST_STATUSES, type PostCategory, type PostStatus } from "@/lib/blog";
+import "@uiw/react-md-editor/markdown-editor.css";
+
+const MDEditor = dynamic(() => import("@uiw/react-md-editor"), { ssr: false });
 
 type Topic = { id: string; name: string };
 
@@ -103,13 +107,15 @@ export function PostEditor({
             rows={2}
             className="w-full border border-hairline rounded-md px-3 py-2 text-sm"
           />
-          <textarea
-            value={form.content}
-            onChange={(e) => update("content", e.target.value)}
-            placeholder="Conteúdo em Markdown..."
-            rows={24}
-            className="w-full border border-hairline rounded-md px-3 py-2 text-sm font-mono"
-          />
+          <div data-color-mode="light" className="rounded-md overflow-hidden border border-hairline">
+            <MDEditor
+              value={form.content}
+              onChange={(v) => update("content", v ?? "")}
+              height={520}
+              preview="live"
+              textareaProps={{ placeholder: "Conteúdo em Markdown..." }}
+            />
+          </div>
         </div>
 
         <aside className="space-y-4 text-sm">
