@@ -230,15 +230,80 @@ Reclamações com status EVALUATED, capturadas 2026-05-14:
 - [Startups to Watch: Por que a IA venceu os apps tradicionais (2026)](https://startupstowatch.com.br/o-melhor-aplicativo-para-controle-financeiro-em-2026-por-que-a-ia-venceu-os-apps-tradicionais/) — "Interface Invisível", WhatsApp como interface vencedora no Brasil.
 - [Jota blog: Top 7 assistentes de IA no WhatsApp para gerir dinheiro](https://blog.jota.ai/assistente-ia-whatsapp-organizar-dinheiro/) — landscape WhatsApp finance bots 2026.
 
-### Limitações da pesquisa atual
+### Gatilhos de vida — quando brasileiros decidem se organizar
 
-- **Sem dados quantitativos de Reddit/r/financaspessoaisbr** — busca `site:reddit.com` não retornou resultados; precisa scrape direto ou GummySearch.
+Pesquisa Creditas + Opinion Box ("O Corre do Brasileiro", 2026) e dados Serasa (jun/2025) confirmam quatro gatilhos principais:
+
+| Gatilho | Dado de suporte | Implicação de aquisição |
+|---|---|---|
+| **Dívida / inadimplência** | 80,9% famílias endividadas (PEIC abr/2026); 81,7M CPFs negativados | Canal: busca ativa por saída ("sair do vermelho", "quitar dívida") |
+| **Casamento / morar junto** | 53% dos casais brigam por dinheiro (Serasa, jun/2025) | Canal: casal que busca "organizar finanças a dois"; feature de compartilhamento |
+| **Primeiro emprego** | 11,5% dos inadimplentes têm 18-25 anos (Serasa 2025); gastos crescem com salário | Canal: jovem que recebe primeiro salário e não sabe dividir |
+| **Filho / planejamento familiar** | Metas de longo prazo surgem ao planejar filho (casa, educação, reserva) | Canal: conteúdo sobre "quanto custa ter filho", "reserva emergência família" |
+
+**Dado crítico (MeuTudo, 2025, n=n/d):** 82% dos brasileiros iniciaram 2025 sem metas financeiras — gatilho mais comum é "virada do ano", mas o hábito não se sustenta sem produto com baixo atrito.
+
+**Dado crítico (pesquisa SPC/CNDL):** 52% dos brasileiros não se organizam por **não saber por onde começar** — a barreira é cognitiva, não motivacional. Produto que reduz essa fricção inicial captura esse pool.
+
+**Implicação para onboarding:** usuário não chega ao bfin por curiosidade — chega com dor ativa (dívida, susto no extrato, briga no casamento). Onboarding deve reconhecer esse contexto, não ensinar finanças do zero.
+
+---
+
+## Análise de reputação Organizze (Reclame Aqui, set/2025–fev/2026)
+
+Contraste com Mobills:
+
+| Métrica | Mobills | Organizze |
+|---|---|---|
+| Nota Reclame Aqui | 9,2 | Alta (excelente) |
+| Reclamações respondidas | 100% | ~100% |
+| Tempo médio resposta | n/d | 2d 16h |
+| Índice de resolução | 93,8% | 87,2% |
+| Tom das reclamações | Raiva (sincronização quebrada, premium não funciona) | Frustração burocrática (cobrança, cancelamento) |
+
+**Padrões de reclamação do Organizze:**
+- Cobrança anual renovada sem aviso claro / sem contato para cancelar
+- Banco do usuário não listado no Open Finance — descoberto após assinar
+- Integração bancária com inconsistências (foge do controle deles, mas usuário culpa o app)
+- Tempo de resposta do suporte (> 20 dias relatados)
+- **Ausência de "dividir despesas"** — pedido mais recorrente não atendido
+
+**Insight competitivo:** Organizze tem produto sólido e suporte bom — mas o modelo de assinatura anual cria fricção no cancelamento que gera reclamação. bfin com plano mensal sem fidelidade elimina esse atrito. A feature de compartilhamento (`AccountMember`) endereça o "dividir despesas" que o Organizze não entrega.
+
+---
+
+## Mapa de preços atualizado (mai/2026)
+
+| App | Grátis | Mensal | Anual | Lifetime | Modelo |
+|---|---|---|---|---|---|
+| Minhas Economias | Ilimitado | — | — | — | 100% grátis |
+| Fin | Sim | R$ 8,50 | — | — | Freemium light |
+| **bfin (planejado)** | **Sim (beta generoso)** | **R$ 14,90** | **R$ 119,90** | — | **Freemium** |
+| Mobills | Sim | — | R$ 99,90 | — | Freemium |
+| Organizze Manual | 7 dias trial | R$ 35 | R$ 159 | — | Quase pago |
+| Organizze Conectado | — | — | R$ 399–599 | — | Premium high |
+| Money Lover | Sim | — | — | R$ 99,90 | Freemium + lifetime |
+| Minhas Finanças | Sim | — | — | R$ 19,90 | Freemium + lifetime |
+| Focca-AI | Sim | R$ 24,90 | — | — | Freemium |
+
+**Insight de pricing:** bfin está bem posicionado entre Mobills (anual, sem mensal) e Organizze Manual (mensal caro). O gap não preenchido é o **lifetime acessível** — R$99–149 únicos poderiam converter usuários que "odeiam assinatura". Vale testar como opção secundária.
+
+**Dado de referência:** sem pesquisa primária de willingness-to-pay disponível publicamente para o segmento. Validar com Van Westendorp em amostra própria (Tally.so, 20-50 respondentes) antes de fixar preço definitivo.
+
+---
+
+## Limitações da pesquisa atual
+
+- **Sem dados quantitativos de Reddit/r/financaspessoaisbr** — busca `site:reddit.com` e WebFetch retornaram 403/sem resultado; única via é GummySearch (trial 7 dias) ou acesso direto com conta autenticada.
 - **Sem volumes exatos de keywords** — requer Ahrefs/Ubersuggest API. Lista atual é qualitativa.
 - **Sem dados primários de retenção dos concorrentes** — Sensor Tower / data.ai pagos.
 - **TAM/SAM/SOM são estimativas próprias** — não verificadas com analista de mercado.
 - **Base de usuários de concorrentes está congelada em 2020** — atualizar via Play Store scraping.
+- **Sem pesquisa primária de willingness-to-pay** — validar com Van Westendorp em amostra própria.
+- **Gatilhos de vida** confirmados qualitativamente; falta dado de qual gatilho **converte** (não só motiva).
 
 ## Histórico de revisões
 
 - **2026-05-14** — v1 inicial. Mapeamento concorrentes BR, validação de dor via Reclame Aqui + Lina/MindMiners, TAM/SAM/SOM estimado, keywords SEO priorizadas, posicionamento sugerido.
-- **2026-05-14** — v1.1 adiciona seção Metodologia, data de cada fonte primária (PEIC abr/2026, Serasa mar/2026, Lina jan/2026), caveat ⚠️ sobre números de usuários defasados de 2020 (CashMe), reestrutura seção Fontes com data de dado vs data de publicação, lista de limitações da pesquisa.
+- **2026-05-14** — v1.1 adiciona seção Metodologia, data de cada fonte primária, caveat sobre números defasados, reestrutura seção Fontes.
+- **2026-05-15** — v1.2 adiciona: gatilhos de vida (Creditas/Opinion Box 2026, Serasa jun/2025, MeuTudo 2025, SPC/CNDL), barreira "52% não sabem por onde começar", análise de reputação Organizze vs Mobills (Reclame Aqui set/2025–fev/2026), mapa de preços atualizado com 9 players, insight de pricing (lifetime gap), limitações adicionais.
