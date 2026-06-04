@@ -16,11 +16,39 @@ type PluggyWebhookBody = {
 };
 
 /**
+ * O endpoint é público e dispara operações sensíveis (linkar/sincronizar/apagar
+ * dados bancários). A Pluggy envia webhooks a partir de IP fixo (177.71.238.212).
+ * Validamos a origem para mitigar spoofing/IDOR.
+ *
+ * Atrás do Caddy (reverse proxy de hop único) o IP real do cliente é o ÚLTIMO da
+ * cadeia x-forwarded-for — o Caddy faz append do remote address. Pegar o primeiro
+ * seria spoofável (atacante envia seu próprio XFF). Configurável via env para não
+ * travar dev/túnel: PLUGGY_WEBHOOK_ALLOWED_IPS="*" desliga a checagem.
+ */
+function isAllowedOrigin(request: Request): boolean {
+  const raw = (process.env.PLUGGY_WEBHOOK_ALLOWED_IPS ?? "177.71.238.212").trim();
+  if (raw === "*") return true;
+  const allowed = new Set(raw.split(",").map((s) => s.trim()).filter(Boolean));
+
+  const parts = (request.headers.get("x-forwarded-for") ?? "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  const clientIp = parts.length ? parts[parts.length - 1] : request.headers.get("x-real-ip");
+
+  return !!clientIp && allowed.has(clientIp);
+}
+
+/**
  * Pluggy exige resposta 2xx em < 5s, senão reenvia (até 9x).
  * Respondemos imediatamente e processamos via `after()` (waitUntil no Vercel).
  * Idempotência garantida por externalId @unique no upsert — retries são inofensivos.
  */
 export async function POST(request: Request) {
+  if (process.env.NODE_ENV === "production" && !isAllowedOrigin(request)) {
+    return Response.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   let body: PluggyWebhookBody;
   try {
     body = await request.json();

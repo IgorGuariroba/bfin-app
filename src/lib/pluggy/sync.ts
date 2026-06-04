@@ -42,17 +42,23 @@ async function resolveUserId(itemId: string): Promise<string | null> {
   return item?.userId ?? null;
 }
 
-/** Encontra ou cria uma Tag (não-sistema) para a categoria do Pluggy. */
-async function resolveCategoryTagId(userId: string, category: string): Promise<string> {
-  const existing = await prisma.tag.findUnique({
-    where: { userId_name: { userId, name: category } },
-    select: { id: true },
-  });
-  if (existing) return existing.id;
+/**
+ * Resolve o id da Tag de uma categoria usando um cache em memória (Map).
+ * Evita N+1: as tags do usuário são pré-carregadas uma vez por sync; categorias
+ * novas são criadas sob demanda e cacheadas. Cria só no miss.
+ */
+async function resolveCategoryTagId(
+  userId: string,
+  category: string,
+  cache: Map<string, string>
+): Promise<string> {
+  const cached = cache.get(category);
+  if (cached) return cached;
   const created = await prisma.tag.create({
     data: { userId, name: category, color: DEFAULT_TAG_COLOR, isSystem: false },
     select: { id: true },
   });
+  cache.set(category, created.id);
   return created.id;
 }
 
@@ -78,12 +84,19 @@ export async function syncItemTransactions(
   const accounts = await listAccounts(itemId);
   let synced = 0;
 
+  // Pré-carrega as tags do usuário uma vez (evita N+1 no loop de transactions).
+  const userTags = await prisma.tag.findMany({
+    where: { userId },
+    select: { id: true, name: true },
+  });
+  const tagCache = new Map<string, string>(userTags.map((t) => [t.name, t.id]));
+
   for (const account of accounts) {
     const txs = await listTransactions(account.id, { createdAtFrom: opts.createdAtFrom });
     for (const tx of txs) {
       const mapped = mapPluggyTransaction(tx, account);
       const tagConnect = mapped.category
-        ? { connect: [{ id: await resolveCategoryTagId(userId, mapped.category) }] }
+        ? { connect: [{ id: await resolveCategoryTagId(userId, mapped.category, tagCache) }] }
         : undefined;
 
       await prisma.transaction.upsert({
