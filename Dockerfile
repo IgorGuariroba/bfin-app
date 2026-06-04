@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1
 FROM node:22-alpine AS deps
 WORKDIR /app
 COPY package*.json ./
@@ -13,9 +14,10 @@ RUN DATABASE_URL=postgresql://dummy:dummy@localhost:5432/dummy npx prisma genera
 ENV NEXT_TELEMETRY_DISABLED=1
 ARG NEXT_PUBLIC_FARO_URL
 ENV NEXT_PUBLIC_FARO_URL=$NEXT_PUBLIC_FARO_URL
-ARG FARO_API_KEY
-ENV FARO_API_KEY=$FARO_API_KEY
-RUN npm run build -- --webpack
+# FARO_API_KEY só é usado em build-time (upload de sourcemaps ao Faro pelo plugin webpack).
+# Montado como secret BuildKit: exposto à env do RUN, sem persistir em layer nem na imagem final.
+RUN --mount=type=secret,id=faro_api_key,env=FARO_API_KEY \
+    npm run build -- --webpack
 
 FROM node:22-alpine AS runner
 WORKDIR /app
