@@ -151,6 +151,12 @@ export function ConnectBankButton({ isPro }: { isPro: boolean }) {
       {token && (
         <PluggyConnect
           connectToken={token}
+          // Expõe o conector de teste "Pluggy Bank" (user-ok/password-ok) só quando
+          // a URL traz ?pluggySandbox=1 — usuário real nunca vê o banco fake.
+          includeSandbox={
+            typeof window !== "undefined" &&
+            new URLSearchParams(window.location.search).get("pluggySandbox") === "1"
+          }
           onSuccess={async (data) => {
             setToken(null);
             // Persiste o item na hora (não espera o webhook, que pode demorar/ser
