@@ -37,14 +37,15 @@ export async function POST(request: Request) {
   const session = await auth();
   if (!session?.user?.id) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
-  let body: { itemId?: string };
+  let body: { itemId?: string } | null;
   try {
     body = await request.json();
   } catch {
     return Response.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const itemId = body.itemId?.trim();
+  // body pode ser null (JSON "null" é válido) — opcional encadeado evita crash 500.
+  const itemId = body?.itemId?.trim();
   if (!itemId) return Response.json({ error: "itemId obrigatório" }, { status: 400 });
 
   // Pool = conta efetiva (owner); connectedBy = quem clicou (sessão atual).
