@@ -39,19 +39,14 @@ jobs:
           secrets: |
             faro_api_key=${{ secrets.FARO_API_KEY }}
 
-      # Dispara redeploy no Dokploy via SSH (curl em localhost:3000), mantendo
-      # o painel Dokploy privado (não exposto à internet). O compose usa a tag
-      # :latest com pull_policy: always, então o Dokploy puxa a imagem recém-
-      # publicada. As migrações Prisma rodam no entrypoint (prisma migrate deploy).
+      # Dispara redeploy no Dokploy via HTTPS (Traefik), sem depender de SSH.
+      # O compose usa a tag :latest com pull_policy: always, então o Dokploy
+      # puxa a imagem recém-publicada. As migrações Prisma rodam no entrypoint
+      # do container (prisma migrate deploy).
       - name: Trigger Dokploy deploy
-        uses: appleboy/ssh-action@v1
-        with:
-          host: ${{ secrets.VPS_HOST }}
-          username: deploy
-          key: ${{ secrets.VPS_SSH_KEY }}
-          script: |
-            curl --fail --silent --show-error -X POST \
-              http://localhost:3000/api/compose.deploy \
-              -H "x-api-key: ${{ secrets.DOKPLOY_API_KEY }}" \
-              -H "Content-Type: application/json" \
-              -d '{"composeId":"CJWFSnkMzDc8Tw0cKQfVD"}'
+        run: |
+          curl --fail --silent --show-error -X POST \
+            "https://dokploy.bfincont.com.br/api/compose.deploy" \
+            -H "x-api-key: ${{ secrets.DOKPLOY_API_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d '{"composeId":"CJWFSnkMzDc8Tw0cKQfVD"}'
