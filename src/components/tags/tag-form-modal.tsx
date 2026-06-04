@@ -35,6 +35,9 @@ export function TagFormModal({ open, onOpenChange, tag, onSave, onDelete }: TagF
 
   useEffect(() => {
     if (open) {
+      // Sincroniza os campos com a prop quando o modal abre — estado derivado
+      // controlado por `open`, não loop de render.
+      /* eslint-disable react-hooks/set-state-in-effect */
       if (tag) {
         setName(tag.name);
         setColor(tag.color);
@@ -42,6 +45,7 @@ export function TagFormModal({ open, onOpenChange, tag, onSave, onDelete }: TagF
         setName("");
         setColor(PRESET_COLORS[0]);
       }
+      /* eslint-enable react-hooks/set-state-in-effect */
     }
   }, [open, tag]);
 
@@ -54,8 +58,8 @@ export function TagFormModal({ open, onOpenChange, tag, onSave, onDelete }: TagF
       await onSave({ name, color });
       toast.success(tag ? "Tag atualizada" : "Tag criada");
       onOpenChange(false);
-    } catch (err: any) {
-      toast.error(err.message || "Erro ao salvar tag");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Erro ao salvar tag");
     } finally {
       setLoading(false);
     }
@@ -70,8 +74,8 @@ export function TagFormModal({ open, onOpenChange, tag, onSave, onDelete }: TagF
         await onDelete(tag.id);
         toast.success("Tag excluída");
         onOpenChange(false);
-      } catch (err: any) {
-        toast.error(err.message || "Erro ao excluir tag");
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "Erro ao excluir tag");
       } finally {
         setLoading(false);
       }

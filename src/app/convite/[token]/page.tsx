@@ -14,7 +14,9 @@ export default function AcceptInvitePage() {
   const [errorMsg, setErrorMsg] = useState("");
 
   useEffect(() => {
-    // Verify token exists by trying to accept — if 401 we redirect to login
+    // Libera a UI só após montar no cliente (gate de hidratação) — transição de
+    // mount única, não loop de render.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setState("ready");
   }, []);
 

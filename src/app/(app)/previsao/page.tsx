@@ -37,6 +37,8 @@ export default function PrevisaoPage() {
   };
 
   useEffect(() => {
+    // fetchItems só altera estado após o await do fetch (fonte externa), não de forma síncrona.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchItems();
   }, []);
 
@@ -55,8 +57,8 @@ export default function PrevisaoPage() {
       const res = await fetch(`/api/previsao/${id}`, { method: "DELETE" });
       if (!res.ok) throw new Error("Erro ao excluir");
       setItems((prev) => prev.filter((i) => i.id !== id));
-    } catch (e: any) {
-      toast.error(e.message);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Erro ao excluir");
     }
   };
 
@@ -72,8 +74,8 @@ export default function PrevisaoPage() {
       const data = await res.json();
       toast.success(`Previsão aplicada! ${data.count} dias preenchidos nos próximos 12 meses.`);
       window.dispatchEvent(new CustomEvent("bfin:transaction-created"));
-    } catch (e: any) {
-      toast.error(e.message || "Erro ao aplicar previsão");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Erro ao aplicar previsão");
     } finally {
       setApplying(false);
     }

@@ -12,7 +12,10 @@ function TodayCalendar() {
   const [today, setToday] = useState<{ m: string; d: number } | null>(null);
 
   useEffect(() => {
+    // Data só existe no cliente — setState no mount evita mismatch de hidratação
+    // (renderiza placeholder no SSR, preenche após montar). Não é loop de render.
     const now = new Date();
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setToday({ m: MONTH_ABBR[now.getMonth()], d: now.getDate() });
   }, []);
 

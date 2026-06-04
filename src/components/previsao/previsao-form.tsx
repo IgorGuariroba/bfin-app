@@ -20,6 +20,9 @@ export function PrevisaoForm({ open, onOpenChange, onSuccess, editItem }: Previs
 
   useEffect(() => {
     if (open) {
+      // Sincroniza os campos com a prop quando o modal abre — estado derivado
+      // controlado por `open`, não loop de render.
+      /* eslint-disable react-hooks/set-state-in-effect */
       if (editItem) {
         setName(editItem.name);
         setAmountStr(editItem.amount.toFixed(2).replace(".", ","));
@@ -27,6 +30,7 @@ export function PrevisaoForm({ open, onOpenChange, onSuccess, editItem }: Previs
         setName("");
         setAmountStr("");
       }
+      /* eslint-enable react-hooks/set-state-in-effect */
       // Focus amount on open
       setTimeout(() => {
         amountInputRef.current?.focus();
@@ -59,8 +63,8 @@ export function PrevisaoForm({ open, onOpenChange, onSuccess, editItem }: Previs
       toast.success(editItem ? "Atualizado!" : "Adicionado!");
       onSuccess();
       onOpenChange(false);
-    } catch (err: any) {
-      toast.error(err.message || "Erro ao salvar");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Erro ao salvar");
     } finally {
       setSubmitting(false);
     }

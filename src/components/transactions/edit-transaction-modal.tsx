@@ -37,6 +37,9 @@ export function EditTransactionModal({ transaction, onClose, onUpdated }: EditTr
 
   useEffect(() => {
     if (transaction) {
+      // Sincroniza os campos com a transação selecionada — estado derivado da
+      // prop, não loop de render.
+      /* eslint-disable react-hooks/set-state-in-effect */
       setCentavos(Math.round(transaction.amount * 100));
       setType(transaction.type as Category);
       setDescription(transaction.description);
@@ -46,6 +49,7 @@ export function EditTransactionModal({ transaction, onClose, onUpdated }: EditTr
           : new Date(transaction.date).toISOString().slice(0, 10);
       setDate(d);
       setTypeOpen(false);
+      /* eslint-enable react-hooks/set-state-in-effect */
     }
   }, [transaction]);
 

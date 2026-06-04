@@ -34,6 +34,8 @@ export function useTags() {
   }, []);
 
   useEffect(() => {
+    // fetch_ só altera estado após o await do fetch (fonte externa), não de forma síncrona.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetch_();
   }, [fetch_]);
 

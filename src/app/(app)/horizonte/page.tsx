@@ -56,8 +56,9 @@ export default function HorizontePage() {
   );
 
   useEffect(() => {
+    // fetchData só altera estado após o await do fetch (fonte externa), não de forma síncrona.
+    // eslint-disable-next-line react-hooks/set-state-in-effect, react-hooks/exhaustive-deps
     fetchData(months);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [firstMonth, period]);
 
   const shift = useCallback((delta: number) => {
