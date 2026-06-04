@@ -63,7 +63,15 @@ async function main() {
   await prisma.transaction.deleteMany({ where: { userId: user.id } });
   await prisma.previsao.deleteMany({ where: { userId: user.id } });
 
-  const transactions = [
+  type SeedTx = {
+    type: string;
+    description: string;
+    amount: number;
+    date: Date;
+    tagIds?: string[];
+  };
+
+  const transactions: SeedTx[] = [
     { type: "entrada", description: "Salário", amount: 8000, date: new Date("2026-05-01") },
     { type: "saida", description: "Aluguel", amount: 2500, date: new Date("2026-05-01") },
     { type: "diario", description: "Supermercado", amount: 120, date: new Date("2026-05-02"), tagIds: ["tag-alimentacao"] },
@@ -76,13 +84,13 @@ async function main() {
   ];
 
   for (const t of transactions) {
-    const { tagIds, ...data } = t as any;
+    const { tagIds, ...data } = t;
     await prisma.transaction.create({
       data: {
         ...data,
         userId: user.id,
         tags: tagIds
-          ? { connect: tagIds.map((id: string) => ({ id })) }
+          ? { connect: tagIds.map((id) => ({ id })) }
           : undefined,
       },
     });

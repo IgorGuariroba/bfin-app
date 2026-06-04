@@ -1,6 +1,7 @@
 import "server-only";
 import { auth } from "@/lib/auth";
 import { PreApproval } from "mercadopago";
+import type { PreApprovalRequest } from "mercadopago/dist/clients/preApproval/commonTypes";
 import { mpClient, PLAN_PRICES, BillingCycle } from "@/lib/mercadopago";
 import { prisma } from "@/lib/prisma";
 import type { NextRequest } from "next/server";
@@ -29,7 +30,6 @@ export async function POST(request: NextRequest) {
 
   try {
     const preApproval = new PreApproval(mpClient);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const sub = await preApproval.create({
       body: {
         reason: `bfin Pro — ${price.label}`,
@@ -43,11 +43,14 @@ export async function POST(request: NextRequest) {
         back_url: `${origin}/assinar`,
         notification_url: `${origin}/api/webhook/mercadopago`,
         external_reference: `${session.user.id}:${cycle}`,
-      } as any,
+        // O tipo do SDK do Mercado Pago não cobre notification_url no body do
+        // PreApproval, embora a API aceite. Cast localizado em vez de any solto.
+      } as PreApprovalRequest,
     });
     return Response.json({ init_point: sub.init_point });
-  } catch (err: any) {
-    console.error("[checkout] error:", err?.message);
-    return Response.json({ error: err?.message ?? "Erro MP" }, { status: 500 });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Erro MP";
+    console.error("[checkout] error:", message);
+    return Response.json({ error: message }, { status: 500 });
   }
 }

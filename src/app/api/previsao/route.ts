@@ -40,7 +40,8 @@ export async function POST(request: NextRequest) {
     });
 
     return Response.json(previsao, { status: 201 });
-  } catch (error: any) {
-    return Response.json({ error: error.message }, { status: 400 });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Erro";
+    return Response.json({ error: message }, { status: 400 });
   }
 }

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { BackHeader } from "@/components/layout/back-header";
-import { Tag, useTags } from "@/hooks/use-tags";
+import { Tag, TagInput, useTags } from "@/hooks/use-tags";
 import { TagFormModal } from "@/components/tags/tag-form-modal";
 import { Plus, Lock } from "lucide-react";
 
@@ -24,7 +24,7 @@ export default function TagsPage() {
     setModalOpen(true);
   };
 
-  const handleSave = async (data: any) => {
+  const handleSave = async (data: TagInput) => {
     if (editingTag) {
       await update(editingTag.id, data);
     } else {

@@ -72,8 +72,9 @@ export function useTransactions(filters: Filters = {}) {
   );
 
   useEffect(() => {
+    // fetch_ só altera estado após o await do fetch (fonte externa), não de forma síncrona.
+    // eslint-disable-next-line react-hooks/set-state-in-effect, react-hooks/exhaustive-deps
     fetch_(filters);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters.month, filters.type, filters.from, filters.to]);
 
   const create = useCallback(

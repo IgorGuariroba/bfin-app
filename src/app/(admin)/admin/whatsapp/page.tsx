@@ -91,6 +91,8 @@ export default function AdminWhatsappPage() {
   }, []);
 
   useEffect(() => {
+    // fetchList só altera estado após o await do fetch (fonte externa), não de forma síncrona.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchList();
     const intv = setInterval(fetchList, POLL_MS);
     return () => clearInterval(intv);
@@ -98,6 +100,8 @@ export default function AdminWhatsappPage() {
 
   useEffect(() => {
     if (!selectedId) return;
+    // fetchDetail só altera estado após o await do fetch (fonte externa), não de forma síncrona.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchDetail(selectedId);
     const intv = setInterval(() => fetchDetail(selectedId), POLL_MS);
     return () => clearInterval(intv);

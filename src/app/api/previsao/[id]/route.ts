@@ -34,8 +34,9 @@ export async function PUT(
     });
 
     return Response.json(updated);
-  } catch (error: any) {
-    return Response.json({ error: error.message }, { status: 400 });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Erro";
+    return Response.json({ error: message }, { status: 400 });
   }
 }
 
@@ -63,7 +64,8 @@ export async function DELETE(
     });
 
     return Response.json({ success: true });
-  } catch (error: any) {
-    return Response.json({ error: error.message }, { status: 400 });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Erro";
+    return Response.json({ error: message }, { status: 400 });
   }
 }

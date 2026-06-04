@@ -60,6 +60,8 @@ export function SaldosGrid({ month, filter, isBlocked, onUpsell, onDayClick, onT
   }, []);
 
   useEffect(() => {
+    // fetchData só altera estado após o await do fetch (fonte externa), não de forma síncrona.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (!isBlocked) fetchData(month);
   }, [month, fetchData, isBlocked]);
 
