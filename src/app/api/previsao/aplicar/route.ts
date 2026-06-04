@@ -21,11 +21,13 @@ export async function POST(request: NextRequest) {
   const startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
   const endDate = new Date(now.getFullYear(), now.getMonth() + 12, now.getDate(), 0, 0, 0);
 
-  // Delete existing diario transactions in the 12-month window
+  // Delete existing diario transactions in the 12-month window.
+  // Apenas lançamentos manuais — nunca toca em importados via Open Finance (source: pluggy).
   await prisma.transaction.deleteMany({
     where: {
       userId,
       type: "diario",
+      source: "manual",
       date: { gte: startDate, lt: endDate },
     },
   });
