@@ -143,9 +143,20 @@ export function ConnectBankButton({ isPro }: { isPro: boolean }) {
       {token && (
         <PluggyConnect
           connectToken={token}
-          onSuccess={() => {
+          onSuccess={async (data) => {
             setToken(null);
-            loadItems();
+            // Persiste o item na hora (não espera o webhook, que pode demorar/ser
+            // rejeitado). Só então recarrega a lista — evita ver "desconectado".
+            try {
+              await fetch("/api/pluggy/items", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ itemId: data?.item?.id }),
+              });
+            } catch {
+              // segue mesmo assim — o webhook é o fallback
+            }
+            await loadItems();
             router.refresh();
           }}
           onError={() => {
