@@ -81,9 +81,10 @@ export async function POST(request: Request) {
 
         case "transactions/created":
         case "transactions/updated":
+          // O evento transactions/* não traz clientUserId, então não dá para
+          // registrar o Item aqui. O item/created sempre chega antes e já dispara
+          // a primeira sync — quando transactions/* chega, o Item já existe.
           if (itemId) {
-            // Garante o Item registrado (caso o transactions chegue antes do item/created).
-            if (ownerId) await ensurePluggyItem(itemId, ownerId, connectedByUserId);
             await syncItemTransactions(itemId, { createdAtFrom: transactionsCreatedAtFrom });
           }
           break;
