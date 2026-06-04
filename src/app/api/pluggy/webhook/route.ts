@@ -31,13 +31,18 @@ export async function POST(request: Request) {
   const { event, itemId, clientUserId, transactionIds, transactionsCreatedAtFrom } = body;
   if (!event) return Response.json({ ok: true });
 
+  // clientUserId vem como "ownerId:actorId" (ver connect-token).
+  // ownerId = dono do pool; actorId = quem conectou. Fallback: sem ":", ambos iguais.
+  const [ownerId, actorId] = (clientUserId ?? "").split(":");
+  const connectedByUserId = actorId || ownerId;
+
   after(async () => {
     try {
       switch (event) {
         case "item/created":
         case "item/updated":
-          if (itemId && clientUserId) {
-            await ensurePluggyItem(itemId, clientUserId);
+          if (itemId && ownerId) {
+            await ensurePluggyItem(itemId, ownerId, connectedByUserId);
             if (event === "item/created") await syncItemTransactions(itemId);
           }
           break;
@@ -50,7 +55,7 @@ export async function POST(request: Request) {
         case "transactions/updated":
           if (itemId) {
             // Garante o Item registrado (caso o transactions chegue antes do item/created).
-            if (clientUserId) await ensurePluggyItem(itemId, clientUserId);
+            if (ownerId) await ensurePluggyItem(itemId, ownerId, connectedByUserId);
             await syncItemTransactions(itemId, { createdAtFrom: transactionsCreatedAtFrom });
           }
           break;

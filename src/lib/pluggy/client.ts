@@ -89,6 +89,18 @@ export async function getItem(itemId: string): Promise<PluggyItem> {
   return pluggyGet<PluggyItem>(apiKey, `/items/${itemId}`);
 }
 
+/** Remove o Item no Pluggy (revoga a conexão/consentimento). */
+export async function deleteItem(itemId: string): Promise<void> {
+  const apiKey = await getApiKey();
+  const res = await fetch(`${BASE_URL}/items/${itemId}`, {
+    method: "DELETE",
+    headers: { "X-API-KEY": apiKey },
+  });
+  if (!res.ok && res.status !== 404) {
+    throw new Error(`Pluggy DELETE /items failed: ${res.status} ${await res.text()}`);
+  }
+}
+
 export async function listAccounts(itemId: string): Promise<PluggyAccount[]> {
   const apiKey = await getApiKey();
   const data = await pluggyGet<{ results: PluggyAccount[] }>(

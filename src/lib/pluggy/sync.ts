@@ -10,13 +10,18 @@ const DEFAULT_TAG_COLOR = "#6a6a6a";
  * Chamado no item/created e item/updated. Busca os dados frescos do Item
  * (recomendação da Pluggy: sempre GET /items/{id} ao processar eventos).
  */
-export async function ensurePluggyItem(itemId: string, userId: string): Promise<void> {
+export async function ensurePluggyItem(
+  itemId: string,
+  userId: string,
+  connectedByUserId: string
+): Promise<void> {
   const item = await getItem(itemId);
   await prisma.pluggyItem.upsert({
     where: { itemId },
     create: {
       itemId,
       userId,
+      connectedByUserId,
       connector: item.connector?.name ?? "Banco",
       status: item.status,
       lastSyncedAt: new Date(),

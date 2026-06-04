@@ -26,7 +26,8 @@ model User {
   memberOf       AccountMember[] @relation("MemberOf")
   posts          Post[]
   postComments   PostComment[]
-  pluggyItems    PluggyItem[]
+  pluggyItems          PluggyItem[] @relation("OwnedPluggyItems")
+  connectedPluggyItems PluggyItem[] @relation("ConnectedPluggyItems")
 }
 
 model AccountMember {
@@ -103,18 +104,21 @@ model Transaction {
 }
 
 model PluggyItem {
-  id           String        @id @default(cuid())
-  userId       String                            // dono dos dados (effective user)
-  itemId       String        @unique             // id do Item no Pluggy
-  connector    String                            // nome do banco/conector
-  status       String                            // UPDATED | LOGIN_ERROR | OUTDATED | ...
-  lastSyncedAt DateTime?
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
-  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  transactions Transaction[]
+  id                String        @id @default(cuid())
+  userId            String                        // dono do pool de dados (effective user)
+  connectedByUserId String                        // quem efetivamente conectou o banco
+  itemId            String        @unique         // id do Item no Pluggy
+  connector         String                        // nome do banco/conector
+  status            String                        // UPDATED | LOGIN_ERROR | OUTDATED | ...
+  lastSyncedAt      DateTime?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  user              User          @relation("OwnedPluggyItems", fields: [userId], references: [id], onDelete: Cascade)
+  connectedBy       User          @relation("ConnectedPluggyItems", fields: [connectedByUserId], references: [id], onDelete: Cascade)
+  transactions      Transaction[]
 
   @@index([userId])
+  @@index([connectedByUserId])
 }
 
 model Tag {
