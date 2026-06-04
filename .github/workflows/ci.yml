@@ -29,7 +29,16 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      # next build sai com exit 0 mesmo logando erros de prerender (ex.: ReferenceError
+      # 'window is not defined' ao renderizar no servidor). Capturamos o log e
+      # reprovamos se algum desses marcadores aparecer — pega regressão de SSR.
       - name: Build
-        run: npm run build
+        run: |
+          set -o pipefail
+          npm run build 2>&1 | tee build.log
+          if grep -E "ReferenceError|is not defined|Error occurred prerendering" build.log; then
+            echo "::error::Erro de prerender detectado no build"
+            exit 1
+          fi
         env:
           NEXT_TELEMETRY_DISABLED: "1"
