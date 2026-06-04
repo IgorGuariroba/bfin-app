@@ -2,8 +2,16 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { PluggyConnect } from "react-pluggy-connect";
+import dynamic from "next/dynamic";
 import { Landmark, Loader2, Trash2 } from "lucide-react";
+
+// react-pluggy-connect toca `window` no carregamento do módulo, o que quebra o
+// prerender SSR de /configuracoes. Carregamos só no cliente (ssr: false) — o
+// widget é interativo e nunca precisa renderizar no servidor.
+const PluggyConnect = dynamic(
+  () => import("react-pluggy-connect").then((m) => m.PluggyConnect),
+  { ssr: false }
+);
 
 type BankItem = {
   id: string;
