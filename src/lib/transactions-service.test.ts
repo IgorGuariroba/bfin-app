@@ -110,6 +110,23 @@ describe("transactions-service create", () => {
     ).rejects.toBeInstanceOf(TransactionValidationError);
   });
 
+  it("rejeita date malformada em vez de gravar Invalid Date", async () => {
+    const user = await seedUser();
+
+    await expect(
+      createTransaction({
+        userId: user.id,
+        type: "saida",
+        description: "X",
+        amount: 10,
+        date: "não-é-data",
+      })
+    ).rejects.toBeInstanceOf(TransactionValidationError);
+
+    const count = await prisma.transaction.count({ where: { userId: user.id } });
+    expect(count).toBe(0);
+  });
+
   it("parseia date YYYY-MM-DD no dia correto (sem off-by-one)", async () => {
     const user = await seedUser();
 
@@ -146,5 +163,47 @@ describe("transactions-service create", () => {
     });
     expect(all).toHaveLength(3);
     expect(all.map((t) => t.date.getMonth())).toEqual([5, 6, 7]); // jun, jul, ago
+  });
+
+  it("associa tags só às ocorrências novas, sem contaminar transações pré-existentes coincidentes", async () => {
+    const user = await seedUser();
+    const tag = await prisma.tag.create({
+      data: { userId: user.id, name: "Casa", color: "#abc" },
+    });
+
+    // Transação pré-existente que coincide em userId/description/type e data
+    // com uma das ocorrências futuras do repeat — NÃO deve receber a tag.
+    const preexisting = await prisma.transaction.create({
+      data: {
+        userId: user.id,
+        type: "saida",
+        description: "Aluguel",
+        amount: 2000,
+        date: new Date(2026, 6, 10, 12, 0, 0), // 2026-07-10 12:00
+      },
+    });
+
+    await createTransaction({
+      userId: user.id,
+      type: "saida",
+      description: "Aluguel",
+      amount: 2000,
+      date: "2026-06-10",
+      repeat: "monthly",
+      repeatEnd: "count",
+      repeatCount: 3,
+      tagIds: [tag.id],
+    });
+
+    const tagged = await prisma.transaction.findMany({
+      where: { userId: user.id, tags: { some: { id: tag.id } } },
+    });
+    expect(tagged).toHaveLength(3); // base + 2 extras, nenhuma a mais
+
+    const refreshedPre = await prisma.transaction.findUnique({
+      where: { id: preexisting.id },
+      include: { tags: true },
+    });
+    expect(refreshedPre?.tags).toHaveLength(0);
   });
 });

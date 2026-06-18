@@ -39,6 +39,9 @@ export async function createTransaction(
 
   const [dy, dm, dd] = input.date.split("-").map(Number);
   const baseDate = new Date(dy, dm - 1, dd, 12, 0, 0);
+  if (isNaN(baseDate.getTime())) {
+    throw new TransactionValidationError("Invalid date format");
+  }
   const repeat = input.repeat ?? "none";
   const repeatEnd = input.repeatEnd ?? "forever";
   const repeatCount = input.repeatCount ?? 0;
@@ -65,7 +68,7 @@ export async function createTransaction(
 
   if (repeat !== "none") {
     const extras = buildRepeatDates(baseDate, repeat, repeatEnd, repeatCount);
-    await prisma.transaction.createMany({
+    const createdExtras = await prisma.transaction.createManyAndReturn({
       data: extras.map((d) => ({
         userId,
         type,
@@ -77,14 +80,11 @@ export async function createTransaction(
         repeatEnd,
         repeatCount,
       })),
+      select: { id: true },
     });
-    if (connectTags && extras.length > 0) {
-      const created = await prisma.transaction.findMany({
-        where: { userId, date: { in: extras }, description, type },
-        select: { id: true },
-      });
+    if (connectTags && createdExtras.length > 0) {
       await Promise.all(
-        created.map((t) =>
+        createdExtras.map((t) =>
           prisma.transaction.update({
             where: { id: t.id },
             data: { tags: connectTags },
