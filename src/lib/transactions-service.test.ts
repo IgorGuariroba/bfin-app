@@ -127,6 +127,25 @@ describe("transactions-service create", () => {
     expect(count).toBe(0);
   });
 
+  it("rejeita date não-string (número/objeto) como Missing required fields, sem TypeError", async () => {
+    const user = await seedUser();
+
+    // Input externo (API/MCP) pode chegar como número se a validação de borda
+    // falhar; o serviço deve rejeitar como 400, não estourar TypeError (500).
+    await expect(
+      createTransaction({
+        userId: user.id,
+        type: "saida",
+        description: "X",
+        amount: 10,
+        date: 20260610 as unknown as string,
+      })
+    ).rejects.toBeInstanceOf(TransactionValidationError);
+
+    const count = await prisma.transaction.count({ where: { userId: user.id } });
+    expect(count).toBe(0);
+  });
+
   it("rejeita data impossível que o JS rolaria (formato válido, mas inexistente)", async () => {
     const user = await seedUser();
 

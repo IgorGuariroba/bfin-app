@@ -27,7 +27,13 @@ export async function createTransaction(
 ): Promise<Transaction> {
   const { userId, type, description, amount, source = "manual" } = input;
 
-  if (!type || !description || amount == null || !input.date) {
+  if (
+    !type ||
+    !description ||
+    amount == null ||
+    typeof input.date !== "string" ||
+    !input.date
+  ) {
     throw new TransactionValidationError("Missing required fields");
   }
   if (!VALID_TYPES.includes(type)) {

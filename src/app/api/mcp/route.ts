@@ -6,6 +6,7 @@ import {
   createTransaction,
   TransactionValidationError,
 } from "@/lib/transactions-service";
+import { fmt } from "@/lib/utils";
 
 function bearerToken(request: Request): string | null {
   const header = request.headers.get("authorization");
@@ -48,7 +49,7 @@ function buildServer(userId: string): McpServer {
           content: [
             {
               type: "text",
-              text: `Movimentação criada: ${tx.description} (${tx.type}) R$ ${tx.amount} em ${date}.`,
+              text: `Movimentação criada: ${tx.description} (${tx.type}) ${fmt(tx.amount)} em ${date}.`,
             },
           ],
         };
