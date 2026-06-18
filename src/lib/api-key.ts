@@ -1,6 +1,12 @@
+import "server-only";
+
 import { randomBytes, scryptSync } from "node:crypto";
 
 const PREFIX = "sk-bfin-";
+
+if (!process.env.APIKEY_PEPPER && process.env.NODE_ENV === "production") {
+  throw new Error("APIKEY_PEPPER é obrigatória em produção.");
+}
 const PEPPER = process.env.APIKEY_PEPPER ?? "dev-pepper-change-me";
 
 export function hashApiKey(plain: string): string {

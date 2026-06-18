@@ -1,3 +1,5 @@
+import "server-only";
+
 import { prisma } from "@/lib/prisma";
 import { hashApiKey } from "@/lib/api-key";
 import { getUserPlan } from "@/lib/plan";
