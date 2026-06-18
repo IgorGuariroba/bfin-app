@@ -4,13 +4,22 @@ import { randomBytes, scryptSync } from "node:crypto";
 
 const PREFIX = "sk-bfin-";
 
-if (!process.env.APIKEY_PEPPER && process.env.NODE_ENV === "production") {
-  throw new Error("APIKEY_PEPPER é obrigatória em produção.");
+// Resolvido em runtime (não no load do módulo): o `next build` avalia este
+// arquivo com NODE_ENV=production ao coletar dados de página, mas sem as env
+// vars de runtime. Lançar no top-level quebraria o build.
+function getPepper(): string {
+  const pepper = process.env.APIKEY_PEPPER;
+  if (!pepper) {
+    if (process.env.NODE_ENV === "production") {
+      throw new Error("APIKEY_PEPPER é obrigatória em produção.");
+    }
+    return "dev-pepper-change-me";
+  }
+  return pepper;
 }
-const PEPPER = process.env.APIKEY_PEPPER ?? "dev-pepper-change-me";
 
 export function hashApiKey(plain: string): string {
-  return scryptSync(plain, PEPPER, 64).toString("base64url");
+  return scryptSync(plain, getPepper(), 64).toString("base64url");
 }
 
 export function verifyApiKey(plain: string, hashedKey: string): boolean {
