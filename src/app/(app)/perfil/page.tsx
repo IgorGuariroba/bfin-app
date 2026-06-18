@@ -4,6 +4,7 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { ChevronLeft, User, Loader2, Check } from "lucide-react";
+import { AssistentePanel } from "@/components/assistente/assistente-panel";
 
 export default function EditarPerfilPage() {
   const { data: session, update } = useSession();
@@ -173,6 +174,8 @@ export default function EditarPerfilPage() {
           )}
         </button>
       </form>
+
+      <AssistentePanel />
     </div>
   );
 }

@@ -28,6 +28,7 @@ model User {
   postComments   PostComment[]
   pluggyItems          PluggyItem[] @relation("OwnedPluggyItems")
   connectedPluggyItems PluggyItem[] @relation("ConnectedPluggyItems")
+  apiKeys              ApiKey[]
 }
 
 model AccountMember {
@@ -119,6 +120,20 @@ model PluggyItem {
 
   @@index([userId])
   @@index([connectedByUserId])
+}
+
+model ApiKey {
+  id          String    @id @default(cuid())
+  userId      String
+  name        String
+  hashedKey   String    @unique
+  prefix      String
+  lastUsedAt  DateTime?
+  createdAt   DateTime  @default(now())
+  revokedAt   DateTime?
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model Tag {
