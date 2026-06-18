@@ -127,6 +127,36 @@ describe("transactions-service create", () => {
     expect(count).toBe(0);
   });
 
+  it("rejeita data impossível que o JS rolaria (formato válido, mas inexistente)", async () => {
+    const user = await seedUser();
+
+    // 2026-13-45: mês/dia fora do range — o JS "rola" para uma data válida,
+    // mas não é o que o caller pediu. O round-trip precisa rejeitar.
+    await expect(
+      createTransaction({
+        userId: user.id,
+        type: "saida",
+        description: "X",
+        amount: 10,
+        date: "2026-13-45",
+      })
+    ).rejects.toBeInstanceOf(TransactionValidationError);
+
+    // 2026-02-30: 30 de fevereiro vira 02 de março.
+    await expect(
+      createTransaction({
+        userId: user.id,
+        type: "saida",
+        description: "X",
+        amount: 10,
+        date: "2026-02-30",
+      })
+    ).rejects.toBeInstanceOf(TransactionValidationError);
+
+    const count = await prisma.transaction.count({ where: { userId: user.id } });
+    expect(count).toBe(0);
+  });
+
   it("parseia date YYYY-MM-DD no dia correto (sem off-by-one)", async () => {
     const user = await seedUser();
 

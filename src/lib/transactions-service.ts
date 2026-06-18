@@ -37,10 +37,18 @@ export async function createTransaction(
     throw new TransactionValidationError("amount must be positive number");
   }
 
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(input.date)) {
+    throw new TransactionValidationError("Invalid date format. Expected YYYY-MM-DD");
+  }
   const [dy, dm, dd] = input.date.split("-").map(Number);
   const baseDate = new Date(dy, dm - 1, dd, 12, 0, 0);
-  if (isNaN(baseDate.getTime())) {
-    throw new TransactionValidationError("Invalid date format");
+  // Round-trip: rejeita datas impossíveis que o JS "rola" (ex.: 2026-13-45).
+  if (
+    baseDate.getFullYear() !== dy ||
+    baseDate.getMonth() !== dm - 1 ||
+    baseDate.getDate() !== dd
+  ) {
+    throw new TransactionValidationError("Invalid date");
   }
   const repeat = input.repeat ?? "none";
   const repeatEnd = input.repeatEnd ?? "forever";
