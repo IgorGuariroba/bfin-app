@@ -16,6 +16,7 @@ export type Transaction = {
   repeatCount: number;
   createdAt: string;
   updatedAt: string;
+  source: "manual" | "pluggy" | "agent";
   tags: TransactionTag[];
 };
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import { ArrowLeft, ChevronLeft, ChevronRight, Plus, ChevronDown, Wallet } from "lucide-react";
+import { ArrowLeft, ChevronLeft, ChevronRight, Plus, ChevronDown, Wallet, Sparkles } from "lucide-react";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { useTransactions } from "@/hooks/use-transactions";
 import type { Transaction } from "@/hooks/use-transactions";
@@ -225,7 +225,16 @@ export function DayDetail({ date, onClose, onNavigate }: DayDetailProps) {
 
                     {/* Description + date */}
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm text-ink font-medium truncate">{tx.description}</p>
+                      <p className="text-sm text-ink font-medium truncate flex items-center gap-1.5">
+                        {tx.source === "agent" && (
+                          <Sparkles
+                            size={13}
+                            className="text-rausch shrink-0"
+                            aria-label="Criada pelo assistente"
+                          />
+                        )}
+                        <span className="truncate">{tx.description}</span>
+                      </p>
                       <p className="text-xs text-muted-foreground mt-0.5">{txShort}</p>
                     </div>
 

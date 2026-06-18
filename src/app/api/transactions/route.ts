@@ -2,8 +2,8 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getEffectiveUserId } from "@/lib/effective-user";
 import type { NextRequest } from "next/server";
-import { addDays, addWeeks, addMonths } from "@/lib/date-utils";
 import { getUserPlan, isMonthAllowed } from "@/lib/plan";
+import { createTransaction, TransactionValidationError } from "@/lib/transactions-service";
 
 export async function GET(request: NextRequest) {
   const session = await auth();
@@ -68,89 +68,23 @@ export async function POST(request: NextRequest) {
   const body = await request.json();
   const { type, description, amount, date, repeat, repeatEnd, repeatCount, tagIds } = body;
 
-  if (!type || !description || amount == null || !date) {
-    return Response.json({ error: "Missing required fields" }, { status: 400 });
-  }
-
-  const validTypes = ["entrada", "saida", "diario", "cartao", "economia"];
-  if (!validTypes.includes(type)) {
-    return Response.json({ error: "Invalid type" }, { status: 400 });
-  }
-
-  if (typeof amount !== "number" || amount <= 0) {
-    return Response.json({ error: "amount must be positive number" }, { status: 400 });
-  }
-
-  const [dy, dm, dd] = (date as string).split("-").map(Number);
-  const baseDate = new Date(dy, dm - 1, dd, 12, 0, 0);
-  const repeatMode = repeat ?? "none";
-  const endMode = repeatEnd ?? "forever";
-  const count = repeatCount ?? 0;
-
-  const connectTags = tagIds?.length
-    ? { connect: (tagIds as string[]).map((id) => ({ id })) }
-    : undefined;
-
-  const base = await prisma.transaction.create({
-    data: {
+  try {
+    const base = await createTransaction({
       userId,
       type,
       description,
       amount,
-      date: baseDate,
-      repeat: repeatMode,
-      repeatEnd: endMode,
-      repeatCount: count,
-      tags: connectTags,
-    },
-    include: { tags: { select: { id: true, name: true, color: true } } },
-  });
-
-  if (repeatMode !== "none") {
-    const extras = buildRepeatDates(baseDate, repeatMode, endMode, count);
-    await prisma.transaction.createMany({
-      data: extras.map((d) => ({
-        userId,
-        type,
-        description,
-        amount,
-        date: d,
-        repeat: repeatMode,
-        repeatEnd: endMode,
-        repeatCount: count,
-      })),
+      date,
+      repeat,
+      repeatEnd,
+      repeatCount,
+      tagIds,
     });
-    if (connectTags && extras.length > 0) {
-      const created = await prisma.transaction.findMany({
-        where: { userId, date: { in: extras }, description, type },
-        select: { id: true },
-      });
-      await Promise.all(
-        created.map((t) =>
-          prisma.transaction.update({
-            where: { id: t.id },
-            data: { tags: connectTags },
-          })
-        )
-      );
+    return Response.json(base, { status: 201 });
+  } catch (error) {
+    if (error instanceof TransactionValidationError) {
+      return Response.json({ error: error.message }, { status: 400 });
     }
+    throw error;
   }
-
-  return Response.json(base, { status: 201 });
-}
-
-function buildRepeatDates(
-  base: Date,
-  repeat: string,
-  repeatEnd: string,
-  count: number
-): Date[] {
-  const dates: Date[] = [];
-  const maxOccurrences = repeatEnd === "count" ? count - 1 : 12;
-  const advance = repeat === "daily" ? addDays : repeat === "weekly" ? addWeeks : addMonths;
-
-  for (let i = 1; i <= maxOccurrences; i++) {
-    dates.push(advance(base, i));
-  }
-  return dates;
 }
