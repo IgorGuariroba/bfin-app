@@ -257,6 +257,29 @@ describe("transactions-service create", () => {
     });
     expect(refreshedPre?.tags).toHaveLength(0);
   });
+
+  it("rejeita tagIds de outro usuário (anti-IDOR) e não cria nada", async () => {
+    const owner = await seedUser();
+    const attacker = await seedUser();
+    // Tag pertencente ao owner — o attacker não pode conectá-la.
+    const foreignTag = await prisma.tag.create({
+      data: { userId: owner.id, name: "Privada", color: "#abc" },
+    });
+
+    await expect(
+      createTransaction({
+        userId: attacker.id,
+        type: "saida",
+        description: "X",
+        amount: 10,
+        date: "2026-06-10",
+        tagIds: [foreignTag.id],
+      })
+    ).rejects.toBeInstanceOf(TransactionValidationError);
+
+    const count = await prisma.transaction.count({ where: { userId: attacker.id } });
+    expect(count).toBe(0);
+  });
 });
 
 describe("createTransaction — dedup defensivo (ADR-0004)", () => {

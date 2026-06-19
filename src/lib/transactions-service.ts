@@ -139,6 +139,17 @@ export async function createTransaction(
     throw new TransactionValidationError("Invalid date");
   }
 
+  // Anti-IDOR (styleguide §39): só conecta tags que pertencem ao próprio userId.
+  // Sem isso, um caller poderia anexar a Tag de outro usuário (input do body é cru).
+  if (input.tagIds?.length) {
+    const owned = await prisma.tag.count({
+      where: { userId, id: { in: input.tagIds } },
+    });
+    if (owned !== input.tagIds.length) {
+      throw new TransactionValidationError("Invalid tags");
+    }
+  }
+
   // Dedup defensivo (ADR-0004): candidata = mesmo amount + data ±2 dias + mesmo type,
   // cruzando qualquer origem (agent × pluggy × manual). Sem force, retorna a existente.
   if (!input.force) {
