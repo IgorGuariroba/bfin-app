@@ -141,11 +141,13 @@ export async function createTransaction(
 
   // Anti-IDOR (styleguide §39): só conecta tags que pertencem ao próprio userId.
   // Sem isso, um caller poderia anexar a Tag de outro usuário (input do body é cru).
-  if (input.tagIds?.length) {
+  // Deduplica antes de validar: IDs repetidos fariam o count divergir do length.
+  const tagIds = input.tagIds?.length ? [...new Set(input.tagIds)] : undefined;
+  if (tagIds?.length) {
     const owned = await prisma.tag.count({
-      where: { userId, id: { in: input.tagIds } },
+      where: { userId, id: { in: tagIds } },
     });
-    if (owned !== input.tagIds.length) {
+    if (owned !== tagIds.length) {
       throw new TransactionValidationError("Invalid tags");
     }
   }
@@ -172,8 +174,8 @@ export async function createTransaction(
   const repeatEnd = input.repeatEnd ?? "forever";
   const repeatCount = input.repeatCount ?? 0;
 
-  const connectTags = input.tagIds?.length
-    ? { connect: input.tagIds.map((id) => ({ id })) }
+  const connectTags = tagIds?.length
+    ? { connect: tagIds.map((id) => ({ id })) }
     : undefined;
 
   const base = await prisma.transaction.create({

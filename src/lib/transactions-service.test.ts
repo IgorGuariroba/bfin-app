@@ -280,6 +280,28 @@ describe("transactions-service create", () => {
     const count = await prisma.transaction.count({ where: { userId: attacker.id } });
     expect(count).toBe(0);
   });
+
+  it("aceita tagIds duplicados (deduplica) e conecta a tag uma única vez", async () => {
+    const user = await seedUser();
+    const tag = await prisma.tag.create({
+      data: { userId: user.id, name: "Casa", color: "#abc" },
+    });
+
+    const { transaction: tx } = await createTransaction({
+      userId: user.id,
+      type: "saida",
+      description: "Aluguel",
+      amount: 2000,
+      date: "2026-06-10",
+      tagIds: [tag.id, tag.id], // duplicado: não deve falhar como "Invalid tags"
+    });
+
+    const stored = await prisma.transaction.findUnique({
+      where: { id: tx.id },
+      include: { tags: true },
+    });
+    expect(stored?.tags.map((t) => t.id)).toEqual([tag.id]);
+  });
 });
 
 describe("createTransaction — dedup defensivo (ADR-0004)", () => {
