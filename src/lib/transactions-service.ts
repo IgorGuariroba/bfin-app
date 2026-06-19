@@ -5,6 +5,11 @@ import { addDays, addWeeks, addMonths } from "@/lib/date-utils";
 
 type Transaction = Awaited<ReturnType<typeof prisma.transaction.create>>;
 
+// createTransaction sempre retorna a transação com suas tags (include fixo abaixo).
+type TransactionWithTags = Transaction & {
+  tags: { id: string; name: string; color: string }[];
+};
+
 export class TransactionValidationError extends Error {}
 
 const VALID_TYPES = ["entrada", "saida", "diario", "cartao", "economia"];
@@ -27,6 +32,59 @@ export function suggestType(description: string): "entrada" | "saida" {
   return INCOME_KEYWORDS.some((k) => d.includes(k)) ? "entrada" : "saida";
 }
 
+/** Minúsculas + remove acentos, para casar descrição × nome de Tag sem sensibilidade a diacríticos. */
+function normalize(s: string): string {
+  return (s ?? "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "");
+}
+
+// Sinônimos de gasto → nome canônico de categoria (já sem acento). Casamento por substring.
+// A sugestão só resolve se o usuário tiver uma Tag cujo nome case com a categoria.
+const TAG_KEYWORDS: { category: string; keywords: string[] }[] = [
+  {
+    category: "alimentacao",
+    keywords: ["mercado", "supermercado", "ifood", "restaurante", "lanche", "padaria", "comida", "almoco", "jantar"],
+  },
+  {
+    category: "transporte",
+    keywords: ["uber", "99", "taxi", "gasolina", "combustivel", "onibus", "metro", "passagem", "estacionamento"],
+  },
+  {
+    category: "lazer",
+    keywords: ["cinema", "bar", "show", "viagem", "netflix", "spotify", "streaming", "jogo", "festa"],
+  },
+];
+
+/**
+ * Sugere o id de uma Tag do usuário a partir da descrição. Retorna null se nada casar.
+ * Heurística conservadora (ADR-0004): primeiro tenta o nome da própria Tag na descrição,
+ * depois um sinônimo de categoria. Nunca inventa Tag — só aponta para uma existente.
+ */
+export function suggestTag(
+  description: string,
+  tags: { id: string; name: string }[]
+): string | null {
+  const d = normalize(description);
+  if (!d) return null;
+
+  // 1) Nome da Tag aparece na descrição (ex.: "Academia" em "academia mensal").
+  for (const tag of tags) {
+    const n = normalize(tag.name);
+    if (n && d.includes(n)) return tag.id;
+  }
+
+  // 2) Palavra-chave de categoria → Tag cujo nome case com a categoria.
+  for (const { category, keywords } of TAG_KEYWORDS) {
+    if (keywords.some((k) => d.includes(k))) {
+      const tag = tags.find((t) => normalize(t.name).includes(category));
+      if (tag) return tag.id;
+    }
+  }
+  return null;
+}
+
 export interface CreateTransactionInput {
   userId: string;
   type: string;
@@ -42,7 +100,7 @@ export interface CreateTransactionInput {
 }
 
 export interface CreateTransactionResult {
-  transaction: Transaction; // criada OU candidata duplicata existente
+  transaction: TransactionWithTags; // criada OU candidata duplicata existente (com tags)
   duplicated: boolean; // true = retornou candidata em vez de criar
 }
 

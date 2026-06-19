@@ -2,8 +2,10 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
 import { z } from "zod";
 import { resolvePrincipal } from "@/lib/mcp-principal";
+import { prisma } from "@/lib/prisma";
 import {
   createTransaction,
+  suggestTag,
   suggestType,
   TransactionValidationError,
 } from "@/lib/transactions-service";
@@ -39,11 +41,33 @@ function buildServer(userId: string): McpServer {
           .boolean()
           .optional()
           .describe("Força a criação mesmo quando houver uma transação duplicata suspeita."),
+        repeat: z
+          .enum(["daily", "weekly", "monthly"])
+          .optional()
+          .describe("Recorrência: 'daily', 'weekly' ou 'monthly'. Omitido = não repete."),
+        repeatEnd: z
+          .enum(["forever", "count"])
+          .optional()
+          .describe(
+            "Fim da recorrência: 'forever' (12 ocorrências) ou 'count' (use repeatCount). Só vale com repeat."
+          ),
+        repeatCount: z
+          .number()
+          .int()
+          .positive()
+          .optional()
+          .describe("Número de ocorrências quando repeatEnd='count'."),
       },
     },
-    async ({ description, amount, date, type, force }) => {
+    async ({ description, amount, date, type, force, repeat, repeatEnd, repeatCount }) => {
       try {
         const resolvedType = type ?? suggestType(description);
+        // Sugere uma Tag existente do usuário a partir da descrição (ADR-0004).
+        const userTags = await prisma.tag.findMany({
+          where: { userId },
+          select: { id: true, name: true },
+        });
+        const suggestedTagId = suggestTag(description, userTags);
         const result = await createTransaction({
           userId,
           type: resolvedType,
@@ -52,6 +76,10 @@ function buildServer(userId: string): McpServer {
           date,
           source: "agent",
           force,
+          repeat,
+          repeatEnd,
+          repeatCount,
+          tagIds: suggestedTagId ? [suggestedTagId] : undefined,
         });
         if (result.duplicated) {
           const dup = result.transaction;
@@ -65,11 +93,19 @@ function buildServer(userId: string): McpServer {
           };
         }
         const tx = result.transaction;
+        const tagName = tx.tags[0]?.name;
+        const recurrenceNote =
+          repeat && repeatEnd === "count" && repeatCount
+            ? ` Recorrência ${repeat} (${repeatCount}x).`
+            : repeat
+              ? ` Recorrência ${repeat}.`
+              : "";
+        const tagNote = tagName ? ` Tag: ${tagName}.` : "";
         return {
           content: [
             {
               type: "text",
-              text: `Movimentação criada: ${tx.description} (${tx.type}) ${fmt(tx.amount)} em ${date}.`,
+              text: `Movimentação criada: ${tx.description} (${tx.type}) ${fmt(tx.amount)} em ${date}.${tagNote}${recurrenceNote}`,
             },
           ],
         };

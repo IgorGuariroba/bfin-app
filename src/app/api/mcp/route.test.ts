@@ -207,4 +207,67 @@ describe("POST /api/mcp", () => {
     expect(stored).toHaveLength(1);
     expect(stored[0].type).toBe("saida");
   });
+
+  it("T10: expõe repeat — cria as ocorrências mensais via MCP", async () => {
+    const { user, plain } = await seedProKey();
+
+    const res = await POST(
+      mcpRequest(plain, {
+        jsonrpc: "2.0",
+        id: 1,
+        method: "tools/call",
+        params: {
+          name: "create_transaction",
+          arguments: {
+            description: "Aluguel",
+            amount: 2000,
+            date: "2026-06-10",
+            type: "saida",
+            repeat: "monthly",
+            repeatEnd: "count",
+            repeatCount: 3,
+          },
+        },
+      })
+    );
+
+    expect(res.status).toBe(200);
+    const body = await res.text();
+    expect(body).toContain("Movimentação criada");
+    const all = await prisma.transaction.findMany({
+      where: { userId: user.id },
+      orderBy: { date: "asc" },
+    });
+    expect(all).toHaveLength(3);
+    expect(all.map((t) => t.date.getMonth())).toEqual([5, 6, 7]); // jun, jul, ago
+  });
+
+  it("T11: sugere Tag a partir da descrição e associa à transação criada", async () => {
+    const { user, plain } = await seedProKey();
+    const tag = await prisma.tag.create({
+      data: { userId: user.id, name: "Transporte", color: "#ff385c" },
+    });
+
+    const res = await POST(
+      mcpRequest(plain, {
+        jsonrpc: "2.0",
+        id: 1,
+        method: "tools/call",
+        params: {
+          name: "create_transaction",
+          arguments: { description: "uber pro aeroporto", amount: 40, date: "2026-06-15" },
+        },
+      })
+    );
+
+    expect(res.status).toBe(200);
+    const body = await res.text(); // consome o stream — garante que o handler concluiu
+    expect(body).toContain("Tag: Transporte");
+    const stored = await prisma.transaction.findMany({
+      where: { userId: user.id },
+      include: { tags: true },
+    });
+    expect(stored).toHaveLength(1);
+    expect(stored[0].tags.map((t) => t.id)).toEqual([tag.id]);
+  });
 });

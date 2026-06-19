@@ -2,6 +2,7 @@ import { afterAll, afterEach, describe, it, expect } from "vitest";
 import { prisma } from "@/lib/prisma";
 import {
   createTransaction,
+  suggestTag,
   suggestType,
   TransactionValidationError,
 } from "@/lib/transactions-service";
@@ -411,5 +412,31 @@ describe("suggestType", () => {
     // nunca retorna diario (sequência vazia ou palavra "diário" no texto)
     expect(suggestType("")).toBe("saida");
     expect(suggestType("diário")).toBe("saida");
+  });
+});
+
+describe("suggestTag", () => {
+  const tags = [
+    { id: "t-alim", name: "Alimentação" },
+    { id: "t-transp", name: "Transporte" },
+    { id: "t-lazer", name: "Lazer" },
+  ];
+
+  it("T10: casa o nome da própria Tag presente na descrição (sem sensibilidade a acento)", () => {
+    expect(suggestTag("alimentacao do mês", tags)).toBe("t-alim");
+    expect(suggestTag("Transporte mensal", tags)).toBe("t-transp");
+  });
+
+  it("T11: casa por sinônimo de categoria → Tag correspondente", () => {
+    expect(suggestTag("uber pro trabalho", tags)).toBe("t-transp");
+    expect(suggestTag("Mercado da esquina", tags)).toBe("t-alim");
+    expect(suggestTag("netflix", tags)).toBe("t-lazer");
+  });
+
+  it("T12: retorna null quando nada casa ou não há Tag para a categoria", () => {
+    expect(suggestTag("pagamento genérico xyz", tags)).toBeNull();
+    expect(suggestTag("", tags)).toBeNull();
+    // keyword de transporte, mas usuário não tem a Tag Transporte
+    expect(suggestTag("uber", [{ id: "t-alim", name: "Alimentação" }])).toBeNull();
   });
 });
