@@ -1,7 +1,7 @@
 import { auth } from "@/lib/auth";
 import { getEffectiveUserId } from "@/lib/effective-user";
 import { getUserPlan, isFutureMonthAllowed } from "@/lib/plan";
-import { getTotais } from "@/lib/insights-service";
+import { getTotais, InsightsValidationError } from "@/lib/insights-service";
 import type { NextRequest } from "next/server";
 
 export async function GET(request: NextRequest) {
@@ -24,5 +24,12 @@ export async function GET(request: NextRequest) {
     return Response.json({ error: "plan_required" }, { status: 403 });
   }
 
-  return Response.json(await getTotais(userId, month));
+  try {
+    return Response.json(await getTotais(userId, month));
+  } catch (error) {
+    if (error instanceof InsightsValidationError) {
+      return Response.json({ error: error.message }, { status: 400 });
+    }
+    throw error;
+  }
 }
