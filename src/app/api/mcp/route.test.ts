@@ -1,6 +1,7 @@
 import { afterAll, afterEach, describe, it, expect } from "vitest";
 import { prisma } from "@/lib/prisma";
 import { generateApiKey } from "@/lib/api-key";
+import { ensureSystemTags } from "@/lib/seed-system-tags";
 import { POST } from "./route";
 
 let createdUserIds: string[] = [];
@@ -269,5 +270,32 @@ describe("POST /api/mcp", () => {
     });
     expect(stored).toHaveLength(1);
     expect(stored[0].tags.map((t) => t.id)).toEqual([tag.id]);
+  });
+
+  it("T12: cadeia #93 — categorias semeadas por ensureSystemTags são sugeridas via MCP", async () => {
+    const { user, plain } = await seedProKey();
+    await ensureSystemTags(user.id); // semeia Transporte/Alimentação/Moradia/... como system tags
+
+    const res = await POST(
+      mcpRequest(plain, {
+        jsonrpc: "2.0",
+        id: 1,
+        method: "tools/call",
+        params: {
+          name: "create_transaction",
+          arguments: { description: "aluguel do apartamento", amount: 1800, date: "2026-06-05" },
+        },
+      })
+    );
+
+    expect(res.status).toBe(200);
+    const body = await res.text();
+    expect(body).toContain("Tag: Moradia");
+    const stored = await prisma.transaction.findMany({
+      where: { userId: user.id },
+      include: { tags: true },
+    });
+    expect(stored).toHaveLength(1);
+    expect(stored[0].tags.map((t) => t.name)).toEqual(["Moradia"]);
   });
 });

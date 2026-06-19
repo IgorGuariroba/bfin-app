@@ -1,5 +1,13 @@
 import { prisma } from "@/lib/prisma";
-import { DEFAULT_SYSTEM_TAGS } from "@/lib/constants";
+import { DEFAULT_SYSTEM_TAGS, CATEGORY_TAGS } from "@/lib/constants";
+
+// Type-mirrors (Entradas/Saídas/...) + categorias canônicas (Transporte/Alimentação/...).
+// As categorias dão substância ao suggestTag (#93); o seeding idempotente faz backfill
+// em usuários existentes na próxima vez que ensureSystemTags rodar.
+const SYSTEM_TAGS = [
+  ...DEFAULT_SYSTEM_TAGS.map((t) => ({ name: t.name, color: t.color })),
+  ...CATEGORY_TAGS.map((t) => ({ name: t.name, color: t.color })),
+];
 
 /**
  * Garante que as tags de sistema existam para o usuário.
@@ -13,7 +21,7 @@ export async function ensureSystemTags(userId: string) {
 
   const existingNames = new Set(existing.map((t) => t.name));
 
-  const toCreate = DEFAULT_SYSTEM_TAGS.filter(
+  const toCreate = SYSTEM_TAGS.filter(
     (tag) => !existingNames.has(tag.name)
   );
 

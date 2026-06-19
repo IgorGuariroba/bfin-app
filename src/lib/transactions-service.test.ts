@@ -461,10 +461,13 @@ describe("suggestType", () => {
 });
 
 describe("suggestTag", () => {
+  // Espelha a taxonomia canônica de CATEGORY_TAGS (#93), com ids fictícios.
   const tags = [
     { id: "t-alim", name: "Alimentação" },
     { id: "t-transp", name: "Transporte" },
+    { id: "t-moradia", name: "Moradia" },
     { id: "t-lazer", name: "Lazer" },
+    { id: "t-saude", name: "Saúde" },
   ];
 
   it("T10: casa o nome da própria Tag presente na descrição (sem sensibilidade a acento)", () => {
@@ -476,6 +479,9 @@ describe("suggestTag", () => {
     expect(suggestTag("uber pro trabalho", tags)).toBe("t-transp");
     expect(suggestTag("Mercado da esquina", tags)).toBe("t-alim");
     expect(suggestTag("netflix", tags)).toBe("t-lazer");
+    // categorias novas da #93
+    expect(suggestTag("aluguel do mês", tags)).toBe("t-moradia");
+    expect(suggestTag("farmacia popular", tags)).toBe("t-saude");
   });
 
   it("T12: retorna null quando nada casa ou não há Tag para a categoria", () => {
