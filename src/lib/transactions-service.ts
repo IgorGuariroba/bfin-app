@@ -71,6 +71,72 @@ export function suggestTag(
   return null;
 }
 
+export interface ListTransactionsFilter {
+  month?: string; // YYYY-MM — atalho para o intervalo do mês inteiro
+  type?: string;
+  tagId?: string;
+  from?: string; // YYYY-MM-DD (ignorado se month presente)
+  to?: string; // YYYY-MM-DD (ignorado se month presente)
+}
+
+/**
+ * Parseia um limite YYYY-MM-DD do filtro, rejeitando formato/datas impossíveis
+ * (round-trip) com TransactionValidationError — evita Invalid Date chegando ao
+ * Prisma como 500. endOfDay=true fixa o fim do dia (limite superior inclusivo).
+ */
+function parseFilterDay(s: string, endOfDay = false): Date {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) {
+    throw new TransactionValidationError("Invalid date format. Expected YYYY-MM-DD");
+  }
+  const [y, m, d] = s.split("-").map(Number);
+  const date = endOfDay
+    ? new Date(y, m - 1, d, 23, 59, 59, 999)
+    : new Date(y, m - 1, d, 0, 0, 0);
+  if (date.getFullYear() !== y || date.getMonth() !== m - 1 || date.getDate() !== d) {
+    throw new TransactionValidationError("Invalid date");
+  }
+  return date;
+}
+
+/**
+ * Lista as Transactions do usuário aplicando filtros (mês/type/Tag ou intervalo
+ * from/to). Sempre escopado ao próprio userId (anti-IDOR). Extraído de
+ * GET /api/transactions para ser reutilizado por REST e MCP.
+ */
+export async function listTransactions(
+  userId: string,
+  filter: ListTransactionsFilter = {}
+): Promise<TransactionWithTags[]> {
+  const { month, type, tagId, from, to } = filter;
+  const where: Record<string, unknown> = { userId };
+
+  if (month) {
+    // Valida antes de instanciar Date: um month malformado viraria Invalid Date
+    // e o Prisma estouraria PrismaClientValidationError (500) no findMany.
+    if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(month)) {
+      throw new TransactionValidationError("Invalid month format. Expected YYYY-MM");
+    }
+    const [year, mon] = month.split("-").map(Number);
+    const start = new Date(year, mon - 1, 1);
+    const end = new Date(year, mon, 1);
+    where.date = { gte: start, lt: end };
+  } else if (from || to) {
+    where.date = {
+      ...(from ? { gte: parseFilterDay(from) } : {}),
+      ...(to ? { lte: parseFilterDay(to, true) } : {}),
+    };
+  }
+
+  if (type) where.type = type;
+  if (tagId) where.tags = { some: { id: tagId } };
+
+  return prisma.transaction.findMany({
+    where,
+    include: { tags: { select: { id: true, name: true, color: true } } },
+    orderBy: { date: "asc" },
+  });
+}
+
 export interface CreateTransactionInput {
   userId: string;
   type: string;

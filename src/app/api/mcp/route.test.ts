@@ -272,6 +272,143 @@ describe("POST /api/mcp", () => {
     expect(stored[0].tags.map((t) => t.id)).toEqual([tag.id]);
   });
 
+  it("get_month_summary responde o resumo do mês em uma chamada", async () => {
+    const { user, plain } = await seedProKey();
+    await prisma.transaction.createMany({
+      data: [
+        { userId: user.id, type: "entrada", description: "Salário", amount: 5000, date: new Date(2026, 5, 1, 12) },
+        { userId: user.id, type: "saida", description: "Mercado", amount: 800, date: new Date(2026, 5, 5, 12) },
+      ],
+    });
+
+    const res = await POST(
+      mcpRequest(plain, {
+        jsonrpc: "2.0",
+        id: 1,
+        method: "tools/call",
+        params: { name: "get_month_summary", arguments: { month: "2026-06" } },
+      })
+    );
+
+    expect(res.status).toBe(200);
+    const body = await res.text();
+    expect(body).toContain("sobrouNoMes");
+    expect(body).toContain("4200"); // 5000 - 800
+  });
+
+  it("get_totais responde os totais do mês via MCP", async () => {
+    const { user, plain } = await seedProKey();
+    await prisma.transaction.createMany({
+      data: [
+        { userId: user.id, type: "entrada", description: "Salário", amount: 5000, date: new Date(2026, 5, 1, 12) },
+        { userId: user.id, type: "cartao", description: "Fatura", amount: 1200, date: new Date(2026, 5, 5, 12) },
+      ],
+    });
+
+    const res = await POST(
+      mcpRequest(plain, {
+        jsonrpc: "2.0",
+        id: 1,
+        method: "tools/call",
+        params: { name: "get_totais", arguments: { month: "2026-06" } },
+      })
+    );
+
+    expect(res.status).toBe(200);
+    const body = await res.text();
+    expect(body).toContain("custoVida");
+    expect(body).toContain("1200"); // cartao entra no custo de vida
+  });
+
+  it("get_saldos responde a evolução diária do saldo via MCP", async () => {
+    const { user, plain } = await seedProKey();
+    await prisma.transaction.create({
+      data: { userId: user.id, type: "entrada", description: "Renda", amount: 1000, date: new Date(2026, 5, 1, 12) },
+    });
+
+    const res = await POST(
+      mcpRequest(plain, {
+        jsonrpc: "2.0",
+        id: 1,
+        method: "tools/call",
+        params: { name: "get_saldos", arguments: { month: "2026-06" } },
+      })
+    );
+
+    expect(res.status).toBe(200);
+    const body = await res.text();
+    expect(body).toContain("entries");
+    expect(body).toContain("accSaldo");
+  });
+
+  it("get_totais converte InsightsValidationError em tool error (isError), não erro JSON-RPC genérico", async () => {
+    const { plain } = await seedProKey();
+
+    // "0000-01" passa o regex do monthSchema (\d{4}) mas parseMonth rejeita (ano 0).
+    const res = await POST(
+      mcpRequest(plain, {
+        jsonrpc: "2.0",
+        id: 1,
+        method: "tools/call",
+        params: { name: "get_totais", arguments: { month: "0000-01" } },
+      })
+    );
+
+    expect(res.status).toBe(200);
+    const body = await res.text();
+    expect(body).toContain('"isError":true');
+    expect(body.toLowerCase()).toContain("month");
+  });
+
+  it("list_transactions filtra por mês e type via MCP", async () => {
+    const { user, plain } = await seedProKey();
+    await prisma.transaction.createMany({
+      data: [
+        { userId: user.id, type: "saida", description: "JunhoGasto", amount: 20, date: new Date(2026, 5, 10, 12) },
+        { userId: user.id, type: "entrada", description: "JunhoRenda", amount: 500, date: new Date(2026, 5, 11, 12) },
+        { userId: user.id, type: "saida", description: "MaioGasto", amount: 99, date: new Date(2026, 4, 10, 12) },
+      ],
+    });
+
+    const res = await POST(
+      mcpRequest(plain, {
+        jsonrpc: "2.0",
+        id: 1,
+        method: "tools/call",
+        params: { name: "list_transactions", arguments: { month: "2026-06", type: "saida" } },
+      })
+    );
+
+    expect(res.status).toBe(200);
+    const body = await res.text();
+    expect(body).toContain("JunhoGasto");
+    expect(body).not.toContain("JunhoRenda");
+    expect(body).not.toContain("MaioGasto");
+  });
+
+  it("get_sugestoes retorna insight de saldo negativo via MCP", async () => {
+    const { user, plain } = await seedProKey();
+    await prisma.transaction.createMany({
+      data: [
+        { userId: user.id, type: "entrada", description: "Pouco", amount: 100, date: new Date(2026, 5, 1, 12) },
+        { userId: user.id, type: "saida", description: "Muito", amount: 900, date: new Date(2026, 5, 2, 12) },
+      ],
+    });
+
+    const res = await POST(
+      mcpRequest(plain, {
+        jsonrpc: "2.0",
+        id: 1,
+        method: "tools/call",
+        params: { name: "get_sugestoes", arguments: { month: "2026-06" } },
+      })
+    );
+
+    expect(res.status).toBe(200);
+    const body = await res.text();
+    expect(body).toContain("saldo_negativo");
+  });
+
   it("T12: cadeia #93 — categorias semeadas por ensureSystemTags são sugeridas via MCP", async () => {
     const { user, plain } = await seedProKey();
     await ensureSystemTags(user.id); // semeia Transporte/Alimentação/Moradia/... como system tags

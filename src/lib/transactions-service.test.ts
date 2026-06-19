@@ -2,6 +2,7 @@ import { afterAll, afterEach, describe, it, expect } from "vitest";
 import { prisma } from "@/lib/prisma";
 import {
   createTransaction,
+  listTransactions,
   suggestTag,
   suggestType,
   TransactionValidationError,
@@ -441,6 +442,98 @@ describe("createTransaction — dedup defensivo (ADR-0004)", () => {
     expect(r.transaction.id).toBe(pluggy.id);
     const count = await prisma.transaction.count({ where: { userId: user.id } });
     expect(count).toBe(1);
+  });
+});
+
+describe("listTransactions", () => {
+  it("filtra por mês, ignorando transações de outros meses", async () => {
+    const user = await seedUser();
+    await prisma.transaction.createMany({
+      data: [
+        { userId: user.id, type: "saida", description: "Maio", amount: 10, date: new Date(2026, 4, 20, 12) },
+        { userId: user.id, type: "saida", description: "Junho A", amount: 20, date: new Date(2026, 5, 10, 12) },
+        { userId: user.id, type: "saida", description: "Junho B", amount: 30, date: new Date(2026, 5, 25, 12) },
+        { userId: user.id, type: "saida", description: "Julho", amount: 40, date: new Date(2026, 6, 1, 12) },
+      ],
+    });
+
+    const result = await listTransactions(user.id, { month: "2026-06" });
+
+    expect(result.map((t) => t.description)).toEqual(["Junho A", "Junho B"]);
+  });
+
+  it("filtra por type", async () => {
+    const user = await seedUser();
+    await prisma.transaction.createMany({
+      data: [
+        { userId: user.id, type: "saida", description: "Gasto", amount: 20, date: new Date(2026, 5, 10, 12) },
+        { userId: user.id, type: "entrada", description: "Renda", amount: 500, date: new Date(2026, 5, 11, 12) },
+      ],
+    });
+
+    const result = await listTransactions(user.id, { month: "2026-06", type: "entrada" });
+
+    expect(result).toHaveLength(1);
+    expect(result[0].description).toBe("Renda");
+  });
+
+  it("filtra por Tag e inclui as tags na resposta", async () => {
+    const user = await seedUser();
+    const tag = await prisma.tag.create({
+      data: { userId: user.id, name: "Transporte", color: "#fff" },
+    });
+    await prisma.transaction.create({
+      data: {
+        userId: user.id,
+        type: "saida",
+        description: "Uber",
+        amount: 30,
+        date: new Date(2026, 5, 10, 12),
+        tags: { connect: { id: tag.id } },
+      },
+    });
+    await prisma.transaction.create({
+      data: { userId: user.id, type: "saida", description: "Sem tag", amount: 15, date: new Date(2026, 5, 11, 12) },
+    });
+
+    const result = await listTransactions(user.id, { tagId: tag.id });
+
+    expect(result).toHaveLength(1);
+    expect(result[0].description).toBe("Uber");
+    expect(result[0].tags.map((t) => t.name)).toEqual(["Transporte"]);
+  });
+
+  it("rejeita month malformado com TransactionValidationError (não estoura Prisma/500)", async () => {
+    const user = await seedUser();
+    await expect(
+      listTransactions(user.id, { month: "garbage" })
+    ).rejects.toBeInstanceOf(TransactionValidationError);
+    // mês fora de 01-12 também é inválido
+    await expect(
+      listTransactions(user.id, { month: "2026-13" })
+    ).rejects.toBeInstanceOf(TransactionValidationError);
+  });
+
+  it("rejeita from/to malformado com TransactionValidationError", async () => {
+    const user = await seedUser();
+    await expect(
+      listTransactions(user.id, { from: "ontem" })
+    ).rejects.toBeInstanceOf(TransactionValidationError);
+    await expect(
+      listTransactions(user.id, { to: "2026-02-31" })
+    ).rejects.toBeInstanceOf(TransactionValidationError);
+  });
+
+  it("não vaza transações de outro usuário", async () => {
+    const user = await seedUser();
+    const other = await seedUser();
+    await prisma.transaction.create({
+      data: { userId: other.id, type: "saida", description: "Alheia", amount: 99, date: new Date(2026, 5, 10, 12) },
+    });
+
+    const result = await listTransactions(user.id, { month: "2026-06" });
+
+    expect(result).toHaveLength(0);
   });
 });
 

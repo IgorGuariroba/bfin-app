@@ -1,7 +1,7 @@
 import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
 import { getEffectiveUserId } from "@/lib/effective-user";
 import { getUserPlan, isFutureMonthAllowed } from "@/lib/plan";
+import { getSaldos, InsightsValidationError } from "@/lib/insights-service";
 import type { NextRequest } from "next/server";
 
 export async function GET(request: NextRequest) {
@@ -24,55 +24,12 @@ export async function GET(request: NextRequest) {
     return Response.json({ error: "plan_required" }, { status: 403 });
   }
 
-  const start = new Date(year, mon - 1, 1);
-  const end = new Date(year, mon, 1);
-
-  const [prevAgg, transactions] = await Promise.all([
-    prisma.transaction.groupBy({
-      by: ["type"],
-      where: { userId, date: { lt: start } },
-      _sum: { amount: true },
-    }),
-    prisma.transaction.findMany({
-      where: { userId, date: { gte: start, lt: end } },
-      select: { type: true, amount: true, date: true },
-      orderBy: { date: "asc" },
-    }),
-  ]);
-
-  const prevByType: Record<string, number> = {};
-  for (const g of prevAgg) {
-    prevByType[g.type] = g._sum.amount ?? 0;
+  try {
+    return Response.json(await getSaldos(userId, month));
+  } catch (error) {
+    if (error instanceof InsightsValidationError) {
+      return Response.json({ error: error.message }, { status: 400 });
+    }
+    throw error;
   }
-
-  const daysCount = new Date(year, mon, 0).getDate();
-  const byDay: Record<number, Record<string, number>> = {};
-  for (let d = 1; d <= daysCount; d++) byDay[d] = {};
-
-  for (const t of transactions) {
-    const day = t.date.getDate();
-    byDay[day][t.type] = (byDay[day][t.type] ?? 0) + t.amount;
-  }
-
-  let accSaldo =
-    (prevByType.entrada ?? 0) -
-    (prevByType.saida ?? 0) -
-    (prevByType.diario ?? 0) -
-    (prevByType.cartao ?? 0);
-  const entries = [];
-
-  for (let d = 1; d <= daysCount; d++) {
-    const bt = byDay[d];
-    accSaldo +=
-      (bt.entrada ?? 0) - (bt.saida ?? 0) - (bt.diario ?? 0) - (bt.cartao ?? 0);
-
-    entries.push({
-      day: d,
-      date: `${year}-${String(mon).padStart(2, "0")}-${String(d).padStart(2, "0")}`,
-      byType: bt,
-      accSaldo,
-    });
-  }
-
-  return Response.json({ entries, prevByType });
 }
