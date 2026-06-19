@@ -71,6 +71,54 @@ export function suggestTag(
   return null;
 }
 
+export interface ListTransactionsFilter {
+  month?: string; // YYYY-MM — atalho para o intervalo do mês inteiro
+  type?: string;
+  tagId?: string;
+  from?: string; // YYYY-MM-DD (ignorado se month presente)
+  to?: string; // YYYY-MM-DD (ignorado se month presente)
+}
+
+/**
+ * Lista as Transactions do usuário aplicando filtros (mês/type/Tag ou intervalo
+ * from/to). Sempre escopado ao próprio userId (anti-IDOR). Extraído de
+ * GET /api/transactions para ser reutilizado por REST e MCP.
+ */
+export async function listTransactions(
+  userId: string,
+  filter: ListTransactionsFilter = {}
+): Promise<TransactionWithTags[]> {
+  const { month, type, tagId, from, to } = filter;
+  const where: Record<string, unknown> = { userId };
+
+  if (month) {
+    const [year, mon] = month.split("-").map(Number);
+    const start = new Date(year, mon - 1, 1);
+    const end = new Date(year, mon, 1);
+    where.date = { gte: start, lt: end };
+  } else if (from || to) {
+    const parseLocalDay = (s: string, endOfDay = false) => {
+      const [y, m, d] = s.split("-").map(Number);
+      return endOfDay
+        ? new Date(y, m - 1, d, 23, 59, 59, 999)
+        : new Date(y, m - 1, d, 0, 0, 0);
+    };
+    where.date = {
+      ...(from ? { gte: parseLocalDay(from) } : {}),
+      ...(to ? { lte: parseLocalDay(to, true) } : {}),
+    };
+  }
+
+  if (type) where.type = type;
+  if (tagId) where.tags = { some: { id: tagId } };
+
+  return prisma.transaction.findMany({
+    where,
+    include: { tags: { select: { id: true, name: true, color: true } } },
+    orderBy: { date: "asc" },
+  });
+}
+
 export interface CreateTransactionInput {
   userId: string;
   type: string;

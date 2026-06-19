@@ -5,11 +5,28 @@ import { resolvePrincipal } from "@/lib/mcp-principal";
 import { prisma } from "@/lib/prisma";
 import {
   createTransaction,
+  listTransactions,
   suggestTag,
   suggestType,
   TransactionValidationError,
 } from "@/lib/transactions-service";
+import {
+  getMonthSummary,
+  getSaldos,
+  getSugestoes,
+  getTotais,
+} from "@/lib/insights-service";
 import { fmt } from "@/lib/utils";
+
+/** Empacota um resultado de leitura como conteúdo JSON para o agente consumir. */
+function jsonContent(data: unknown) {
+  return { content: [{ type: "text" as const, text: JSON.stringify(data) }] };
+}
+
+const monthSchema = z
+  .string()
+  .regex(/^\d{4}-\d{2}$/, "Mês no formato YYYY-MM")
+  .describe("Mês no formato YYYY-MM (ex.: 2026-06).");
 
 function bearerToken(request: Request): string | null {
   const header = request.headers.get("authorization");
@@ -119,6 +136,66 @@ function buildServer(userId: string): McpServer {
         throw error;
       }
     }
+  );
+
+  server.registerTool(
+    "get_month_summary",
+    {
+      description:
+        "Resumo do mês em uma chamada: entradas, custo de vida, quanto sobrou (sobrouNoMes) e saldo. Use para responder 'quanto sobrou este mês'.",
+      inputSchema: { month: monthSchema },
+    },
+    async ({ month }) => jsonContent(await getMonthSummary(userId, month))
+  );
+
+  server.registerTool(
+    "get_totais",
+    {
+      description:
+        "Totais detalhados do mês por tipo (entrada/saida/cartao/diario/economia), custo de vida, performance, saldo e comparação com o mês anterior.",
+      inputSchema: { month: monthSchema },
+    },
+    async ({ month }) => jsonContent(await getTotais(userId, month))
+  );
+
+  server.registerTool(
+    "get_saldos",
+    {
+      description:
+        "Evolução do saldo acumulado dia a dia no mês (para mostrar como o saldo varia ao longo do mês).",
+      inputSchema: { month: monthSchema },
+    },
+    async ({ month }) => jsonContent(await getSaldos(userId, month))
+  );
+
+  server.registerTool(
+    "get_sugestoes",
+    {
+      description:
+        "Insights financeiros proativos do mês (saldo negativo, gasto diário acima da Previsão, economia baixa, custo de vida em alta). Lista vazia = nada a sinalizar.",
+      inputSchema: { month: monthSchema },
+    },
+    async ({ month }) => jsonContent(await getSugestoes(userId, month))
+  );
+
+  server.registerTool(
+    "list_transactions",
+    {
+      description:
+        "Lista movimentações com filtros, para responder perguntas como 'quanto gastei com mercado'. Filtre por mês, tipo e/ou Tag.",
+      inputSchema: {
+        month: monthSchema.optional(),
+        type: z
+          .enum(["entrada", "saida", "diario", "cartao", "economia"])
+          .optional()
+          .describe(
+            "Filtra por tipo da movimentação. 'diario' é a projeção de gasto variável da Previsão (não gasto real)."
+          ),
+        tagId: z.string().optional().describe("Filtra pelas movimentações com esta Tag."),
+      },
+    },
+    async ({ month, type, tagId }) =>
+      jsonContent(await listTransactions(userId, { month, type, tagId }))
   );
 
   return server;
