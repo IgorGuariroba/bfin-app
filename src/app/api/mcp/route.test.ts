@@ -1,7 +1,8 @@
-import { afterAll, afterEach, describe, it, expect } from "vitest";
+import { afterAll, afterEach, describe, it, expect, vi } from "vitest";
 import { prisma } from "@/lib/prisma";
 import { generateApiKey } from "@/lib/api-key";
 import { ensureSystemTags } from "@/lib/seed-system-tags";
+import { logger } from "@/lib/logger";
 import { POST } from "./route";
 
 let createdUserIds: string[] = [];
@@ -16,10 +17,10 @@ async function seedProKey() {
   });
   createdUserIds.push(user.id);
   const { plain, prefix, hashedKey } = generateApiKey();
-  await prisma.apiKey.create({
+  const apiKey = await prisma.apiKey.create({
     data: { userId: user.id, name: "Assistente", prefix, hashedKey },
   });
-  return { user, plain };
+  return { user, plain, apiKey };
 }
 
 function mcpRequest(token: string | null, body: unknown) {
@@ -36,6 +37,7 @@ function mcpRequest(token: string | null, body: unknown) {
 }
 
 afterEach(async () => {
+  vi.restoreAllMocks();
   if (createdUserIds.length) {
     await prisma.user.deleteMany({ where: { id: { in: createdUserIds } } });
     createdUserIds = [];
@@ -434,5 +436,96 @@ describe("POST /api/mcp", () => {
     });
     expect(stored).toHaveLength(1);
     expect(stored[0].tags.map((t) => t.name)).toEqual(["Moradia"]);
+  });
+
+  it("T13: update_transaction edita uma Transaction existente via MCP", async () => {
+    const { user, plain } = await seedProKey();
+    const tx = await prisma.transaction.create({
+      data: {
+        userId: user.id,
+        type: "saida",
+        description: "Mercado",
+        amount: 120,
+        date: new Date(2026, 5, 10, 12),
+        source: "agent",
+      },
+    });
+
+    const res = await POST(
+      mcpRequest(plain, {
+        jsonrpc: "2.0",
+        id: 1,
+        method: "tools/call",
+        params: {
+          name: "update_transaction",
+          arguments: { id: tx.id, description: "Mercado do mês", amount: 150 },
+        },
+      })
+    );
+
+    expect(res.status).toBe(200);
+    await res.text();
+    const stored = await prisma.transaction.findUnique({ where: { id: tx.id } });
+    expect(stored?.description).toBe("Mercado do mês");
+    expect(stored?.amount).toBe(150);
+  });
+
+  it("T14: delete_transaction remove fisicamente a Transaction via MCP", async () => {
+    const { user, plain } = await seedProKey();
+    const tx = await prisma.transaction.create({
+      data: {
+        userId: user.id,
+        type: "saida",
+        description: "Erro",
+        amount: 10,
+        date: new Date(2026, 5, 10, 12),
+        source: "agent",
+      },
+    });
+
+    const res = await POST(
+      mcpRequest(plain, {
+        jsonrpc: "2.0",
+        id: 1,
+        method: "tools/call",
+        params: { name: "delete_transaction", arguments: { id: tx.id } },
+      })
+    );
+
+    expect(res.status).toBe(200);
+    await res.text();
+    const stored = await prisma.transaction.findUnique({ where: { id: tx.id } });
+    expect(stored).toBeNull();
+  });
+
+  it("T15: escrita do agente emite log de auditoria (apiKeyId/userId/action/entityId)", async () => {
+    const { user, plain, apiKey } = await seedProKey();
+    const infoSpy = vi.spyOn(logger, "info");
+
+    const res = await POST(
+      mcpRequest(plain, {
+        jsonrpc: "2.0",
+        id: 1,
+        method: "tools/call",
+        params: {
+          name: "create_transaction",
+          arguments: { description: "Café", amount: 9.5, date: "2026-06-15", type: "saida" },
+        },
+      })
+    );
+
+    expect(res.status).toBe(200);
+    await res.text(); // garante que o handler concluiu
+
+    const tx = await prisma.transaction.findFirst({ where: { userId: user.id } });
+    expect(infoSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        apiKeyId: apiKey.id,
+        userId: user.id,
+        action: "create",
+        entityId: tx!.id,
+      }),
+      expect.anything()
+    );
   });
 });

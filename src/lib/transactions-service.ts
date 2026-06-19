@@ -15,6 +15,12 @@ export class TransactionValidationError extends Error {}
 
 const VALID_TYPES = ["entrada", "saida", "diario", "cartao", "economia"];
 
+// Tipos que uma escrita de usuário/agente (create/update) pode atribuir. Exclui
+// `diario`: é o placeholder da projeção, criado só por apply_previsao — deixar o
+// boundary aceitá-lo abriria uma Transaction real a ser apagada por um futuro
+// deleteMany de apply_previsao (ADR-0004 §4, CONTEXT.md › Transaction Type).
+const VALID_WRITE_TYPES = VALID_TYPES.filter((t) => t !== "diario");
+
 // Sinais de receita para suggestType. Lista conservadora: o default é gasto → "saida".
 // "diario" jamais é sugerido (é projeção — ADR-0004).
 const INCOME_KEYWORDS = [
@@ -99,6 +105,23 @@ function parseFilterDay(s: string, endOfDay = false): Date {
 }
 
 /**
+ * Parseia uma data YYYY-MM-DD de Transaction ao meio-dia local (evita off-by-one
+ * de fuso). Round-trip rejeita formato e datas impossíveis (ex.: 2026-02-30) com
+ * TransactionValidationError. Compartilhado por create e update.
+ */
+function parseTransactionDay(s: string): Date {
+  if (typeof s !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(s)) {
+    throw new TransactionValidationError("Invalid date format. Expected YYYY-MM-DD");
+  }
+  const [y, m, d] = s.split("-").map(Number);
+  const date = new Date(y, m - 1, d, 12, 0, 0);
+  if (date.getFullYear() !== y || date.getMonth() !== m - 1 || date.getDate() !== d) {
+    throw new TransactionValidationError("Invalid date");
+  }
+  return date;
+}
+
+/**
  * Lista as Transactions do usuário aplicando filtros (mês/type/Tag ou intervalo
  * from/to). Sempre escopado ao próprio userId (anti-IDOR). Extraído de
  * GET /api/transactions para ser reutilizado por REST e MCP.
@@ -170,26 +193,14 @@ export async function createTransaction(
   ) {
     throw new TransactionValidationError("Missing required fields");
   }
-  if (!VALID_TYPES.includes(type)) {
+  if (!VALID_WRITE_TYPES.includes(type)) {
     throw new TransactionValidationError("Invalid type");
   }
   if (typeof amount !== "number" || amount <= 0) {
     throw new TransactionValidationError("amount must be positive number");
   }
 
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(input.date)) {
-    throw new TransactionValidationError("Invalid date format. Expected YYYY-MM-DD");
-  }
-  const [dy, dm, dd] = input.date.split("-").map(Number);
-  const baseDate = new Date(dy, dm - 1, dd, 12, 0, 0);
-  // Round-trip: rejeita datas impossíveis que o JS "rola" (ex.: 2026-13-45).
-  if (
-    baseDate.getFullYear() !== dy ||
-    baseDate.getMonth() !== dm - 1 ||
-    baseDate.getDate() !== dd
-  ) {
-    throw new TransactionValidationError("Invalid date");
-  }
+  const baseDate = parseTransactionDay(input.date);
 
   // Anti-IDOR (styleguide §39): só conecta tags que pertencem ao próprio userId.
   // Sem isso, um caller poderia anexar a Tag de outro usuário (input do body é cru).
@@ -275,6 +286,103 @@ export async function createTransaction(
   }
 
   return { transaction: base, duplicated: false };
+}
+
+export interface UpdateTransactionInput {
+  userId: string;
+  id: string;
+  type?: string;
+  description?: string;
+  amount?: number;
+  date?: string; // YYYY-MM-DD
+  tagIds?: string[];
+}
+
+/**
+ * Edita os campos centrais de uma Transaction (patch parcial). Sempre escopado
+ * ao próprio userId (anti-IDOR) — um id de outro dono não casa e vira
+ * "Transaction not found". Reaproveita as validações do create para os campos
+ * enviados; campos omitidos ficam intactos. A trilha de auditoria (log + bump
+ * de lastUsedAt) é responsabilidade do chamador MCP (recordAgentWrite).
+ */
+export async function updateTransaction(
+  input: UpdateTransactionInput
+): Promise<TransactionWithTags> {
+  const { userId, id } = input;
+  if (!userId || !id) {
+    throw new TransactionValidationError("Missing required fields");
+  }
+
+  const data: Record<string, unknown> = {};
+
+  if (input.type !== undefined) {
+    if (!VALID_WRITE_TYPES.includes(input.type)) {
+      throw new TransactionValidationError("Invalid type");
+    }
+    data.type = input.type;
+  }
+
+  if (input.description !== undefined) {
+    if (!input.description) {
+      throw new TransactionValidationError("Missing required fields");
+    }
+    data.description = input.description;
+  }
+
+  if (input.amount !== undefined) {
+    if (typeof input.amount !== "number" || input.amount <= 0) {
+      throw new TransactionValidationError("amount must be positive number");
+    }
+    data.amount = input.amount;
+  }
+
+  if (input.date !== undefined) {
+    data.date = parseTransactionDay(input.date);
+  }
+
+  if (input.tagIds !== undefined) {
+    const tagIds = input.tagIds.length ? [...new Set(input.tagIds)] : [];
+    if (tagIds.length) {
+      const owned = await prisma.tag.count({ where: { userId, id: { in: tagIds } } });
+      if (owned !== tagIds.length) {
+        throw new TransactionValidationError("Invalid tags");
+      }
+    }
+    // set substitui o conjunto de tags por completo (incl. desconectar todas).
+    data.tags = { set: tagIds.map((tid) => ({ id: tid })) };
+  }
+
+  // Anti-IDOR: confirma posse antes de editar. update (não updateMany) é
+  // necessário para escrever a relação tags; seu where só aceita o id único,
+  // então a checagem (id, userId) é a barreira contra editar a Transaction
+  // de outro dono.
+  const owned = await prisma.transaction.findFirst({
+    where: { id, userId },
+    select: { id: true },
+  });
+  if (!owned) {
+    throw new TransactionValidationError("Transaction not found");
+  }
+
+  return prisma.transaction.update({
+    where: { id },
+    data,
+    include: { tags: { select: { id: true, name: true, color: true } } },
+  });
+}
+
+/**
+ * Remove fisicamente uma Transaction (irreversível — ADR-0004). Escopado ao
+ * próprio userId (anti-IDOR): id de outro dono não casa e vira "not found".
+ */
+export async function deleteTransaction(userId: string, id: string): Promise<void> {
+  if (!userId || !id) {
+    throw new TransactionValidationError("Missing required fields");
+  }
+  const { count } = await prisma.transaction.deleteMany({ where: { id, userId } });
+  if (count === 0) {
+    throw new TransactionValidationError("Transaction not found");
+  }
 }
 
 function buildRepeatDates(
