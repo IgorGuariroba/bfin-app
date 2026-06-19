@@ -12,6 +12,7 @@ import {
   suggestType,
   TransactionValidationError,
 } from "@/lib/transactions-service";
+import { createTag, listTags, TagValidationError } from "@/lib/tags-service";
 import { recordAgentWrite } from "@/lib/agent-audit";
 import {
   getMonthSummary,
@@ -298,6 +299,60 @@ function buildServer(userId: string, apiKeyId: string): McpServer {
         throw error;
       }
     }
+  );
+
+  server.registerTool(
+    "create_tag",
+    {
+      description:
+        "Cria uma Tag (categoria) na conta do usuário, para classificar movimentações. " +
+        "O nome é único por usuário.",
+      inputSchema: {
+        name: z.string().describe("Nome da Tag (ex.: 'Viagem'). Único por usuário."),
+        color: z
+          .string()
+          .optional()
+          .describe("Cor em hex (ex.: '#4a90e2'). Se omitida, usa uma cor neutra."),
+      },
+    },
+    async ({ name, color }) => {
+      try {
+        const tag = await createTag({ userId, name, color });
+        await recordAgentWrite({ apiKeyId, userId, action: "create", entityId: tag.id });
+        return {
+          content: [{ type: "text", text: `Tag criada: ${tag.name}.` }],
+        };
+      } catch (error) {
+        if (error instanceof TagValidationError) {
+          return { isError: true, content: [{ type: "text", text: error.message }] };
+        }
+        throw error;
+      }
+    }
+  );
+
+  server.registerTool(
+    "list_tag",
+    {
+      description:
+        "Lista as Tags (categorias) do usuário, para escolher um filtro ou descobrir a taxonomia disponível.",
+      inputSchema: {},
+    },
+    async () => readContent(() => listTags(userId))
+  );
+
+  server.registerTool(
+    "get_previsao",
+    {
+      description:
+        "Retorna a Previsão configurada do usuário (itens de gasto previsto, somente leitura). " +
+        "Não aplica nem altera nada.",
+      inputSchema: {},
+    },
+    async () =>
+      readContent(() =>
+        prisma.previsao.findMany({ where: { userId }, orderBy: { name: "asc" } })
+      )
   );
 
   return server;

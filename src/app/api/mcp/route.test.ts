@@ -498,6 +498,155 @@ describe("POST /api/mcp", () => {
     expect(stored).toBeNull();
   });
 
+  it("T16: create_tag cria uma Tag do usuário (isSystem=false) via MCP", async () => {
+    const { user, plain } = await seedProKey();
+
+    const res = await POST(
+      mcpRequest(plain, {
+        jsonrpc: "2.0",
+        id: 1,
+        method: "tools/call",
+        params: {
+          name: "create_tag",
+          arguments: { name: "Viagem", color: "#4a90e2" },
+        },
+      })
+    );
+
+    expect(res.status).toBe(200);
+    const body = await res.text();
+    expect(body).toContain("Viagem");
+    const stored = await prisma.tag.findMany({ where: { userId: user.id } });
+    expect(stored).toHaveLength(1);
+    expect(stored[0].name).toBe("Viagem");
+    expect(stored[0].isSystem).toBe(false);
+  });
+
+  it("T17: create_tag com nome duplicado vira tool error e não cria uma segunda", async () => {
+    const { user, plain } = await seedProKey();
+    await prisma.tag.create({
+      data: { userId: user.id, name: "Viagem", color: "#4a90e2" },
+    });
+
+    const res = await POST(
+      mcpRequest(plain, {
+        jsonrpc: "2.0",
+        id: 1,
+        method: "tools/call",
+        params: {
+          name: "create_tag",
+          arguments: { name: "Viagem", color: "#000000" },
+        },
+      })
+    );
+
+    expect(res.status).toBe(200);
+    const body = await res.text();
+    expect(body).toContain('"isError":true');
+    expect(body.toLowerCase()).toContain("já existe");
+    const count = await prisma.tag.count({ where: { userId: user.id } });
+    expect(count).toBe(1);
+  });
+
+  it("T17b: create_tag rejeita name acima de 50 chars (contrato REST) e não cria", async () => {
+    const { user, plain } = await seedProKey();
+
+    const res = await POST(
+      mcpRequest(plain, {
+        jsonrpc: "2.0",
+        id: 1,
+        method: "tools/call",
+        params: {
+          name: "create_tag",
+          arguments: { name: "a".repeat(51), color: "#4a90e2" },
+        },
+      })
+    );
+
+    expect(res.status).toBe(200);
+    const body = await res.text();
+    expect(body).toContain('"isError":true');
+    const count = await prisma.tag.count({ where: { userId: user.id } });
+    expect(count).toBe(0);
+  });
+
+  it("T17c: create_tag rejeita color inválida (contrato REST) e não cria", async () => {
+    const { user, plain } = await seedProKey();
+
+    const res = await POST(
+      mcpRequest(plain, {
+        jsonrpc: "2.0",
+        id: 1,
+        method: "tools/call",
+        params: {
+          name: "create_tag",
+          arguments: { name: "Viagem", color: "xx" },
+        },
+      })
+    );
+
+    expect(res.status).toBe(200);
+    const body = await res.text();
+    expect(body).toContain('"isError":true');
+    const count = await prisma.tag.count({ where: { userId: user.id } });
+    expect(count).toBe(0);
+  });
+
+  it("T18: list_tag retorna as Tags do usuário (incl. system tags semeadas) via MCP", async () => {
+    const { user, plain } = await seedProKey();
+    await prisma.tag.create({
+      data: { userId: user.id, name: "Viagem", color: "#4a90e2" },
+    });
+
+    const res = await POST(
+      mcpRequest(plain, {
+        jsonrpc: "2.0",
+        id: 1,
+        method: "tools/call",
+        params: { name: "list_tag", arguments: {} },
+      })
+    );
+
+    expect(res.status).toBe(200);
+    const body = await res.text();
+    expect(body).toContain("Viagem");
+    expect(body).toContain("Alimentação"); // system tag semeada por ensureSystemTags
+  });
+
+  it("T19: get_previsao retorna a Previsão configurada (somente leitura) via MCP", async () => {
+    const { user, plain } = await seedProKey();
+    await prisma.previsao.create({
+      data: { userId: user.id, name: "Mercado", amount: 1200 },
+    });
+
+    const res = await POST(
+      mcpRequest(plain, {
+        jsonrpc: "2.0",
+        id: 1,
+        method: "tools/call",
+        params: { name: "get_previsao", arguments: {} },
+      })
+    );
+
+    expect(res.status).toBe(200);
+    const body = await res.text();
+    expect(body).toContain("Mercado");
+    expect(body).toContain("1200");
+  });
+
+  it("T20: nenhuma tool apply_previsao é exposta (projeção destrutiva fora de escopo)", async () => {
+    const { plain } = await seedProKey();
+
+    const res = await POST(
+      mcpRequest(plain, { jsonrpc: "2.0", id: 1, method: "tools/list" })
+    );
+
+    expect(res.status).toBe(200);
+    const body = await res.text();
+    expect(body).not.toContain("apply_previsao");
+    expect(body).not.toContain("aplicar");
+  });
+
   it("T15: escrita do agente emite log de auditoria (apiKeyId/userId/action/entityId)", async () => {
     const { user, plain, apiKey } = await seedProKey();
     const infoSpy = vi.spyOn(logger, "info");
