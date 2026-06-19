@@ -5,6 +5,7 @@ const publicRoutes = [
   "/login",
   "/convite",
   "/api/health",
+  "/api/mcp",
   "/precos",
   "/ajuda",
   "/sobre",
