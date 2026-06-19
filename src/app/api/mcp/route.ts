@@ -5,11 +5,14 @@ import { resolvePrincipal } from "@/lib/mcp-principal";
 import { prisma } from "@/lib/prisma";
 import {
   createTransaction,
+  updateTransaction,
+  deleteTransaction,
   listTransactions,
   suggestTag,
   suggestType,
   TransactionValidationError,
 } from "@/lib/transactions-service";
+import { recordAgentWrite } from "@/lib/agent-audit";
 import {
   getMonthSummary,
   getSaldos,
@@ -55,7 +58,7 @@ function bearerToken(request: Request): string | null {
   return token || null;
 }
 
-function buildServer(userId: string): McpServer {
+function buildServer(userId: string, apiKeyId: string): McpServer {
   const server = new McpServer({ name: "bfin-assistente", version: "1.0.0" });
 
   server.registerTool(
@@ -130,6 +133,7 @@ function buildServer(userId: string): McpServer {
           };
         }
         const tx = result.transaction;
+        await recordAgentWrite({ apiKeyId, userId, action: "create", entityId: tx.id });
         const tagName = tx.tags[0]?.name;
         const recurrenceNote =
           repeat && repeatEnd === "count" && repeatCount
@@ -218,6 +222,84 @@ function buildServer(userId: string): McpServer {
       readContent(() => listTransactions(userId, { month, type, tagId }))
   );
 
+  server.registerTool(
+    "update_transaction",
+    {
+      description:
+        "Edita uma movimentação existente, identificada pelo seu id (alvo explícito). " +
+        "Envie só os campos a corrigir; os demais ficam intactos.",
+      inputSchema: {
+        id: z.string().describe("Identificador da movimentação a editar."),
+        description: z.string().optional().describe("Nova descrição."),
+        amount: z.number().positive().optional().describe("Novo valor, sempre positivo."),
+        date: z.string().optional().describe("Nova data no formato YYYY-MM-DD."),
+        type: z
+          .enum(["entrada", "saida", "cartao", "economia"])
+          .optional()
+          .describe(
+            "Novo tipo. 'diario' não é permitido — é reservado à projeção da Previsão."
+          ),
+        tagIds: z
+          .array(z.string())
+          .optional()
+          .describe("Substitui o conjunto de Tags (lista vazia remove todas)."),
+      },
+    },
+    async ({ id, description, amount, date, type, tagIds }) => {
+      try {
+        const tx = await updateTransaction({
+          userId,
+          id,
+          description,
+          amount,
+          date,
+          type,
+          tagIds,
+        });
+        await recordAgentWrite({ apiKeyId, userId, action: "update", entityId: tx.id });
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Movimentação atualizada: ${tx.description} (${tx.type}) ${fmt(tx.amount)}.`,
+            },
+          ],
+        };
+      } catch (error) {
+        if (error instanceof TransactionValidationError) {
+          return { isError: true, content: [{ type: "text", text: error.message }] };
+        }
+        throw error;
+      }
+    }
+  );
+
+  server.registerTool(
+    "delete_transaction",
+    {
+      description:
+        "Remove permanentemente uma movimentação pelo seu id (irreversível). " +
+        "Use para apagar um lançamento errado.",
+      inputSchema: {
+        id: z.string().describe("Identificador da movimentação a remover."),
+      },
+    },
+    async ({ id }) => {
+      try {
+        await deleteTransaction(userId, id);
+        await recordAgentWrite({ apiKeyId, userId, action: "delete", entityId: id });
+        return {
+          content: [{ type: "text", text: `Movimentação ${id} removida.` }],
+        };
+      } catch (error) {
+        if (error instanceof TransactionValidationError) {
+          return { isError: true, content: [{ type: "text", text: error.message }] };
+        }
+        throw error;
+      }
+    }
+  );
+
   return server;
 }
 
@@ -232,7 +314,7 @@ export async function POST(request: Request) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const server = buildServer(principal.userId);
+  const server = buildServer(principal.userId, principal.apiKeyId);
   const transport = new WebStandardStreamableHTTPServerTransport({
     sessionIdGenerator: undefined, // stateless
   });

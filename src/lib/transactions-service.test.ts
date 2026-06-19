@@ -2,6 +2,8 @@ import { afterAll, afterEach, describe, it, expect } from "vitest";
 import { prisma } from "@/lib/prisma";
 import {
   createTransaction,
+  updateTransaction,
+  deleteTransaction,
   listTransactions,
   suggestTag,
   suggestType,
@@ -90,6 +92,23 @@ describe("transactions-service create", () => {
         userId: user.id,
         type: "investimento",
         description: "X",
+        amount: 10,
+        date: "2026-06-10",
+      })
+    ).rejects.toBeInstanceOf(TransactionValidationError);
+
+    const count = await prisma.transaction.count({ where: { userId: user.id } });
+    expect(count).toBe(0);
+  });
+
+  it("rejeita type 'diario' no create (reservado à projeção — ADR-0004)", async () => {
+    const user = await seedUser();
+
+    await expect(
+      createTransaction({
+        userId: user.id,
+        type: "diario",
+        description: "Gasto",
         amount: 10,
         date: "2026-06-10",
       })
@@ -442,6 +461,169 @@ describe("createTransaction — dedup defensivo (ADR-0004)", () => {
     expect(r.transaction.id).toBe(pluggy.id);
     const count = await prisma.transaction.count({ where: { userId: user.id } });
     expect(count).toBe(1);
+  });
+});
+
+describe("updateTransaction", () => {
+  it("edita os campos de uma Transaction existente e persiste", async () => {
+    const user = await seedUser();
+    const { transaction: tx } = await createTransaction({
+      userId: user.id,
+      type: "saida",
+      description: "Mercado",
+      amount: 120,
+      date: "2026-06-10",
+    });
+
+    const updated = await updateTransaction({
+      userId: user.id,
+      id: tx.id,
+      description: "Mercado do mês",
+      amount: 150,
+    });
+
+    expect(updated.description).toBe("Mercado do mês");
+    expect(updated.amount).toBe(150);
+
+    const stored = await prisma.transaction.findUnique({ where: { id: tx.id } });
+    expect(stored?.description).toBe("Mercado do mês");
+    expect(stored?.amount).toBe(150);
+    expect(stored?.type).toBe("saida"); // campos não enviados ficam intactos
+  });
+
+  it("anti-IDOR: não edita Transaction de outro usuário e não a muta", async () => {
+    const owner = await seedUser();
+    const attacker = await seedUser();
+    const { transaction: tx } = await createTransaction({
+      userId: owner.id,
+      type: "saida",
+      description: "Privado",
+      amount: 100,
+      date: "2026-06-10",
+    });
+
+    await expect(
+      updateTransaction({
+        userId: attacker.id,
+        id: tx.id,
+        description: "Hackeado",
+      })
+    ).rejects.toBeInstanceOf(TransactionValidationError);
+
+    const stored = await prisma.transaction.findUnique({ where: { id: tx.id } });
+    expect(stored?.description).toBe("Privado"); // intacta
+  });
+
+  it("rejeita type/amount/date inválidos sem mutar a transação", async () => {
+    const user = await seedUser();
+    const { transaction: tx } = await createTransaction({
+      userId: user.id,
+      type: "saida",
+      description: "Mercado",
+      amount: 120,
+      date: "2026-06-10",
+    });
+
+    await expect(
+      updateTransaction({ userId: user.id, id: tx.id, type: "investimento" })
+    ).rejects.toBeInstanceOf(TransactionValidationError);
+    // `diario` é reservado à projeção (apply_previsao) — o boundary rejeita
+    // mesmo sendo um Transaction Type válido (ADR-0004 §4).
+    await expect(
+      updateTransaction({ userId: user.id, id: tx.id, type: "diario" })
+    ).rejects.toBeInstanceOf(TransactionValidationError);
+    await expect(
+      updateTransaction({ userId: user.id, id: tx.id, amount: 0 })
+    ).rejects.toBeInstanceOf(TransactionValidationError);
+    await expect(
+      updateTransaction({ userId: user.id, id: tx.id, date: "2026-02-30" })
+    ).rejects.toBeInstanceOf(TransactionValidationError);
+
+    const stored = await prisma.transaction.findUnique({ where: { id: tx.id } });
+    expect(stored?.type).toBe("saida");
+    expect(stored?.amount).toBe(120);
+  });
+
+  it("anti-IDOR de tags: rejeita tagIds de outro usuário", async () => {
+    const owner = await seedUser();
+    const attacker = await seedUser();
+    const foreignTag = await prisma.tag.create({
+      data: { userId: owner.id, name: "Privada", color: "#abc" },
+    });
+    const { transaction: tx } = await createTransaction({
+      userId: attacker.id,
+      type: "saida",
+      description: "X",
+      amount: 10,
+      date: "2026-06-10",
+    });
+
+    await expect(
+      updateTransaction({ userId: attacker.id, id: tx.id, tagIds: [foreignTag.id] })
+    ).rejects.toBeInstanceOf(TransactionValidationError);
+  });
+
+  it("substitui o conjunto de tags (set) quando tagIds é enviado", async () => {
+    const user = await seedUser();
+    const tagA = await prisma.tag.create({
+      data: { userId: user.id, name: "A", color: "#a" },
+    });
+    const tagB = await prisma.tag.create({
+      data: { userId: user.id, name: "B", color: "#b" },
+    });
+    const { transaction: tx } = await createTransaction({
+      userId: user.id,
+      type: "saida",
+      description: "X",
+      amount: 10,
+      date: "2026-06-10",
+      tagIds: [tagA.id],
+    });
+
+    const updated = await updateTransaction({
+      userId: user.id,
+      id: tx.id,
+      tagIds: [tagB.id],
+    });
+
+    expect(updated.tags.map((t) => t.id)).toEqual([tagB.id]);
+  });
+});
+
+describe("deleteTransaction", () => {
+  it("remove fisicamente a Transaction pelo identificador", async () => {
+    const user = await seedUser();
+    const { transaction: tx } = await createTransaction({
+      userId: user.id,
+      type: "saida",
+      description: "Erro",
+      amount: 10,
+      date: "2026-06-10",
+    });
+
+    await deleteTransaction(user.id, tx.id);
+
+    const stored = await prisma.transaction.findUnique({ where: { id: tx.id } });
+    expect(stored).toBeNull();
+  });
+
+  it("anti-IDOR: não deleta Transaction de outro usuário", async () => {
+    const owner = await seedUser();
+    const attacker = await seedUser();
+    const { transaction: tx } = await createTransaction({
+      userId: owner.id,
+      type: "saida",
+      description: "Privado",
+      amount: 100,
+      date: "2026-06-10",
+    });
+
+    await expect(
+      deleteTransaction(attacker.id, tx.id)
+    ).rejects.toBeInstanceOf(TransactionValidationError);
+
+    const stored = await prisma.transaction.findUnique({ where: { id: tx.id } });
+    expect(stored).not.toBeNull(); // intacta
   });
 });
 
