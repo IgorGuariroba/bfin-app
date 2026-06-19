@@ -2,6 +2,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
 import { z } from "zod";
 import { resolvePrincipal } from "@/lib/mcp-principal";
+import { checkRateLimit, classifyRpc, RATE_LIMITS } from "@/lib/rate-limit";
 import { prisma } from "@/lib/prisma";
 import {
   createTransaction,
@@ -369,11 +370,37 @@ export async function POST(request: Request) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  // Rate limit por ApiKey, separado por leitura/escrita (ADR-0004). Consome o
+  // body para classificar a chamada; como o stream só pode ser lido uma vez,
+  // reconstrói o Request para o transport.
+  const rawBody = await request.text();
+  const kind = classifyRpc(rawBody);
+  const limit = checkRateLimit(`${principal.apiKeyId}:${kind}`, RATE_LIMITS[kind]);
+  if (!limit.allowed) {
+    return Response.json(
+      { error: "Rate limit exceeded" },
+      { status: 429, headers: { "retry-after": String(limit.retryAfter) } }
+    );
+  }
+  // Reaproveita os headers originais, mas descarta os que descrevem o corpo na
+  // forma em que ele chegou (comprimido/chunked): `rawBody` já é texto plano e o
+  // content-length é recalculado a partir dele. Mantê-los faria o transport
+  // tentar descomprimir um corpo plano ou truncar o JSON pelo tamanho antigo.
+  const headers = new Headers(request.headers);
+  headers.delete("content-encoding");
+  headers.delete("content-length");
+  headers.delete("transfer-encoding");
+  const forwarded = new Request(request.url, {
+    method: request.method,
+    headers,
+    body: rawBody,
+  });
+
   const server = buildServer(principal.userId, principal.apiKeyId);
   const transport = new WebStandardStreamableHTTPServerTransport({
     sessionIdGenerator: undefined, // stateless
   });
   await server.connect(transport);
 
-  return transport.handleRequest(request);
+  return transport.handleRequest(forwarded);
 }

@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { generateApiKey } from "@/lib/api-key";
 import { ensureSystemTags } from "@/lib/seed-system-tags";
 import { logger } from "@/lib/logger";
+import { RATE_LIMITS } from "@/lib/rate-limit";
 import { POST } from "./route";
 
 let createdUserIds: string[] = [];
@@ -645,6 +646,40 @@ describe("POST /api/mcp", () => {
     const body = await res.text();
     expect(body).not.toContain("apply_previsao");
     expect(body).not.toContain("aplicar");
+  });
+
+  it("T21: estourar o limite de escrita por ApiKey retorna 429 com retry-after", async () => {
+    const { plain } = await seedProKey();
+
+    const createCall = (day: number) =>
+      POST(
+        mcpRequest(plain, {
+          jsonrpc: "2.0",
+          id: 1,
+          method: "tools/call",
+          params: {
+            name: "create_transaction",
+            arguments: {
+              description: "Gasto",
+              amount: 10,
+              date: `2026-06-${String(day).padStart(2, "0")}`,
+              type: "saida",
+            },
+          },
+        })
+      );
+
+    // Esgota a janela de escrita: as primeiras chamadas (até o limite) passam.
+    for (let day = 1; day <= RATE_LIMITS.write.limit; day++) {
+      const res = await createCall(day);
+      await res.text();
+      expect(res.status).toBe(200);
+    }
+
+    // A próxima escrita, dentro da mesma janela, é barrada.
+    const blocked = await createCall(RATE_LIMITS.write.limit + 1);
+    expect(blocked.status).toBe(429);
+    expect(Number(blocked.headers.get("retry-after"))).toBeGreaterThan(0);
   });
 
   it("T15: escrita do agente emite log de auditoria (apiKeyId/userId/action/entityId)", async () => {
