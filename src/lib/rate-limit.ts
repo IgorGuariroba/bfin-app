@@ -60,6 +60,20 @@ export function classifyRpc(rawBody: string): RateLimitKind {
 const buckets = new Map<string, Bucket>();
 
 /**
+ * Acima deste número de baldes vivos, fazemos uma varredura preguiçosa removendo
+ * os já expirados. Sem isso o Map cresce indefinidamente (cada `apiKeyId:kind`
+ * distinto fica para sempre, mesmo após a janela fechar) — memory leak lento em
+ * produção. A limpeza só roda ao abrir uma janela nova, não no caminho quente.
+ */
+const MAX_BUCKETS = 1000;
+
+function evictExpired(now: number): void {
+  for (const [k, b] of buckets) {
+    if (now >= b.resetAt) buckets.delete(k);
+  }
+}
+
+/**
  * Rate limit in-memory por chave, janela fixa (ADR-0004). Cada chave
  * (`apiKeyId:kind`) tem seu balde: a primeira chamada abre a janela, e ao
  * exceder `limit` antes de `windowMs` retorna `allowed: false` com `retryAfter`.
@@ -72,6 +86,7 @@ export function checkRateLimit(
   const bucket = buckets.get(key);
 
   if (!bucket || now >= bucket.resetAt) {
+    if (buckets.size > MAX_BUCKETS) evictExpired(now);
     buckets.set(key, { count: 1, resetAt: now + config.windowMs });
     return { allowed: true, retryAfter: 0 };
   }
