@@ -382,9 +382,17 @@ export async function POST(request: Request) {
       { status: 429, headers: { "retry-after": String(limit.retryAfter) } }
     );
   }
+  // Reaproveita os headers originais, mas descarta os que descrevem o corpo na
+  // forma em que ele chegou (comprimido/chunked): `rawBody` já é texto plano e o
+  // content-length é recalculado a partir dele. Mantê-los faria o transport
+  // tentar descomprimir um corpo plano ou truncar o JSON pelo tamanho antigo.
+  const headers = new Headers(request.headers);
+  headers.delete("content-encoding");
+  headers.delete("content-length");
+  headers.delete("transfer-encoding");
   const forwarded = new Request(request.url, {
     method: request.method,
-    headers: request.headers,
+    headers,
     body: rawBody,
   });
 

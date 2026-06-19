@@ -44,12 +44,19 @@ const WRITE_TOOLS = new Set([
  * cota. Só `tools/call` de uma WRITE_TOOLS é escrita; `tools/list`, `initialize`
  * e leituras (`get_*`/`list_*`) são leitura. Body inválido cai em `read` (o
  * transport lida com o erro de protocolo depois).
+ *
+ * Trata batch JSON-RPC (array): se qualquer chamada do lote for escrita, o lote
+ * inteiro conta como escrita — caso contrário um lote com `tools/call` de write
+ * burlaria a cota mais restrita usando a de leitura.
  */
 export function classifyRpc(rawBody: string): RateLimitKind {
   try {
     const msg = JSON.parse(rawBody);
-    if (msg?.method === "tools/call" && WRITE_TOOLS.has(msg?.params?.name)) {
-      return "write";
+    const calls = Array.isArray(msg) ? msg : [msg];
+    for (const call of calls) {
+      if (call?.method === "tools/call" && WRITE_TOOLS.has(call?.params?.name)) {
+        return "write";
+      }
     }
   } catch {
     // body não-JSON: trata como leitura (não onera a cota de escrita).

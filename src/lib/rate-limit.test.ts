@@ -82,4 +82,21 @@ describe("classifyRpc", () => {
   it("trata body não-JSON como read (não onera a cota de escrita)", () => {
     expect(classifyRpc("not json")).toBe("read");
   });
+
+  it("classifica batch JSON-RPC com qualquer write-tool como write (sem bypass)", () => {
+    const batch = JSON.stringify([
+      { jsonrpc: "2.0", id: 1, method: "tools/list" },
+      { jsonrpc: "2.0", id: 2, method: "tools/call", params: { name: "list_tag" } },
+      { jsonrpc: "2.0", id: 3, method: "tools/call", params: { name: "create_transaction" } },
+    ]);
+    expect(classifyRpc(batch)).toBe("write");
+  });
+
+  it("classifica batch JSON-RPC só de leituras como read", () => {
+    const batch = JSON.stringify([
+      { jsonrpc: "2.0", id: 1, method: "tools/list" },
+      { jsonrpc: "2.0", id: 2, method: "tools/call", params: { name: "get_month_summary" } },
+    ]);
+    expect(classifyRpc(batch)).toBe("read");
+  });
 });
