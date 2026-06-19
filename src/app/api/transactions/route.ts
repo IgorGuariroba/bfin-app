@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
   const { type, description, amount, date, repeat, repeatEnd, repeatCount, tagIds } = body;
 
   try {
-    const base = await createTransaction({
+    const result = await createTransaction({
       userId,
       type,
       description,
@@ -79,8 +79,9 @@ export async function POST(request: NextRequest) {
       repeatEnd,
       repeatCount,
       tagIds,
+      force: true, // UI: sempre cria (dedup defensivo é feature do agente — ADR-0004)
     });
-    return Response.json(base, { status: 201 });
+    return Response.json(result.transaction, { status: 201 });
   } catch (error) {
     if (error instanceof TransactionValidationError) {
       return Response.json({ error: error.message }, { status: 400 });

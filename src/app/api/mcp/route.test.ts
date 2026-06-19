@@ -121,4 +121,153 @@ describe("POST /api/mcp", () => {
     const count = await prisma.transaction.count({ where: { userId: user.id } });
     expect(count).toBe(0);
   });
+
+  it("T7: com candidata duplicata e sem force, sinaliza 'possível duplicata' e não cria", async () => {
+    const { user, plain } = await seedProKey();
+    await prisma.transaction.create({
+      data: {
+        userId: user.id,
+        type: "saida",
+        description: "Café",
+        amount: 9.5,
+        date: new Date(2026, 5, 15, 12, 0, 0),
+        source: "manual",
+      },
+    });
+
+    const res = await POST(
+      mcpRequest(plain, {
+        jsonrpc: "2.0",
+        id: 1,
+        method: "tools/call",
+        params: {
+          name: "create_transaction",
+          arguments: { description: "Café", amount: 9.5, date: "2026-06-15", type: "saida" },
+        },
+      })
+    );
+
+    expect(res.status).toBe(200);
+    const body = await res.text();
+    expect(body.toLowerCase()).toContain("duplicata");
+    expect(body).toContain("force");
+    const c = await prisma.transaction.count({ where: { userId: user.id } });
+    expect(c).toBe(1); // só a pré-existente
+  });
+
+  it("T8: com force=true, cria mesmo havendo candidata duplicata", async () => {
+    const { user, plain } = await seedProKey();
+    await prisma.transaction.create({
+      data: {
+        userId: user.id,
+        type: "saida",
+        description: "Café",
+        amount: 9.5,
+        date: new Date(2026, 5, 15, 12, 0, 0),
+        source: "manual",
+      },
+    });
+
+    const res = await POST(
+      mcpRequest(plain, {
+        jsonrpc: "2.0",
+        id: 1,
+        method: "tools/call",
+        params: {
+          name: "create_transaction",
+          arguments: { description: "Café", amount: 9.5, date: "2026-06-15", type: "saida", force: true },
+        },
+      })
+    );
+
+    const body = await res.text();
+    expect(body).toContain("Movimentação criada");
+    const c = await prisma.transaction.count({ where: { userId: user.id } });
+    expect(c).toBe(2);
+  });
+
+  it("T9: sem type, sugere saida para gasto e cria corretamente", async () => {
+    const { user, plain } = await seedProKey();
+
+    const res = await POST(
+      mcpRequest(plain, {
+        jsonrpc: "2.0",
+        id: 1,
+        method: "tools/call",
+        params: {
+          name: "create_transaction",
+          arguments: { description: "uber", amount: 20, date: "2026-06-15" },
+        },
+      })
+    );
+
+    const body = await res.text();
+    expect(body).toContain("Movimentação criada");
+    const stored = await prisma.transaction.findMany({ where: { userId: user.id } });
+    expect(stored).toHaveLength(1);
+    expect(stored[0].type).toBe("saida");
+  });
+
+  it("T10: expõe repeat — cria as ocorrências mensais via MCP", async () => {
+    const { user, plain } = await seedProKey();
+
+    const res = await POST(
+      mcpRequest(plain, {
+        jsonrpc: "2.0",
+        id: 1,
+        method: "tools/call",
+        params: {
+          name: "create_transaction",
+          arguments: {
+            description: "Aluguel",
+            amount: 2000,
+            date: "2026-06-10",
+            type: "saida",
+            repeat: "monthly",
+            repeatEnd: "count",
+            repeatCount: 3,
+          },
+        },
+      })
+    );
+
+    expect(res.status).toBe(200);
+    const body = await res.text();
+    expect(body).toContain("Movimentação criada");
+    const all = await prisma.transaction.findMany({
+      where: { userId: user.id },
+      orderBy: { date: "asc" },
+    });
+    expect(all).toHaveLength(3);
+    expect(all.map((t) => t.date.getMonth())).toEqual([5, 6, 7]); // jun, jul, ago
+  });
+
+  it("T11: sugere Tag a partir da descrição e associa à transação criada", async () => {
+    const { user, plain } = await seedProKey();
+    const tag = await prisma.tag.create({
+      data: { userId: user.id, name: "Transporte", color: "#ff385c" },
+    });
+
+    const res = await POST(
+      mcpRequest(plain, {
+        jsonrpc: "2.0",
+        id: 1,
+        method: "tools/call",
+        params: {
+          name: "create_transaction",
+          arguments: { description: "uber pro aeroporto", amount: 40, date: "2026-06-15" },
+        },
+      })
+    );
+
+    expect(res.status).toBe(200);
+    const body = await res.text(); // consome o stream — garante que o handler concluiu
+    expect(body).toContain("Tag: Transporte");
+    const stored = await prisma.transaction.findMany({
+      where: { userId: user.id },
+      include: { tags: true },
+    });
+    expect(stored).toHaveLength(1);
+    expect(stored[0].tags.map((t) => t.id)).toEqual([tag.id]);
+  });
 });

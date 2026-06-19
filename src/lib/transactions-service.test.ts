@@ -2,6 +2,8 @@ import { afterAll, afterEach, describe, it, expect } from "vitest";
 import { prisma } from "@/lib/prisma";
 import {
   createTransaction,
+  suggestTag,
+  suggestType,
   TransactionValidationError,
 } from "@/lib/transactions-service";
 
@@ -34,7 +36,7 @@ describe("transactions-service create", () => {
   it("cria uma Transaction válida e persiste no banco", async () => {
     const user = await seedUser();
 
-    const tx = await createTransaction({
+    const { transaction: tx } = await createTransaction({
       userId: user.id,
       type: "entrada",
       description: "Salário",
@@ -53,7 +55,7 @@ describe("transactions-service create", () => {
   it("usa source 'manual' por padrão", async () => {
     const user = await seedUser();
 
-    const tx = await createTransaction({
+    const { transaction: tx } = await createTransaction({
       userId: user.id,
       type: "entrada",
       description: "Salário",
@@ -67,7 +69,7 @@ describe("transactions-service create", () => {
   it("grava source 'agent' quando criada pelo assistente", async () => {
     const user = await seedUser();
 
-    const tx = await createTransaction({
+    const { transaction: tx } = await createTransaction({
       userId: user.id,
       type: "saida",
       description: "Mercado",
@@ -179,7 +181,7 @@ describe("transactions-service create", () => {
   it("parseia date YYYY-MM-DD no dia correto (sem off-by-one)", async () => {
     const user = await seedUser();
 
-    const tx = await createTransaction({
+    const { transaction: tx } = await createTransaction({
       userId: user.id,
       type: "entrada",
       description: "Salário",
@@ -254,5 +256,232 @@ describe("transactions-service create", () => {
       include: { tags: true },
     });
     expect(refreshedPre?.tags).toHaveLength(0);
+  });
+
+  it("rejeita tagIds de outro usuário (anti-IDOR) e não cria nada", async () => {
+    const owner = await seedUser();
+    const attacker = await seedUser();
+    // Tag pertencente ao owner — o attacker não pode conectá-la.
+    const foreignTag = await prisma.tag.create({
+      data: { userId: owner.id, name: "Privada", color: "#abc" },
+    });
+
+    await expect(
+      createTransaction({
+        userId: attacker.id,
+        type: "saida",
+        description: "X",
+        amount: 10,
+        date: "2026-06-10",
+        tagIds: [foreignTag.id],
+      })
+    ).rejects.toBeInstanceOf(TransactionValidationError);
+
+    const count = await prisma.transaction.count({ where: { userId: attacker.id } });
+    expect(count).toBe(0);
+  });
+
+  it("aceita tagIds duplicados (deduplica) e conecta a tag uma única vez", async () => {
+    const user = await seedUser();
+    const tag = await prisma.tag.create({
+      data: { userId: user.id, name: "Casa", color: "#abc" },
+    });
+
+    const { transaction: tx } = await createTransaction({
+      userId: user.id,
+      type: "saida",
+      description: "Aluguel",
+      amount: 2000,
+      date: "2026-06-10",
+      tagIds: [tag.id, tag.id], // duplicado: não deve falhar como "Invalid tags"
+    });
+
+    const stored = await prisma.transaction.findUnique({
+      where: { id: tx.id },
+      include: { tags: true },
+    });
+    expect(stored?.tags.map((t) => t.id)).toEqual([tag.id]);
+  });
+});
+
+describe("createTransaction — dedup defensivo (ADR-0004)", () => {
+  it("T1: sem force, retorna a candidata existente (duplicated) e não cria linha nova", async () => {
+    const user = await seedUser();
+    // Candidata pré-existente: mesmo amount + mesmo dia + mesmo type.
+    const existing = await prisma.transaction.create({
+      data: {
+        userId: user.id,
+        type: "saida",
+        description: "Uber",
+        amount: 30,
+        date: new Date(2026, 5, 10, 12, 0, 0), // 2026-06-10
+        source: "manual",
+      },
+    });
+
+    const result = await createTransaction({
+      userId: user.id,
+      type: "saida",
+      description: "Uber",
+      amount: 30,
+      date: "2026-06-10",
+    });
+
+    expect(result.duplicated).toBe(true);
+    expect(result.transaction.id).toBe(existing.id);
+    const count = await prisma.transaction.count({ where: { userId: user.id } });
+    expect(count).toBe(1); // nenhuma linha nova
+  });
+
+  it("T2: com force=true, cria nova transação mesmo havendo candidata", async () => {
+    const user = await seedUser();
+    await prisma.transaction.create({
+      data: {
+        userId: user.id,
+        type: "saida",
+        description: "Uber",
+        amount: 30,
+        date: new Date(2026, 5, 10, 12, 0, 0),
+        source: "manual",
+      },
+    });
+
+    const result = await createTransaction({
+      userId: user.id,
+      type: "saida",
+      description: "Uber",
+      amount: 30,
+      date: "2026-06-10",
+      force: true,
+    });
+
+    expect(result.duplicated).toBe(false);
+    const all = await prisma.transaction.findMany({ where: { userId: user.id } });
+    expect(all).toHaveLength(2);
+  });
+
+  it("T3: janela de ±2 dias — 1 e 2 dias casam; 3 dias não", async () => {
+    const user = await seedUser();
+    const seed = (dayOffset: number) =>
+      prisma.transaction.create({
+        data: {
+          userId: user.id,
+          type: "saida",
+          description: "Gasto",
+          amount: 50,
+          date: new Date(2026, 5, 10 + dayOffset, 12, 0, 0),
+          source: "manual",
+        },
+      });
+
+    // +1 dia → candidata
+    const near1 = await seed(1);
+    let r = await createTransaction({ userId: user.id, type: "saida", description: "Outro", amount: 50, date: "2026-06-10" });
+    expect(r.duplicated).toBe(true);
+    expect(r.transaction.id).toBe(near1.id);
+    await prisma.transaction.deleteMany({ where: { userId: user.id } });
+
+    // +2 dias → candidata (limite inclusivo)
+    const near2 = await seed(2);
+    r = await createTransaction({ userId: user.id, type: "saida", description: "Outro", amount: 50, date: "2026-06-10" });
+    expect(r.duplicated).toBe(true);
+    expect(r.transaction.id).toBe(near2.id);
+    await prisma.transaction.deleteMany({ where: { userId: user.id } });
+
+    // +3 dias → NÃO é candidata → cria normal
+    await seed(3);
+    r = await createTransaction({ userId: user.id, type: "saida", description: "Outro", amount: 50, date: "2026-06-10" });
+    expect(r.duplicated).toBe(false);
+    const all = await prisma.transaction.findMany({ where: { userId: user.id } });
+    expect(all).toHaveLength(2); // a de +3 dias + a recém-criada
+  });
+
+  it("T4: type ou amount diferente não é candidata → cria normal", async () => {
+    const user = await seedUser();
+    await prisma.transaction.create({
+      data: { userId: user.id, type: "saida", description: "Uber", amount: 30, date: new Date(2026, 5, 10, 12, 0, 0), source: "manual" },
+    });
+
+    // type diferente
+    let r = await createTransaction({ userId: user.id, type: "entrada", description: "Uber", amount: 30, date: "2026-06-10" });
+    expect(r.duplicated).toBe(false);
+
+    // amount diferente
+    r = await createTransaction({ userId: user.id, type: "saida", description: "Uber", amount: 31, date: "2026-06-10" });
+    expect(r.duplicated).toBe(false);
+
+    const count = await prisma.transaction.count({ where: { userId: user.id } });
+    expect(count).toBe(3); // 1 pré-existente + 2 criadas
+  });
+
+  it("T5: cross-source — candidata pluggy é casada por create do agente", async () => {
+    const user = await seedUser();
+    const pluggy = await prisma.transaction.create({
+      data: {
+        userId: user.id,
+        type: "saida",
+        description: "Mercado",
+        amount: 120,
+        date: new Date(2026, 5, 10, 12, 0, 0),
+        source: "pluggy",
+        externalId: "pluggy-xyz",
+      },
+    });
+
+    const r = await createTransaction({
+      userId: user.id,
+      type: "saida",
+      description: "Mercado",
+      amount: 120,
+      date: "2026-06-10",
+      source: "agent",
+    });
+
+    expect(r.duplicated).toBe(true);
+    expect(r.transaction.id).toBe(pluggy.id);
+    const count = await prisma.transaction.count({ where: { userId: user.id } });
+    expect(count).toBe(1);
+  });
+});
+
+describe("suggestType", () => {
+  it("T6: classifica gasto real como saida, receita como entrada — nunca diario", () => {
+    // gastos → saida
+    expect(suggestType("uber")).toBe("saida");
+    expect(suggestType("Mercado")).toBe("saida");
+    expect(suggestType("aluguel")).toBe("saida");
+    // receitas → entrada
+    expect(suggestType("salário")).toBe("entrada");
+    expect(suggestType("Salario recebido")).toBe("entrada");
+    expect(suggestType("recebi freela")).toBe("entrada");
+    // nunca retorna diario (sequência vazia ou palavra "diário" no texto)
+    expect(suggestType("")).toBe("saida");
+    expect(suggestType("diário")).toBe("saida");
+  });
+});
+
+describe("suggestTag", () => {
+  const tags = [
+    { id: "t-alim", name: "Alimentação" },
+    { id: "t-transp", name: "Transporte" },
+    { id: "t-lazer", name: "Lazer" },
+  ];
+
+  it("T10: casa o nome da própria Tag presente na descrição (sem sensibilidade a acento)", () => {
+    expect(suggestTag("alimentacao do mês", tags)).toBe("t-alim");
+    expect(suggestTag("Transporte mensal", tags)).toBe("t-transp");
+  });
+
+  it("T11: casa por sinônimo de categoria → Tag correspondente", () => {
+    expect(suggestTag("uber pro trabalho", tags)).toBe("t-transp");
+    expect(suggestTag("Mercado da esquina", tags)).toBe("t-alim");
+    expect(suggestTag("netflix", tags)).toBe("t-lazer");
+  });
+
+  it("T12: retorna null quando nada casa ou não há Tag para a categoria", () => {
+    expect(suggestTag("pagamento genérico xyz", tags)).toBeNull();
+    expect(suggestTag("", tags)).toBeNull();
+    // keyword de transporte, mas usuário não tem a Tag Transporte
+    expect(suggestTag("uber", [{ id: "t-alim", name: "Alimentação" }])).toBeNull();
   });
 });
