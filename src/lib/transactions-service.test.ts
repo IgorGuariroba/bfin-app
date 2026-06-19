@@ -503,6 +503,27 @@ describe("listTransactions", () => {
     expect(result[0].tags.map((t) => t.name)).toEqual(["Transporte"]);
   });
 
+  it("rejeita month malformado com TransactionValidationError (não estoura Prisma/500)", async () => {
+    const user = await seedUser();
+    await expect(
+      listTransactions(user.id, { month: "garbage" })
+    ).rejects.toBeInstanceOf(TransactionValidationError);
+    // mês fora de 01-12 também é inválido
+    await expect(
+      listTransactions(user.id, { month: "2026-13" })
+    ).rejects.toBeInstanceOf(TransactionValidationError);
+  });
+
+  it("rejeita from/to malformado com TransactionValidationError", async () => {
+    const user = await seedUser();
+    await expect(
+      listTransactions(user.id, { from: "ontem" })
+    ).rejects.toBeInstanceOf(TransactionValidationError);
+    await expect(
+      listTransactions(user.id, { to: "2026-02-31" })
+    ).rejects.toBeInstanceOf(TransactionValidationError);
+  });
+
   it("não vaza transações de outro usuário", async () => {
     const user = await seedUser();
     const other = await seedUser();

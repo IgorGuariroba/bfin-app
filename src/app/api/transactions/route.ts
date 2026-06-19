@@ -25,15 +25,21 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const transactions = await listTransactions(userId, {
-    month: month ?? undefined,
-    type: searchParams.get("type") ?? undefined,
-    tagId: searchParams.get("tagId") ?? undefined,
-    from: searchParams.get("from") ?? undefined,
-    to: searchParams.get("to") ?? undefined,
-  });
-
-  return Response.json(transactions);
+  try {
+    const transactions = await listTransactions(userId, {
+      month: month ?? undefined,
+      type: searchParams.get("type") ?? undefined,
+      tagId: searchParams.get("tagId") ?? undefined,
+      from: searchParams.get("from") ?? undefined,
+      to: searchParams.get("to") ?? undefined,
+    });
+    return Response.json(transactions);
+  } catch (error) {
+    if (error instanceof TransactionValidationError) {
+      return Response.json({ error: error.message }, { status: 400 });
+    }
+    throw error;
+  }
 }
 
 export async function POST(request: NextRequest) {
