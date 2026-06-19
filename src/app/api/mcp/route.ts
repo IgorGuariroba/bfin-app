@@ -15,12 +15,32 @@ import {
   getSaldos,
   getSugestoes,
   getTotais,
+  InsightsValidationError,
 } from "@/lib/insights-service";
 import { fmt } from "@/lib/utils";
 
 /** Empacota um resultado de leitura como conteúdo JSON para o agente consumir. */
 function jsonContent(data: unknown) {
   return { content: [{ type: "text" as const, text: JSON.stringify(data) }] };
+}
+
+/**
+ * Executa uma leitura e empacota o resultado como JSON. Erros de validação
+ * (mês/data inválidos) viram tool error estruturado (isError) — espelha o
+ * tratamento de create_transaction, em vez de propagar erro JSON-RPC genérico.
+ */
+async function readContent(produce: () => Promise<unknown>) {
+  try {
+    return jsonContent(await produce());
+  } catch (error) {
+    if (
+      error instanceof InsightsValidationError ||
+      error instanceof TransactionValidationError
+    ) {
+      return { isError: true, content: [{ type: "text" as const, text: error.message }] };
+    }
+    throw error;
+  }
 }
 
 const monthSchema = z
@@ -145,7 +165,7 @@ function buildServer(userId: string): McpServer {
         "Resumo do mês em uma chamada: entradas, custo de vida, quanto sobrou (sobrouNoMes) e saldo. Use para responder 'quanto sobrou este mês'.",
       inputSchema: { month: monthSchema },
     },
-    async ({ month }) => jsonContent(await getMonthSummary(userId, month))
+    async ({ month }) => readContent(() => getMonthSummary(userId, month))
   );
 
   server.registerTool(
@@ -155,7 +175,7 @@ function buildServer(userId: string): McpServer {
         "Totais detalhados do mês por tipo (entrada/saida/cartao/diario/economia), custo de vida, performance, saldo e comparação com o mês anterior.",
       inputSchema: { month: monthSchema },
     },
-    async ({ month }) => jsonContent(await getTotais(userId, month))
+    async ({ month }) => readContent(() => getTotais(userId, month))
   );
 
   server.registerTool(
@@ -165,7 +185,7 @@ function buildServer(userId: string): McpServer {
         "Evolução do saldo acumulado dia a dia no mês (para mostrar como o saldo varia ao longo do mês).",
       inputSchema: { month: monthSchema },
     },
-    async ({ month }) => jsonContent(await getSaldos(userId, month))
+    async ({ month }) => readContent(() => getSaldos(userId, month))
   );
 
   server.registerTool(
@@ -175,7 +195,7 @@ function buildServer(userId: string): McpServer {
         "Insights financeiros proativos do mês (saldo negativo, gasto diário acima da Previsão, economia baixa, custo de vida em alta). Lista vazia = nada a sinalizar.",
       inputSchema: { month: monthSchema },
     },
-    async ({ month }) => jsonContent(await getSugestoes(userId, month))
+    async ({ month }) => readContent(() => getSugestoes(userId, month))
   );
 
   server.registerTool(
@@ -195,7 +215,7 @@ function buildServer(userId: string): McpServer {
       },
     },
     async ({ month, type, tagId }) =>
-      jsonContent(await listTransactions(userId, { month, type, tagId }))
+      readContent(() => listTransactions(userId, { month, type, tagId }))
   );
 
   return server;

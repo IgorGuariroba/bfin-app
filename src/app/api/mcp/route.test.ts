@@ -341,6 +341,25 @@ describe("POST /api/mcp", () => {
     expect(body).toContain("accSaldo");
   });
 
+  it("get_totais converte InsightsValidationError em tool error (isError), não erro JSON-RPC genérico", async () => {
+    const { plain } = await seedProKey();
+
+    // "0000-01" passa o regex do monthSchema (\d{4}) mas parseMonth rejeita (ano 0).
+    const res = await POST(
+      mcpRequest(plain, {
+        jsonrpc: "2.0",
+        id: 1,
+        method: "tools/call",
+        params: { name: "get_totais", arguments: { month: "0000-01" } },
+      })
+    );
+
+    expect(res.status).toBe(200);
+    const body = await res.text();
+    expect(body).toContain('"isError":true');
+    expect(body.toLowerCase()).toContain("month");
+  });
+
   it("list_transactions filtra por mês e type via MCP", async () => {
     const { user, plain } = await seedProKey();
     await prisma.transaction.createMany({
