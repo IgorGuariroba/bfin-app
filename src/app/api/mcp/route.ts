@@ -4,6 +4,7 @@ import { z } from "zod";
 import { resolvePrincipal } from "@/lib/mcp-principal";
 import {
   createTransaction,
+  suggestType,
   TransactionValidationError,
 } from "@/lib/transactions-service";
 import { fmt } from "@/lib/utils";
@@ -29,22 +30,41 @@ function buildServer(userId: string): McpServer {
         date: z.string().describe("Data no formato YYYY-MM-DD"),
         type: z
           .enum(["entrada", "saida", "cartao", "economia"])
+          .optional()
           .describe(
-            "Tipo da movimentação. Gasto real (mercado, uber, etc.) é 'saida'. " +
-              "'diario' não é permitido — é reservado à projeção da Previsão."
+            "Tipo da movimentação. Se omitido, é inferido da descrição (gasto → 'saida', receita → 'entrada'). " +
+              "Gasto real (mercado, uber, etc.) é 'saida'. 'diario' não é permitido — é reservado à projeção da Previsão."
           ),
+        force: z
+          .boolean()
+          .optional()
+          .describe("Força a criação mesmo quando houver uma transação duplicata suspeita."),
       },
     },
-    async ({ description, amount, date, type }) => {
+    async ({ description, amount, date, type, force }) => {
       try {
-        const tx = await createTransaction({
+        const resolvedType = type ?? suggestType(description);
+        const result = await createTransaction({
           userId,
-          type,
+          type: resolvedType,
           description,
           amount,
           date,
           source: "agent",
+          force,
         });
+        if (result.duplicated) {
+          const dup = result.transaction;
+          return {
+            content: [
+              {
+                type: "text",
+                text: `Possível duplicata: já existe "${dup.description}" (${dup.type}) ${fmt(dup.amount)}. Envie force=true para criar mesmo assim.`,
+              },
+            ],
+          };
+        }
+        const tx = result.transaction;
         return {
           content: [
             {

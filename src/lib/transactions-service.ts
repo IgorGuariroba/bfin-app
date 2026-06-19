@@ -9,6 +9,24 @@ export class TransactionValidationError extends Error {}
 
 const VALID_TYPES = ["entrada", "saida", "diario", "cartao", "economia"];
 
+// Sinais de receita para suggestType. Lista conservadora: o default é gasto → "saida".
+// "diario" jamais é sugerido (é projeção — ADR-0004).
+const INCOME_KEYWORDS = [
+  "salário",
+  "salario",
+  "recebi",
+  "rendimento",
+  "depósito",
+  "deposito",
+  "reembolso",
+];
+
+/** Sugere type a partir da descrição: receita → "entrada", resto → "saida" (nunca "diario"). */
+export function suggestType(description: string): "entrada" | "saida" {
+  const d = (description ?? "").toLowerCase();
+  return INCOME_KEYWORDS.some((k) => d.includes(k)) ? "entrada" : "saida";
+}
+
 export interface CreateTransactionInput {
   userId: string;
   type: string;
@@ -20,11 +38,17 @@ export interface CreateTransactionInput {
   repeatEnd?: string;
   repeatCount?: number;
   tagIds?: string[];
+  force?: boolean; // true = cria mesmo havendo candidata duplicata (ADR-0004)
+}
+
+export interface CreateTransactionResult {
+  transaction: Transaction; // criada OU candidata duplicata existente
+  duplicated: boolean; // true = retornou candidata em vez de criar
 }
 
 export async function createTransaction(
   input: CreateTransactionInput
-): Promise<Transaction> {
+): Promise<CreateTransactionResult> {
   const { userId, type, description, amount, source = "manual" } = input;
 
   if (
@@ -56,6 +80,25 @@ export async function createTransaction(
   ) {
     throw new TransactionValidationError("Invalid date");
   }
+
+  // Dedup defensivo (ADR-0004): candidata = mesmo amount + data ±2 dias + mesmo type,
+  // cruzando qualquer origem (agent × pluggy × manual). Sem force, retorna a existente.
+  if (!input.force) {
+    const candidate = await prisma.transaction.findFirst({
+      where: {
+        userId,
+        type,
+        amount,
+        date: { gte: addDays(baseDate, -2), lte: addDays(baseDate, 2) },
+      },
+      include: { tags: { select: { id: true, name: true, color: true } } },
+      orderBy: { date: "asc" },
+    });
+    if (candidate) {
+      return { transaction: candidate, duplicated: true };
+    }
+  }
+
   const repeat = input.repeat ?? "none";
   const repeatEnd = input.repeatEnd ?? "forever";
   const repeatCount = input.repeatCount ?? 0;
@@ -108,7 +151,7 @@ export async function createTransaction(
     }
   }
 
-  return base;
+  return { transaction: base, duplicated: false };
 }
 
 function buildRepeatDates(
