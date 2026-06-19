@@ -2,6 +2,7 @@ import "server-only";
 
 import { prisma } from "@/lib/prisma";
 import { addDays, addWeeks, addMonths } from "@/lib/date-utils";
+import { CATEGORY_TAGS } from "@/lib/constants";
 
 type Transaction = Awaited<ReturnType<typeof prisma.transaction.create>>;
 
@@ -40,27 +41,11 @@ function normalize(s: string): string {
     .replace(/\p{Diacritic}/gu, "");
 }
 
-// Sinônimos de gasto → nome canônico de categoria (já sem acento). Casamento por substring.
-// A sugestão só resolve se o usuário tiver uma Tag cujo nome case com a categoria.
-const TAG_KEYWORDS: { category: string; keywords: string[] }[] = [
-  {
-    category: "alimentacao",
-    keywords: ["mercado", "supermercado", "ifood", "restaurante", "lanche", "padaria", "comida", "almoco", "jantar"],
-  },
-  {
-    category: "transporte",
-    keywords: ["uber", "99", "taxi", "gasolina", "combustivel", "onibus", "metro", "passagem", "estacionamento"],
-  },
-  {
-    category: "lazer",
-    keywords: ["cinema", "bar", "show", "viagem", "netflix", "spotify", "streaming", "jogo", "festa"],
-  },
-];
-
 /**
  * Sugere o id de uma Tag do usuário a partir da descrição. Retorna null se nada casar.
  * Heurística conservadora (ADR-0004): primeiro tenta o nome da própria Tag na descrição,
- * depois um sinônimo de categoria. Nunca inventa Tag — só aponta para uma existente.
+ * depois um sinônimo de categoria (taxonomia canônica em CATEGORY_TAGS — #93). Nunca inventa
+ * Tag — só aponta para uma existente (as categorias são semeadas por ensureSystemTags).
  */
 export function suggestTag(
   description: string,
@@ -76,9 +61,10 @@ export function suggestTag(
   }
 
   // 2) Palavra-chave de categoria → Tag cujo nome case com a categoria.
-  for (const { category, keywords } of TAG_KEYWORDS) {
-    if (keywords.some((k) => d.includes(k))) {
-      const tag = tags.find((t) => normalize(t.name).includes(category));
+  for (const cat of CATEGORY_TAGS) {
+    if (cat.keywords.some((k) => d.includes(k))) {
+      const target = normalize(cat.name);
+      const tag = tags.find((t) => normalize(t.name).includes(target));
       if (tag) return tag.id;
     }
   }
