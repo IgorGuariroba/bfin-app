@@ -25,7 +25,7 @@ function jsonContent(data: unknown) {
 
 const monthSchema = z
   .string()
-  .regex(/^\d{4}-\d{2}$/, "Mês no formato YYYY-MM")
+  .regex(/^\d{4}-(0[1-9]|1[0-2])$/, "Mês no formato YYYY-MM")
   .describe("Mês no formato YYYY-MM (ex.: 2026-06).");
 
 function bearerToken(request: Request): string | null {
