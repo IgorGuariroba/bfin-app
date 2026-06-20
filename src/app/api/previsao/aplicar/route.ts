@@ -40,6 +40,10 @@ export async function POST(request: NextRequest) {
       type: "diario",
       description: "Previsão Diária",
       amount: Math.abs(amount),
+      // Meio-dia em hora local do servidor (igual a parseTransactionDay). Em prod
+      // o container roda UTC → 12:00Z, o que dá ~12h de folga das bordas da janela
+      // da baixa automática (saoPauloTodayRange/ADR-0005 §7). A invariante "diário
+      // ao meio-dia UTC" da baixa depende desse deploy em UTC.
       date: new Date(cursor.getFullYear(), cursor.getMonth(), cursor.getDate(), 12, 0, 0),
     });
     cursor.setDate(cursor.getDate() + 1);

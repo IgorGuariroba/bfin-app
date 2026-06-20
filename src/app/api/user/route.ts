@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
+import { setAutoBaixaDiario, ProRequiredError } from "@/lib/user-settings";
 
 export async function GET() {
   const session = await auth();
@@ -9,7 +10,7 @@ export async function GET() {
 
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { id: true, name: true, email: true, image: true, plan: true },
+    select: { id: true, name: true, email: true, image: true, plan: true, autoBaixaDiario: true },
   });
 
   if (!user) return NextResponse.json({ error: "Not found" }, { status: 404 });
@@ -23,10 +24,25 @@ export async function PATCH(req: Request) {
   }
 
   const body = await req.json();
-  const { name, currentPassword, newPassword } = body;
+  const { name, currentPassword, newPassword, autoBaixaDiario } = body;
 
   const user = await prisma.user.findUnique({ where: { id: session.user.id } });
   if (!user) return NextResponse.json({ error: "Usuário não encontrado" }, { status: 404 });
+
+  // Toggle da baixa automática: regra de plano vive no serviço (ADR-0005).
+  if (autoBaixaDiario !== undefined) {
+    if (typeof autoBaixaDiario !== "boolean") {
+      return NextResponse.json({ error: "autoBaixaDiario deve ser booleano" }, { status: 400 });
+    }
+    try {
+      await setAutoBaixaDiario(session.user.id, autoBaixaDiario);
+    } catch (e) {
+      if (e instanceof ProRequiredError) {
+        return NextResponse.json({ error: e.message }, { status: 403 });
+      }
+      throw e;
+    }
+  }
 
   const data: { name?: string; password?: string } = {};
 
@@ -53,14 +69,17 @@ export async function PATCH(req: Request) {
     data.password = await bcrypt.hash(newPassword, 10);
   }
 
-  if (Object.keys(data).length === 0) {
+  if (Object.keys(data).length === 0 && autoBaixaDiario === undefined) {
     return NextResponse.json({ error: "Nenhum campo para atualizar" }, { status: 400 });
   }
 
-  const updated = await prisma.user.update({
+  if (Object.keys(data).length > 0) {
+    await prisma.user.update({ where: { id: session.user.id }, data });
+  }
+
+  const updated = await prisma.user.findUnique({
     where: { id: session.user.id },
-    data,
-    select: { id: true, name: true, email: true, image: true },
+    select: { id: true, name: true, email: true, image: true, autoBaixaDiario: true },
   });
 
   return NextResponse.json(updated);

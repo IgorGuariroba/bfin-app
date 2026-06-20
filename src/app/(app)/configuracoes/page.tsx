@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { usePlan } from "@/hooks/use-plan";
 import { ConnectBankButton } from "@/components/pluggy/connect-bank-button";
+import { AutoBaixaDiarioToggle } from "@/components/configuracoes/auto-baixa-diario-toggle";
 
 type Invite = {
   id: string;
@@ -265,6 +266,9 @@ export default function ConfiguracoesPage() {
           </div>
         </div>
       </section>
+
+      {/* Gasto diário (baixa automática) */}
+      <AutoBaixaDiarioToggle />
 
       {/* Convidar */}
       <section className="mb-6">

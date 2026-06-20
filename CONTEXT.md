@@ -20,6 +20,10 @@ Classifica uma `Transaction`, e não é só "entrada/saída" — cada tipo tem e
 Meta orientativa de valor mensal para uma categoria, não impõe trava. A **previsão diária** é materializada como projeção: `apply_previsao` cria uma `Transaction` `type=diario` ("Previsão Diária") para cada dia numa janela de 12 meses — e é **destrutivo**, deletando antes os `diario` manuais (`source=manual`) nessa janela antes de recriar.
 _Avoid_: orçamento, budget, limite.
 
+**Baixa automática do gasto diário**:
+Automação opt-in de `User` `pro` (default **desligada**) que, ao menos uma vez por dia, **exclui** as `Transaction` `type=diario` (a projeção da [[Previsão]]) cujo dia é "hoje" em `America/Sao_Paulo`. Filosofia: o diário é gasto *possível*, não real; quando o dia chega ele perde sentido e sai de cena para o usuário lançar o gasto real, sem o trabalho manual de apagar a projeção gerada para o mês inteiro. Não toca diários **futuros** (continuam como projeção dos próximos dias/meses). Escopo deliberadamente restrito ao **dia corrente** — não recupera dias passados nem dias em que o job falhou.
+_Avoid_: pagar (o dono chamou de "pagar", mas a operação é exclusão — não há liquidação), limpeza, faxina.
+
 **Tag**:
 Rótulo categorizador aplicado a Transactions; pode ser do sistema (`isSystem`) ou do usuário.
 _Avoid_: categoria, label.
