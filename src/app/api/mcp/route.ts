@@ -30,6 +30,15 @@ function jsonContent(data: unknown) {
 }
 
 /**
+ * Formata um Date como YYYY-MM-DD em hora local. As Transaction são gravadas ao
+ * meio-dia local (parseTransactionDay), então os componentes locais dão a
+ * data-calendário correta — é a mesma base que list/insights usam para o dia.
+ */
+function ymd(date: Date): string {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
+/**
  * Executa uma leitura e empacota o resultado como JSON. Erros de validação
  * (mês/data inválidos) viram tool error estruturado (isError) — espelha o
  * tratamento de create_transaction, em vez de propagar erro JSON-RPC genérico.
@@ -100,6 +109,20 @@ function buildServer(userId: string, apiKeyId: string): McpServer {
           .optional()
           .describe("Número de ocorrências quando repeatEnd='count'."),
       },
+      // Canal de máquina paralelo ao texto (ADR-0006): devolve o id para o agente
+      // encadear uma correção (update/delete) sem re-listar. `type` é string (não
+      // enum) de propósito: a candidata duplicata pode ser de qualquer tipo, e a
+      // validação estrita do outputSchema não deve estourar por um tipo legítimo.
+      outputSchema: {
+        id: z.string().describe("Id da movimentação criada (ou da duplicata existente)."),
+        duplicated: z
+          .boolean()
+          .describe("true = nada foi criado; id/campos referem-se à duplicata existente."),
+        type: z.string().describe("Tipo resolvido da movimentação."),
+        amount: z.number().describe("Valor persistido."),
+        date: z.string().describe("Data no formato YYYY-MM-DD."),
+        tagId: z.string().nullable().describe("Tag aplicada (auto-sugerida) ou null."),
+      },
     },
     async ({ description, amount, date, type, force, repeat, repeatEnd, repeatCount }) => {
       try {
@@ -132,6 +155,14 @@ function buildServer(userId: string, apiKeyId: string): McpServer {
                 text: `Possível duplicata: já existe "${dup.description}" (${dup.type}) ${fmt(dup.amount)}. Envie force=true para criar mesmo assim.`,
               },
             ],
+            structuredContent: {
+              id: dup.id,
+              duplicated: true,
+              type: dup.type,
+              amount: dup.amount,
+              date: ymd(dup.date),
+              tagId: dup.tags[0]?.id ?? null,
+            },
           };
         }
         const tx = result.transaction;
@@ -151,6 +182,14 @@ function buildServer(userId: string, apiKeyId: string): McpServer {
               text: `Movimentação criada: ${tx.description} (${tx.type}) ${fmt(tx.amount)} em ${date}.${tagNote}${recurrenceNote}`,
             },
           ],
+          structuredContent: {
+            id: tx.id,
+            duplicated: false,
+            type: tx.type,
+            amount: tx.amount,
+            date: ymd(tx.date),
+            tagId: tx.tags[0]?.id ?? null,
+          },
         };
       } catch (error) {
         if (error instanceof TransactionValidationError) {
@@ -246,6 +285,14 @@ function buildServer(userId: string, apiKeyId: string): McpServer {
           .optional()
           .describe("Substitui o conjunto de Tags (lista vazia remove todas)."),
       },
+      // Estado resultante para o agente encadear outra edição (ADR-0006).
+      outputSchema: {
+        id: z.string().describe("Id da movimentação editada."),
+        type: z.string().describe("Tipo após a edição."),
+        amount: z.number().describe("Valor após a edição."),
+        date: z.string().describe("Data no formato YYYY-MM-DD após a edição."),
+        tagIds: z.array(z.string()).describe("Conjunto de Tags resultante."),
+      },
     },
     async ({ id, description, amount, date, type, tagIds }) => {
       try {
@@ -266,6 +313,13 @@ function buildServer(userId: string, apiKeyId: string): McpServer {
               text: `Movimentação atualizada: ${tx.description} (${tx.type}) ${fmt(tx.amount)}.`,
             },
           ],
+          structuredContent: {
+            id: tx.id,
+            type: tx.type,
+            amount: tx.amount,
+            date: ymd(tx.date),
+            tagIds: tx.tags.map((t) => t.id),
+          },
         };
       } catch (error) {
         if (error instanceof TransactionValidationError) {
@@ -315,6 +369,13 @@ function buildServer(userId: string, apiKeyId: string): McpServer {
           .optional()
           .describe("Cor em hex (ex.: '#4a90e2'). Se omitida, usa uma cor neutra."),
       },
+      // Devolve o id da Tag para o agente encadear (ex.: aplicá-la num
+      // update_transaction) sem re-listar (ADR-0006).
+      outputSchema: {
+        id: z.string().describe("Id da Tag criada."),
+        name: z.string().describe("Nome da Tag."),
+        color: z.string().describe("Cor resolvida da Tag (hex)."),
+      },
     },
     async ({ name, color }) => {
       try {
@@ -322,6 +383,7 @@ function buildServer(userId: string, apiKeyId: string): McpServer {
         await recordAgentWrite({ apiKeyId, userId, action: "create", entityId: tag.id });
         return {
           content: [{ type: "text", text: `Tag criada: ${tag.name}.` }],
+          structuredContent: { id: tag.id, name: tag.name, color: tag.color },
         };
       } catch (error) {
         if (error instanceof TagValidationError) {

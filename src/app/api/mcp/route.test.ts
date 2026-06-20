@@ -37,6 +37,17 @@ function mcpRequest(token: string | null, body: unknown) {
   });
 }
 
+/** Extrai o `result` da resposta JSON-RPC (corpo pode vir como SSE: linha "data: {…}"). */
+function parseRpcResult(body: string) {
+  const dataLine = body.split("\n").find((l) => l.startsWith("data:"));
+  const json = JSON.parse(dataLine ? dataLine.slice("data:".length).trim() : body);
+  return json.result as {
+    content: { type: string; text: string }[];
+    structuredContent?: Record<string, unknown>;
+    isError?: boolean;
+  };
+}
+
 afterEach(async () => {
   vi.restoreAllMocks();
   if (createdUserIds.length) {
@@ -680,6 +691,124 @@ describe("POST /api/mcp", () => {
     const blocked = await createCall(RATE_LIMITS.write.limit + 1);
     expect(blocked.status).toBe(429);
     expect(Number(blocked.headers.get("retry-after"))).toBeGreaterThan(0);
+  });
+
+  it("T22: create_transaction devolve o id no structuredContent (ADR-0006) para encadear correção", async () => {
+    const { user, plain } = await seedProKey();
+
+    const res = await POST(
+      mcpRequest(plain, {
+        jsonrpc: "2.0",
+        id: 1,
+        method: "tools/call",
+        params: {
+          name: "create_transaction",
+          arguments: { description: "Café", amount: 9.5, date: "2026-06-15", type: "saida" },
+        },
+      })
+    );
+
+    expect(res.status).toBe(200);
+    const result = parseRpcResult(await res.text());
+    const stored = await prisma.transaction.findFirst({ where: { userId: user.id } });
+    expect(result.structuredContent).toMatchObject({
+      id: stored!.id,
+      duplicated: false,
+      type: "saida",
+      amount: 9.5,
+      date: "2026-06-15",
+      tagId: null,
+    });
+  });
+
+  it("T22b: o id devolvido por create_transaction serve de alvo para um update encadeado", async () => {
+    const { plain } = await seedProKey();
+
+    const createRes = await POST(
+      mcpRequest(plain, {
+        jsonrpc: "2.0",
+        id: 1,
+        method: "tools/call",
+        params: {
+          name: "create_transaction",
+          arguments: { description: "Mercado", amount: 100, date: "2026-06-15", type: "saida" },
+        },
+      })
+    );
+    const created = parseRpcResult(await createRes.text());
+    const id = created.structuredContent!.id as string;
+
+    const updRes = await POST(
+      mcpRequest(plain, {
+        jsonrpc: "2.0",
+        id: 2,
+        method: "tools/call",
+        params: { name: "update_transaction", arguments: { id, amount: 150 } },
+      })
+    );
+    const updated = parseRpcResult(await updRes.text());
+    expect(updated.structuredContent).toMatchObject({ id, type: "saida", amount: 150 });
+
+    const stored = await prisma.transaction.findUnique({ where: { id } });
+    expect(stored?.amount).toBe(150);
+  });
+
+  it("T22c: na duplicata, structuredContent devolve duplicated=true e o id da transação existente", async () => {
+    const { user, plain } = await seedProKey();
+    const existing = await prisma.transaction.create({
+      data: {
+        userId: user.id,
+        type: "saida",
+        description: "Café",
+        amount: 9.5,
+        date: new Date(2026, 5, 15, 12, 0, 0),
+        source: "manual",
+      },
+    });
+
+    const res = await POST(
+      mcpRequest(plain, {
+        jsonrpc: "2.0",
+        id: 1,
+        method: "tools/call",
+        params: {
+          name: "create_transaction",
+          arguments: { description: "Café", amount: 9.5, date: "2026-06-15", type: "saida" },
+        },
+      })
+    );
+
+    expect(res.status).toBe(200);
+    const result = parseRpcResult(await res.text());
+    expect(result.structuredContent).toMatchObject({
+      id: existing.id,
+      duplicated: true,
+      date: "2026-06-15",
+    });
+    const count = await prisma.transaction.count({ where: { userId: user.id } });
+    expect(count).toBe(1); // nada criado
+  });
+
+  it("T22d: create_tag devolve id/name/color no structuredContent", async () => {
+    const { user, plain } = await seedProKey();
+
+    const res = await POST(
+      mcpRequest(plain, {
+        jsonrpc: "2.0",
+        id: 1,
+        method: "tools/call",
+        params: { name: "create_tag", arguments: { name: "Viagem", color: "#4a90e2" } },
+      })
+    );
+
+    expect(res.status).toBe(200);
+    const result = parseRpcResult(await res.text());
+    const stored = await prisma.tag.findFirst({ where: { userId: user.id, name: "Viagem" } });
+    expect(result.structuredContent).toMatchObject({
+      id: stored!.id,
+      name: "Viagem",
+      color: "#4a90e2",
+    });
   });
 
   it("T15: escrita do agente emite log de auditoria (apiKeyId/userId/action/entityId)", async () => {
