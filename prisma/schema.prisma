@@ -17,6 +17,7 @@ model User {
   plan             String    @default("free")
   planExpiresAt    DateTime?
   mpSubscriptionId String?
+  autoBaixaDiario  Boolean   @default(false)
   accounts         Account[]
   sessions       Session[]
   transactions   Transaction[]
