@@ -11,7 +11,8 @@ Lançamento de entrada ou saída de dinheiro feito pelo usuário, com data, valo
 _Avoid_: lançamento, movimentação, gasto (gasto é um subtipo de Transaction).
 
 **Transaction Source (origem)**:
-De onde veio uma `Transaction`: `manual` (digitada na UI), `pluggy` (importada do banco, com `externalId` do Pluggy para idempotência), ou `agent` (criada ou editada por um agente MCP em nome do dono). É a trilha que distingue canais — o usuário sabe o que veio de cada um.
+De onde veio uma `Transaction`: `manual` (digitada na UI), `pluggy` (importada do banco via Open Finance, com `externalId` para idempotência) ou `agent` (criada ou editada por um agente MCP em nome do dono). É a trilha que distingue canais — o usuário sabe o que veio de cada um.
+`pluggy` é um **canal descontinuado/histórico**: a integração foi removida do projeto por custo (ver ADR-0007), então **não há mais importação ativa** — o valor sobrevive apenas nas `Transaction` que já tinham sido importadas, como lápide de origem. Não é convertido para `manual` (seria falsear a origem), e as regras que preservam importados (`apply_previsao`, baixa diária) continuam protegendo esses registros históricos.
 
 **Transaction Type (tipo)**:
 Classifica uma `Transaction`, e não é só "entrada/saída" — cada tipo tem efeito contábil distinto: `entrada` soma ao saldo; `saida` (gasto) e `cartao` (fatura/parcelado) abatem o saldo; `economia` é guardado (sai do fluxo corrente e **não** abate saldo nem custo de vida); `diario` é o placeholder da **projeção** de gasto variável futuro (ver [[Previsão]]), não um gasto real registrado.

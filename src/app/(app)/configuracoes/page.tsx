@@ -18,7 +18,6 @@ import {
   Lock,
 } from "lucide-react";
 import { usePlan } from "@/hooks/use-plan";
-import { ConnectBankButton } from "@/components/pluggy/connect-bank-button";
 import { AutoBaixaDiarioToggle } from "@/components/configuracoes/auto-baixa-diario-toggle";
 
 type Invite = {
@@ -228,16 +227,6 @@ export default function ConfiguracoesPage() {
           </div>
         </section>
       )}
-
-      {/* Conexão bancária (Open Finance) */}
-      <section className="mb-6">
-        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-          Banco conectado
-        </h2>
-        <div className="rounded-3xl bg-surface p-5 shadow-sm">
-          <ConnectBankButton isPro={plan === "pro"} />
-        </div>
-      </section>
 
       {/* Aparência */}
       <section className="mb-6">
