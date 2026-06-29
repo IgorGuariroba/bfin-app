@@ -32,6 +32,23 @@
   --color-luxe: var(--luxe);
   --color-plus: var(--plus);
 
+  /* feedback semântico (dinheiro + status) — ADR-0008
+     text = --color-feedback-*, surface = --color-feedback-*-surface
+     valores claro/escuro resolvidos via :root / .dark */
+  --color-feedback-positive: var(--feedback-positive);
+  --color-feedback-positive-surface: var(--feedback-positive-surface);
+  --color-feedback-caution: var(--feedback-caution);
+  --color-feedback-caution-surface: var(--feedback-caution-surface);
+  --color-feedback-negative: var(--feedback-negative);
+  --color-feedback-negative-surface: var(--feedback-negative-surface);
+  --color-feedback-info: var(--feedback-info);
+  --color-feedback-info-surface: var(--feedback-info-surface);
+
+  /* elevação — 3 tiers (ADR-0008); no dark prefira ring/borda */
+  --shadow-card: 0 1px 2px 0 rgb(0 0 0 / 0.04), 0 1px 3px 0 rgb(0 0 0 / 0.06);
+  --shadow-overlay: 0 2px 4px 0 rgb(0 0 0 / 0.06), 0 4px 12px 0 rgb(0 0 0 / 0.1);
+  --shadow-float: 0 4px 8px 0 rgb(0 0 0 / 0.08), 0 8px 24px 0 rgb(0 0 0 / 0.16);
+
   /* shadcn semantic */
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
@@ -96,6 +113,25 @@
   --luxe: #460479;
   --plus: #92174d;
 
+  /* feedback semântico — light (ADR-0008) */
+  --feedback-positive: #15803d;
+  --feedback-positive-surface: #f0fdf4;
+  --feedback-caution: #b45309;
+  --feedback-caution-surface: #fffbeb;
+  --feedback-negative: var(--error); /* #c13515 — reusa o vermelho sério de validação */
+  --feedback-negative-surface: #fef2f2;
+  --feedback-info: #2563eb;
+  --feedback-info-surface: #eff6ff;
+
+  /* z-index — escala 100-based (ADR-0008); Tailwind v4 não tem
+     namespace --z-index-*, então use via z-[var(--z-nav)] */
+  --z-sticky: 100;
+  --z-header: 200;
+  --z-nav: 300;
+  --z-scrim: 400;
+  --z-overlay: 500;
+  --z-toast: 600;
+
   /* shadcn → bfin mapping */
   --radius: 0.5rem;
   --background: var(--canvas);
@@ -145,6 +181,17 @@
   --border-strong: rgba(255, 255, 255, 0.2);
   --surface-soft: #1a1a1a;
   --surface-strong: #262626;
+
+  /* feedback semântico — dark (ADR-0008) */
+  --feedback-positive: #4ade80;
+  --feedback-positive-surface: #0a1f12;
+  --feedback-caution: #fbbf24;
+  --feedback-caution-surface: #1c1500;
+  --feedback-negative: #f87171;
+  --feedback-negative-surface: #1f0a0a;
+  --feedback-info: #60a5fa;
+  --feedback-info-surface: #0a1530;
+
   --background: #0f0f0f;
   --foreground: #ededed;
   --card: #1a1a1a;

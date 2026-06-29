@@ -193,6 +193,7 @@ export default function ConfiguracoesPage() {
                     <img
                       src={inv.owner.image}
                       alt={inv.owner.name}
+                      referrerPolicy="no-referrer"
                       className="h-10 w-10 rounded-full object-cover"
                     />
                   ) : (

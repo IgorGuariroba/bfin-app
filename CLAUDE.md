@@ -1,24 +1,65 @@
-@AGENTS.md
+# CLAUDE.md
 
-## MCPs disponíveis
+Behavioral guidelines to reduce common LLM coding mistakes. Merge with project-specific instructions as needed.
 
-### context7
-Documentação atualizada de qualquer lib/framework.
-**Usar quando:** dúvida de API Next.js, Prisma, React, Tailwind, ou qualquer dependência do projeto — training data pode estar desatualizado.
-**Fluxo:** `resolve-library-id` → `query-docs`.
+**Tradeoff:** These guidelines bias toward caution over speed. For trivial tasks, use judgment.
 
-### next-devtools
-Ferramentas específicas para o servidor Next.js em execução.
-**Usar quando:** inspecionar cache de componentes, chamar rotas internas, buscar docs do Next.js local, upgrade de versão.
+## 1. Think Before Coding
 
-### playwright
-Automação de browser completa (navigate, click, fill, screenshot, snapshot, network).
-**Usar quando:** testar UI após mudanças visuais, verificar golden path de feature, depurar comportamento de página, inspecionar requests de rede no browser.
+**Don't assume. Don't hide confusion. Surface tradeoffs.**
 
-### shadcn
-Gerenciamento de componentes shadcn/ui.
-**Usar quando:** adicionar novo componente UI (`get_add_command`), checar exemplos de uso (`get_item_examples`), auditar acessibilidade (`get_audit_checklist`), pesquisar componente disponível (`search_items`).
+Before implementing:
+- State your assumptions explicitly. If uncertain, ask.
+- If multiple interpretations exist, present them - don't pick silently.
+- If a simpler approach exists, say so. Push back when warranted.
+- If something is unclear, stop. Name what's confusing. Ask.
 
-### Gmail / Google Calendar / Google Drive
-Integração com serviços Google (requer autenticação OAuth).
-**Usar quando:** explicitamente solicitado pelo usuário para ler e-mails, eventos ou arquivos do Drive.
+## 2. Simplicity First
+
+**Minimum code that solves the problem. Nothing speculative.**
+
+- No features beyond what was asked.
+- No abstractions for single-use code.
+- No "flexibility" or "configurability" that wasn't requested.
+- No error handling for impossible scenarios.
+- If you write 200 lines and it could be 50, rewrite it.
+
+Ask yourself: "Would a senior engineer say this is overcomplicated?" If yes, simplify.
+
+## 3. Surgical Changes
+
+**Touch only what you must. Clean up only your own mess.**
+
+When editing existing code:
+- Don't "improve" adjacent code, comments, or formatting.
+- Don't refactor things that aren't broken.
+- Match existing style, even if you'd do it differently.
+- If you notice unrelated dead code, mention it - don't delete it.
+
+When your changes create orphans:
+- Remove imports/variables/functions that YOUR changes made unused.
+- Don't remove pre-existing dead code unless asked.
+
+The test: Every changed line should trace directly to the user's request.
+
+## 4. Goal-Driven Execution
+
+**Define success criteria. Loop until verified.**
+
+Transform tasks into verifiable goals:
+- "Add validation" → "Write tests for invalid inputs, then make them pass"
+- "Fix the bug" → "Write a test that reproduces it, then make it pass"
+- "Refactor X" → "Ensure tests pass before and after"
+
+For multi-step tasks, state a brief plan:
+```
+1. [Step] → verify: [check]
+2. [Step] → verify: [check]
+3. [Step] → verify: [check]
+```
+
+Strong success criteria let you loop independently. Weak criteria ("make it work") require constant clarification.
+
+---
+
+**These guidelines are working if:** fewer unnecessary changes in diffs, fewer rewrites due to overcomplication, and clarifying questions come before implementation rather than after mistakes.
