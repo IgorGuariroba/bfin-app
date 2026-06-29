@@ -33,7 +33,7 @@ export default async function MenuPage() {
         <CardContent className="flex flex-col items-center p-0">
           <div className="h-20 w-20 rounded-full bg-surface-soft border border-hairline flex items-center justify-center mb-4 overflow-hidden">
             {user.image ? (
-              <img src={user.image} alt={user.name || "Usuário"} className="h-full w-full object-cover" />
+              <img src={user.image} alt={user.name || "Usuário"} referrerPolicy="no-referrer" className="h-full w-full object-cover" />
             ) : (
               <User size={32} className="text-muted" />
             )}

@@ -7,11 +7,14 @@ function fmtCompact(val: number): string {
   return val.toLocaleString("pt-BR", { maximumFractionDigits: 0 });
 }
 
+// abaixo deste saldo o estado deixa de ser "atenção" (zona do zero) e vira negativo
+const CAUTION_FLOOR = -200;
+
 function colorClass(value: number): string {
-  if (value === 0) return "bg-[var(--color-surface-soft)] text-[var(--color-muted)]";
-  if (value > 0) return "bg-[#2db55d]/15 text-[#2db55d]";
-  if (value < -200) return "bg-[#ff385c]/15 text-[#ff385c]";
-  return "bg-amber-100 text-amber-700";
+  if (value === 0) return "bg-surface-soft text-muted";
+  if (value > 0) return "bg-feedback-positive-surface text-feedback-positive";
+  if (value < CAUTION_FLOOR) return "bg-feedback-negative-surface text-feedback-negative";
+  return "bg-feedback-caution-surface text-feedback-caution";
 }
 
 interface SaldoCellProps {
