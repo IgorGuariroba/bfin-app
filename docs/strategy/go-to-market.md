@@ -162,7 +162,7 @@ Stack de referência para construir e validar a estratégia. Não usar tudo — 
 
 ## Decisões pendentes
 
-- [ ] Escolher canal Fase 1: Reddit ou TikTok
+- [x] ~~Escolher canal Fase 1: Reddit ou TikTok~~ → **Instagram (Reels)** (resolvido 2026-06-30: canal Fase 1 = vídeo curto educativo via Instagram Reels; Reddit fica para fase posterior)
 - [ ] Definir métrica norte D7 vs D30
 - [ ] Calendário editorial blog (10 títulos prioritários)
 - [ ] Aprovar mecânica de indique-ganhe (1 mês premium é suficiente?)
@@ -171,3 +171,4 @@ Stack de referência para construir e validar a estratégia. Não usar tudo — 
 
 - **2026-05-14** — v1 rascunho inicial. ICP definido, canais listados, faseamento esboçado.
 - **2026-05-14** — v1.1 seção Ferramentas & Frameworks (livros, stack de validação, roteiro 3 semanas).
+- **2026-06-30** — Decisão de canal Fase 1 resolvida: **Instagram (Reels)** em vez de Reddit. Alinhado ao princípio "1 canal por 60 dias" — Instagram é a materialização do canal 2 (TikTok/Reels) do GTM. Próximo: definir funil de conversão, identidade da conta, cadência e operação de produção.
