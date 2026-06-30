@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import { Geist_Mono } from "next/font/google";
 import { Providers } from "@/components/providers";
 import { ServiceWorkerRegistration } from "@/components/pwa/sw-register";
+import { auth } from "@/lib/auth";
 import { SITE_URL } from "@/lib/site-url";
 import "./globals.css";
 
@@ -73,11 +74,13 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const session = await auth();
+
   return (
     <html
       lang="pt-BR"
@@ -85,7 +88,7 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col">
-        <Providers>{children}</Providers>
+        <Providers session={session}>{children}</Providers>
         <ServiceWorkerRegistration />
       </body>
     </html>
