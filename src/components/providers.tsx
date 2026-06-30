@@ -1,5 +1,6 @@
 "use client";
 
+import type { Session } from "next-auth";
 import { SessionProvider } from "next-auth/react";
 import { ThemeProvider } from "next-themes";
 import { Toaster } from "@/components/ui/sonner";
@@ -15,10 +16,27 @@ if (typeof window !== "undefined" && process.env.NODE_ENV === "development") {
   };
 }
 
-export function Providers({ children }: { children: React.ReactNode }) {
+export function Providers({
+  children,
+  session,
+}: {
+  children: React.ReactNode;
+  session: Session | null;
+}) {
+  // Visitante/deslogado: primeira impressão sempre clara (independente do SO).
+  // Logado: respeita a escolha do usuário (system / light / dark).
+  // A sessão vem do servidor (JWT), então a decisão é tomada no SSR — sem flash.
+  const forcedTheme = session?.user ? undefined : "light";
+
   return (
-    <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-      <SessionProvider>
+    <ThemeProvider
+      attribute="class"
+      defaultTheme="system"
+      enableSystem
+      forcedTheme={forcedTheme}
+      disableTransitionOnChange
+    >
+      <SessionProvider session={session}>
         {children}
         <Toaster position="top-center" richColors />
       </SessionProvider>
