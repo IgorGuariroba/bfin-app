@@ -98,6 +98,16 @@ _Avoid_: escalonamento, transferência.
 Item do menu reconhecido pelo Bot (`price`, `how`, `signup`, `cancel`, `lgpd`, `support`, `human`).
 _Avoid_: opção, comando.
 
+### Observabilidade
+
+**Alerta (Página)**:
+Sinal de observabilidade que exige **ação humana imediata** — sintoma user-facing (app caiu, taxa de erro real, delete em massa do agente). Entregue em tempo real no Discord (#bfin-health). Critério: se não for agir nos próximos ~30min, não é Página.
+_Avoid_: notificação, aviso, alerta genérico.
+
+**Detecção (Issue)**:
+Achado de observabilidade que **merece tratamento mas não é urgente** — degradação, anomalia ou oportunidade de melhoria. Materializado como **GitHub Issue** (trabalho rastreável, pego pelo dev/agente, fechado por PR), nunca como notificação que se lê e esquece.
+_Avoid_: alerta (reservado p/ [[Alerta (Página)]]), warning, aviso.
+
 ## Relationships
 
 - Um **User** possui muitas **Transactions**, **Previsões** e **Tags**.
