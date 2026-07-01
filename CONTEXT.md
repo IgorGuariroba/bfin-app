@@ -108,6 +108,24 @@ _Avoid_: notificação, aviso, alerta genérico.
 Achado de observabilidade que **merece tratamento mas não é urgente** — degradação, anomalia ou oportunidade de melhoria. Materializado como **GitHub Issue** (trabalho rastreável, pego pelo dev/agente, fechado por PR), nunca como notificação que se lê e esquece.
 _Avoid_: alerta (reservado p/ [[Alerta (Página)]]), warning, aviso.
 
+### Aquisição (marketing pago)
+
+**Landing de campanha (LP)**:
+Página dedicada ao tráfego pago (Google Ads), focada em converter visitante em assinante [[User]] `pro`. Distinta da **home** `/` (orgânica, topo de funil) e da `/precos` (comparativa Free × Pro). Vende um único plano com uma única promessa e CTA.
+_Avoid_: landing (ambíguo — a home também é uma landing), home, página de vendas.
+
+**Conversão**:
+Evento de negócio "um clique de anúncio virou assinante `pro` pago", reportado ao Google Ads como conversão **primária** (com valor em BRL) para medir retorno do investimento. Disparada **uma única vez, na primeira ativação** confirmada pelo webhook do MercadoPago (`status=authorized`) — **não** no clique do CTA, **não** no retorno do checkout, e **não** em renovações recorrentes (que também chegam como `authorized`). Mede assinante real, não intenção. Distinta do [[Sinal de cadastro]] (secundário).
+_Avoid_: lead, clique, signup/cadastro (o cadastro é reportado ao Google Ads como [[Sinal de cadastro]], **não** como Conversão — a Conversão é o pagamento confirmado).
+
+**Sinal de cadastro**:
+O cadastro grátis reportado ao Google Ads como conversão **secundária** (sem valor), apenas para dar volume ao algoritmo de lances otimizar cedo, enquanto assinantes pagos ainda são poucos. Não é uma [[Conversão]]: mede intenção, não dinheiro. Disparado uma vez, quando o [[User]] novo se cadastra vindo de um anúncio.
+_Avoid_: conversão (reservado ao pagamento), micro-conversão, lead.
+
+**Identificador de clique (gclid/gbraid/wbraid)**:
+Identificador que o Google atribui ao clique no anúncio — `gclid` no caso geral; `gbraid`/`wbraid` quando o `gclid` não está disponível (tráfego iOS/app). Capturado na entrada e persistido no [[User]] em dois momentos: no **cadastro** (usuário novo) e quando um **free existente inicia o checkout** do `pro`. É a trilha que liga a [[Conversão]] e o [[Sinal de cadastro]] ao anúncio que os originou. Sem ele salvo, a ativação acontece mas não é atribuível ao marketing pago.
+_Avoid_: utm, tracking id, origem (origem já é termo de [[Transaction Source (origem)]]).
+
 ## Relationships
 
 - Um **User** possui muitas **Transactions**, **Previsões** e **Tags**.
@@ -120,6 +138,7 @@ _Avoid_: alerta (reservado p/ [[Alerta (Página)]]), warning, aviso.
 - Um **Post** tem um **Category** (obrigatório) e muitos **Topic** (livres).
 - Um **Post** tem um autor (`User` Admin).
 - Um **Post** acumula muitos **PostComment** de **User** logados.
+- Um **User** pode carregar um **Identificador de clique** opcional, capturado no cadastro (usuário novo) ou ao iniciar o checkout (free existente); a primeira ativação `pro` desse **User** reporta uma **Conversão** ao Google Ads usando esse identificador. O cadastro vindo de anúncio reporta também um **Sinal de cadastro**.
 
 ## Example dialogue
 

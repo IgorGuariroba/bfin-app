@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import { Geist_Mono } from "next/font/google";
 import { Providers } from "@/components/providers";
 import { ServiceWorkerRegistration } from "@/components/pwa/sw-register";
+import { GclidCapture } from "@/components/gclid-capture";
 import { auth } from "@/lib/auth";
 import { SITE_URL } from "@/lib/site-url";
 import "./globals.css";
@@ -90,6 +91,7 @@ export default async function RootLayout({
       <body className="min-h-full flex flex-col">
         <Providers session={session}>{children}</Providers>
         <ServiceWorkerRegistration />
+        <GclidCapture />
       </body>
     </html>
   );

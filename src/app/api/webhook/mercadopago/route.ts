@@ -1,8 +1,14 @@
 import "server-only";
 import { createHmac } from "crypto";
 import { PreApproval } from "mercadopago";
-import { mpClient } from "@/lib/mercadopago";
+import { mpClient, PLAN_PRICES } from "@/lib/mercadopago";
 import { prisma } from "@/lib/prisma";
+import {
+  isGoogleAdsConfigured,
+  resolveClickId,
+  uploadConversion,
+  type ClickId,
+} from "@/lib/google-ads";
 
 function verifySignature(request: Request, rawBody: string, dataId: string): boolean {
   const secret = process.env.MERCADO_PAGO_WEBHOOK_SECRET;
@@ -19,6 +25,47 @@ function verifySignature(request: Request, rawBody: string, dataId: string): boo
   const expected = createHmac("sha256", secret).update(message).digest("hex");
 
   return expected === v1;
+}
+
+/**
+ * Reporta a conversão de assinatura ao Google Ads (ADR-0010), uma única vez.
+ * Falhas nunca quebram o webhook — ele precisa responder 200 ao MercadoPago.
+ * Dedup: o campo `conversionReportedAt` descarta renovações (que também chegam
+ * como `authorized`) e reenvios do mesmo evento.
+ */
+async function maybeReportConversion(
+  userId: string,
+  clickId: ClickId | null,
+  cycle: string | undefined,
+  txAmount: number | undefined,
+) {
+  if (!clickId || !isGoogleAdsConfigured()) return;
+
+  const current = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { conversionReportedAt: true },
+  });
+  if (current?.conversionReportedAt) return;
+
+  const fallback =
+    cycle === "annual" || cycle === "monthly"
+      ? PLAN_PRICES[cycle].amount
+      : PLAN_PRICES.monthly.amount;
+  const value = txAmount ?? fallback;
+
+  const result = await uploadConversion({
+    clickId,
+    value,
+    occurredAt: new Date(),
+  });
+  if (result.ok) {
+    await prisma.user.update({
+      where: { id: userId },
+      data: { conversionReportedAt: new Date() },
+    });
+  } else if (result.reason === "error") {
+    console.error("[google-ads] conversion upload failed:", result.error);
+  }
 }
 
 export async function POST(request: Request) {
@@ -52,6 +99,14 @@ export async function POST(request: Request) {
       where: { id: userId },
       data: { plan: "pro", planExpiresAt, mpSubscriptionId: sub.id },
     });
+
+    // Conversão de marketing (ADR-0010): só na 1ª ativação, se houver
+    // identificador de clique e o Google Ads estiver configurado. Renovações
+    // (também "authorized") são descartadas por conversionReportedAt.
+    const txAmount =
+      (sub as { auto_recurring?: { transaction_amount?: number } }).auto_recurring
+        ?.transaction_amount;
+    await maybeReportConversion(userId, resolveClickId(user), cycle, txAmount);
 
     const discordUrl = process.env.DISCORD_WEBHOOK_URL;
     if (discordUrl) {

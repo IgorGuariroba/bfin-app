@@ -72,6 +72,16 @@ function CardIllustration() {
   );
 }
 
+/**
+ * Destino pós-login. Vem do `?callbackUrl=` (ex.: a LP de campanha manda para
+ * `/assinar`), restrito a caminhos internos para evitar open redirect. Default
+ * `/saldos`. Lido de window no clique — sem useSearchParams (sem Suspense).
+ */
+function getCallbackUrl(): string {
+  const raw = new URLSearchParams(window.location.search).get("callbackUrl");
+  return raw && raw.startsWith("/") && !raw.startsWith("//") ? raw : "/saldos";
+}
+
 export default function LoginPage() {
   const router = useRouter();
   const [showForm, setShowForm] = useState(false);
@@ -89,13 +99,13 @@ export default function LoginPage() {
     if (result?.error) {
       setError("Email ou senha inválidos");
     } else {
-      router.push("/saldos");
+      router.push(getCallbackUrl());
       router.refresh();
     }
   }
 
   async function handleGoogleLogin() {
-    await signIn("google", { callbackUrl: "/saldos" });
+    await signIn("google", { callbackUrl: getCallbackUrl() });
   }
 
   return (
