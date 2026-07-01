@@ -44,6 +44,7 @@ const PRO_BENEFITS = [
   "Histórico completo, sem limite de meses",
   "Horizonte de saldo de longo prazo",
   "Conta compartilhada com quem você quiser",
+  "Assistente IA via MCP (Claude, ChatGPT)",
   "Suporte prioritário",
 ];
 

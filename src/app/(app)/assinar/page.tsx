@@ -263,5 +263,8 @@ export default function AssinarPage() {
 
 const PRO_FEATURES = [
   "Histórico completo sem limite de meses",
+  "Horizonte de saldo de longo prazo",
   "Compartilhar conta com outra pessoa",
+  "Assistente IA via MCP (Claude, ChatGPT)",
+  "Suporte prioritário",
 ];
