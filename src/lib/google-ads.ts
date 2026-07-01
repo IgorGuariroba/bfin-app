@@ -10,10 +10,10 @@ import "server-only";
  * o plano vira `pro` pela primeira vez — nunca no retorno do checkout.
  *
  * Sem SDK do Google Ads (seria +1 dependência pesada): usa `fetch` direto na
- * REST API v18 + troca do refresh_token por access_token (OAuth Desktop).
+ * REST API v22 + troca do refresh_token por access_token (OAuth Desktop).
  */
 
-const API_VERSION = "v18";
+const API_VERSION = "v22";
 const ADS_BASE = "https://googleads.googleapis.com";
 const TOKEN_URL = "https://oauth2.googleapis.com/token";
 
