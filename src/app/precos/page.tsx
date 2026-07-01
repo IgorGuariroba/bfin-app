@@ -47,6 +47,7 @@ const PRO_FEATURES = [
   "Tudo do Free",
   "Horizonte de saldo de longo prazo",
   "Compartilhamento de conta com convidados",
+  "Assistente IA via MCP (Claude, ChatGPT)",
   "Suporte prioritário",
 ];
 
