@@ -111,7 +111,7 @@ _Avoid_: alerta (reservado p/ [[Alerta (Página)]]), warning, aviso.
 ### Aquisição (marketing pago)
 
 **Landing de campanha (LP)**:
-Página dedicada ao tráfego pago (Google Ads), focada em converter visitante em assinante [[User]] `pro`. Distinta da **home** `/` (orgânica, topo de funil) e da `/precos` (comparativa Free × Pro). Vende um único plano com uma única promessa e CTA.
+Página dedicada ao tráfego pago (Google Ads), focada em converter visitante em assinante [[User]] `pro`. Distinta da **home** `/` (orgânica, topo de funil) e da `/precos` (comparativa Free × Pro). Promessa única; oferta em 3 cards estilo SaaS (Free, Pro Anual em destaque como "mais popular", Pro Mensal), com preços vindos do `PlanConfig`.
 _Avoid_: landing (ambíguo — a home também é uma landing), home, página de vendas.
 
 **Conversão**:

@@ -7,9 +7,10 @@ import { PLAN_PRICES } from "@/lib/mercadopago";
 
 export const dynamic = "force-dynamic";
 
-// Landing de campanha (ADR-0010): destino do tráfego pago do Google Ads. Um
-// plano, uma promessa, um CTA. noindex — é página de mídia paga, não deve
-// competir com /precos na busca orgânica.
+// Landing de campanha (ADR-0010): destino do tráfego pago do Google Ads. Uma
+// promessa única; oferta em 3 cards estilo SaaS (Free, Pro Anual em destaque,
+// Pro Mensal). noindex — é página de mídia paga, não deve competir com /precos
+// na busca orgânica.
 export const metadata: Metadata = {
   title: "bfin Pro · Assuma o controle das suas finanças",
   description:
@@ -17,9 +18,11 @@ export const metadata: Metadata = {
   robots: { index: false, follow: true },
 };
 
-// CTA único: manda para o login já com o checkout como destino pós-cadastro.
+// CTAs pagos mandam para o login já com o checkout como destino pós-cadastro.
 // O login honra ?callbackUrl (caminho interno).
 const CTA_HREF = "/login?callbackUrl=%2Fassinar";
+const CTA_ANNUAL = "/login?callbackUrl=%2Fassinar%3Fplan%3Dannual";
+const CTA_MONTHLY = "/login?callbackUrl=%2Fassinar%3Fplan%3Dmonthly";
 
 const currencyFormatter = new Intl.NumberFormat("pt-BR", {
   style: "currency",
@@ -43,6 +46,14 @@ const PRO_BENEFITS = [
   "Conta compartilhada com quem você quiser",
   "Suporte prioritário",
 ];
+
+// Cards de oferta — mesma estrutura da /precos.
+const FREE_FEATURES = [
+  "Saldos diários ilimitados",
+  "Tags personalizadas",
+  "Previsões mensais por categoria",
+];
+const PRO_CARD_FEATURES = ["Tudo do Free", ...PRO_BENEFITS];
 
 export default async function LpProPage() {
   const { monthly, annual } = await getPrices();
@@ -134,39 +145,112 @@ export default async function LpProPage() {
           </div>
         </section>
 
-        {/* Oferta — plano único (Pro anual, melhor valor) + CTA único */}
-        <section className="py-16 md:py-24" aria-label="Assinar o Pro">
-          <div className="mx-auto max-w-md px-6">
-            <article className="relative rounded-[14px] border border-hairline bg-canvas p-8 shadow-[rgba(0,0,0,0.02)_0_0_0_1px,rgba(0,0,0,0.04)_0_2px_6px_0,rgba(0,0,0,0.1)_0_4px_8px_0]">
-              <span className="absolute -top-3 left-8 inline-flex items-center rounded-full bg-rausch px-3 py-1 text-[11px] font-semibold tracking-wide text-white">
-                MELHOR VALOR
-              </span>
-              <h3 className="text-xl font-bold text-ink">bfin Pro Anual</h3>
-              <p className="mt-1 text-sm text-body-text">
-                Pague 1×, use o ano todo
-              </p>
-              <p className="mt-6 text-[40px] font-bold leading-none tracking-tight text-ink">
-                {fmt(annualMonthly)}
-                <span className="text-base font-normal text-body-text">
-                  /mês
+        {/* Oferta — 3 cards estilo SaaS: Free, Pro Anual (mais popular, ao
+            centro no desktop e primeiro no mobile) e Pro Mensal. Preços vêm do
+            PlanConfig (banco), com fallback nos defaults. */}
+        <section className="py-16 md:py-24" aria-label="Planos e preços">
+          <div className="mx-auto max-w-5xl px-6">
+            <div className="grid gap-4 md:grid-cols-3">
+              <article className="relative order-first rounded-[14px] border border-hairline bg-canvas p-8 shadow-[rgba(0,0,0,0.02)_0_0_0_1px,rgba(0,0,0,0.04)_0_2px_6px_0,rgba(0,0,0,0.1)_0_4px_8px_0] md:order-2">
+                <span className="absolute -top-3 left-8 inline-flex items-center rounded-full bg-rausch px-3 py-1 text-[11px] font-semibold tracking-wide text-white">
+                  MAIS POPULAR
                 </span>
-              </p>
-              <p className="mt-1 text-sm text-body-text">
-                {fmt(annual)} cobrado anualmente · economiza {savings}%
-              </p>
-              <Link
-                href={CTA_HREF}
-                className="mt-8 inline-flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-rausch px-6 text-base font-medium text-white transition-colors hover:bg-rausch-active"
-              >
-                <Zap className="size-5" aria-hidden />
-                Assinar o Pro
-              </Link>
-              <p className="mt-3 text-center text-sm text-body-text">
-                Prefere mensal? Escolha no próximo passo, por {fmt(monthly)}/mês.
-              </p>
-            </article>
+                <h3 className="text-xl font-bold text-ink">Pro Anual</h3>
+                <p className="mt-1 text-sm text-body-text">
+                  Pague 1×, use o ano todo
+                </p>
+                <p className="mt-6 text-[36px] font-bold leading-none tracking-tight text-ink">
+                  {fmt(annualMonthly)}
+                  <span className="text-base font-normal text-body-text">
+                    /mês
+                  </span>
+                </p>
+                <p className="mt-1 text-sm text-body-text">
+                  {fmt(annual)} cobrado anualmente · economiza {savings}%
+                </p>
+                <ul className="mt-8 space-y-3 text-sm">
+                  {PRO_CARD_FEATURES.map((f) => (
+                    <li key={f} className="flex items-start gap-3">
+                      <Check
+                        className="mt-0.5 size-4 shrink-0 text-rausch"
+                        aria-hidden
+                      />
+                      <span className="text-ink">{f}</span>
+                    </li>
+                  ))}
+                </ul>
+                <Link
+                  href={CTA_ANNUAL}
+                  className="mt-8 inline-flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-rausch px-6 text-base font-medium text-white transition-colors hover:bg-rausch-active"
+                >
+                  <Zap className="size-5" aria-hidden />
+                  Assinar anual
+                </Link>
+              </article>
 
-            <div className="mt-8 flex flex-col items-center gap-3 rounded-[14px] border border-hairline bg-surface-soft px-6 py-5 text-center sm:flex-row sm:text-left">
+              <article className="rounded-[14px] border border-hairline bg-canvas p-8 md:order-1">
+                <h3 className="text-xl font-bold text-ink">Free</h3>
+                <p className="mt-1 text-sm text-body-text">
+                  Para começar a organizar
+                </p>
+                <p className="mt-6 text-[36px] font-bold leading-none tracking-tight text-ink">
+                  R$ 0
+                </p>
+                <p className="mt-1 text-sm text-body-text">grátis para sempre</p>
+                <ul className="mt-8 space-y-3 text-sm">
+                  {FREE_FEATURES.map((f) => (
+                    <li key={f} className="flex items-start gap-3">
+                      <Check
+                        className="mt-0.5 size-4 shrink-0 text-rausch"
+                        aria-hidden
+                      />
+                      <span className="text-ink">{f}</span>
+                    </li>
+                  ))}
+                </ul>
+                <Link
+                  href="/login"
+                  className="mt-8 inline-flex h-12 w-full items-center justify-center rounded-lg border border-ink bg-canvas px-6 text-base font-medium text-ink transition-colors hover:bg-surface-soft"
+                >
+                  Começar grátis
+                </Link>
+              </article>
+
+              <article className="rounded-[14px] border border-hairline bg-canvas p-8 md:order-3">
+                <h3 className="text-xl font-bold text-ink">Pro Mensal</h3>
+                <p className="mt-1 text-sm text-body-text">
+                  Flexibilidade total
+                </p>
+                <p className="mt-6 text-[36px] font-bold leading-none tracking-tight text-ink">
+                  {fmt(monthly)}
+                  <span className="text-base font-normal text-body-text">
+                    /mês
+                  </span>
+                </p>
+                <p className="mt-1 text-sm text-body-text">
+                  cobrança mensal recorrente
+                </p>
+                <ul className="mt-8 space-y-3 text-sm">
+                  {PRO_CARD_FEATURES.map((f) => (
+                    <li key={f} className="flex items-start gap-3">
+                      <Check
+                        className="mt-0.5 size-4 shrink-0 text-rausch"
+                        aria-hidden
+                      />
+                      <span className="text-ink">{f}</span>
+                    </li>
+                  ))}
+                </ul>
+                <Link
+                  href={CTA_MONTHLY}
+                  className="mt-8 inline-flex h-12 w-full items-center justify-center rounded-lg border border-ink bg-canvas px-6 text-base font-medium text-ink transition-colors hover:bg-surface-soft"
+                >
+                  Assinar mensal
+                </Link>
+              </article>
+            </div>
+
+            <div className="mt-10 flex flex-col items-center gap-3 rounded-[14px] border border-hairline bg-surface-soft px-6 py-5 text-center sm:flex-row sm:justify-center sm:text-left">
               <span className="inline-flex size-10 shrink-0 items-center justify-center rounded-full bg-canvas text-ink">
                 <ShieldCheck className="size-5" aria-hidden />
               </span>

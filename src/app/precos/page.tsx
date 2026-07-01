@@ -9,14 +9,14 @@ import { LandingHeader } from "@/components/landing/landing-header";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Planos e preços · bfin Premium",
+  title: "Planos e preços · bfin Pro",
   description:
-    "Plano Free e Premium do bfin. Mensal ou anual, sem fidelidade. Cancele quando quiser.",
+    "Plano Free e Pro do bfin. Mensal ou anual, sem fidelidade. Cancele quando quiser.",
   alternates: { canonical: "/precos" },
   openGraph: {
-    title: "Planos e preços · bfin Premium",
+    title: "Planos e preços · bfin Pro",
     description:
-      "Plano Free e Premium do bfin. Mensal ou anual, sem fidelidade. Cancele quando quiser.",
+      "Plano Free e Pro do bfin. Mensal ou anual, sem fidelidade. Cancele quando quiser.",
     url: "/precos",
   },
 };
@@ -43,7 +43,7 @@ const FREE_FEATURES = [
   "Previsões mensais por categoria",
 ];
 
-const PREMIUM_FEATURES = [
+const PRO_FEATURES = [
   "Tudo do Free",
   "Horizonte de saldo de longo prazo",
   "Compartilhamento de conta com convidados",
@@ -125,44 +125,11 @@ export default async function PrecosPage() {
                 </Link>
               </article>
 
-              <article className="rounded-[14px] border border-hairline bg-canvas p-8">
-                <h2 className="text-xl font-bold text-ink">Premium Mensal</h2>
-                <p className="mt-1 text-sm text-body-text">
-                  Flexibilidade total
-                </p>
-                <p className="mt-6 text-[36px] font-bold tracking-tight text-ink">
-                  {fmt(monthly)}
-                  <span className="text-base font-normal text-body-text">
-                    /mês
-                  </span>
-                </p>
-                <p className="mt-1 text-sm text-body-text">
-                  cobrança mensal recorrente
-                </p>
-                <ul className="mt-8 space-y-3 text-sm">
-                  {PREMIUM_FEATURES.map((f) => (
-                    <li key={f} className="flex items-start gap-3">
-                      <Check
-                        className="mt-0.5 size-4 shrink-0 text-rausch"
-                        aria-hidden
-                      />
-                      <span className="text-ink">{f}</span>
-                    </li>
-                  ))}
-                </ul>
-                <Link
-                  href="/assinar?plan=monthly"
-                  className="mt-8 inline-flex h-12 w-full items-center justify-center rounded-lg border border-ink bg-canvas px-6 text-base font-medium text-ink transition-colors hover:bg-surface-soft"
-                >
-                  Assinar mensal
-                </Link>
-              </article>
-
               <article className="relative rounded-[14px] border border-hairline bg-canvas p-8 shadow-[rgba(0,0,0,0.02)_0_0_0_1px,rgba(0,0,0,0.04)_0_2px_6px_0,rgba(0,0,0,0.1)_0_4px_8px_0]">
                 <span className="absolute -top-3 left-8 inline-flex items-center rounded-full bg-rausch px-3 py-1 text-[11px] font-semibold tracking-wide text-white">
-                  MELHOR VALOR
+                  MAIS POPULAR
                 </span>
-                <h2 className="text-xl font-bold text-ink">Premium Anual</h2>
+                <h2 className="text-xl font-bold text-ink">Pro Anual</h2>
                 <p className="mt-1 text-sm text-body-text">
                   Pague 1×, use o ano todo
                 </p>
@@ -176,7 +143,7 @@ export default async function PrecosPage() {
                   {fmt(annual)} cobrado anualmente · economiza {savings}%
                 </p>
                 <ul className="mt-8 space-y-3 text-sm">
-                  {PREMIUM_FEATURES.map((f) => (
+                  {PRO_FEATURES.map((f) => (
                     <li key={f} className="flex items-start gap-3">
                       <Check
                         className="mt-0.5 size-4 shrink-0 text-rausch"
@@ -191,6 +158,39 @@ export default async function PrecosPage() {
                   className="mt-8 inline-flex h-12 w-full items-center justify-center rounded-lg bg-rausch px-6 text-base font-medium text-white transition-colors hover:bg-rausch-active"
                 >
                   Assinar anual
+                </Link>
+              </article>
+
+              <article className="rounded-[14px] border border-hairline bg-canvas p-8">
+                <h2 className="text-xl font-bold text-ink">Pro Mensal</h2>
+                <p className="mt-1 text-sm text-body-text">
+                  Flexibilidade total
+                </p>
+                <p className="mt-6 text-[36px] font-bold tracking-tight text-ink">
+                  {fmt(monthly)}
+                  <span className="text-base font-normal text-body-text">
+                    /mês
+                  </span>
+                </p>
+                <p className="mt-1 text-sm text-body-text">
+                  cobrança mensal recorrente
+                </p>
+                <ul className="mt-8 space-y-3 text-sm">
+                  {PRO_FEATURES.map((f) => (
+                    <li key={f} className="flex items-start gap-3">
+                      <Check
+                        className="mt-0.5 size-4 shrink-0 text-rausch"
+                        aria-hidden
+                      />
+                      <span className="text-ink">{f}</span>
+                    </li>
+                  ))}
+                </ul>
+                <Link
+                  href="/assinar?plan=monthly"
+                  className="mt-8 inline-flex h-12 w-full items-center justify-center rounded-lg border border-ink bg-canvas px-6 text-base font-medium text-ink transition-colors hover:bg-surface-soft"
+                >
+                  Assinar mensal
                 </Link>
               </article>
             </div>
