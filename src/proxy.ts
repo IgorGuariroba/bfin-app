@@ -8,6 +8,7 @@ const publicRoutes = [
   "/api/mcp",
   "/api/cron/baixa-diaria",
   "/precos",
+  "/lp",
   "/ajuda",
   "/sobre",
   "/contato",
@@ -34,10 +35,14 @@ export function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
-  // Logado + /login → saldos (landing em / fica visível mesmo logado pra preview;
-  // page.tsx já redireciona logados pra /saldos)
+  // Logado + /login → destino. Honra ?callbackUrl (caminho interno) para não
+  // furar o funil da LP de campanha, que manda logados de anúncio direto ao
+  // checkout (/assinar). Sem callbackUrl válido → /saldos. (landing em / fica
+  // visível mesmo logado pra preview; page.tsx já redireciona logados.)
   if (isAuthRedirectRoute && hasSession) {
-    return NextResponse.redirect(new URL("/saldos", request.url));
+    const cb = request.nextUrl.searchParams.get("callbackUrl");
+    const dest = cb && cb.startsWith("/") && !cb.startsWith("//") ? cb : "/saldos";
+    return NextResponse.redirect(new URL(dest, request.url));
   }
 
   return NextResponse.next();

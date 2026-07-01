@@ -10,6 +10,26 @@ export async function POST(request: NextRequest) {
   const session = await auth();
   if (!session?.user?.id) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
+  // Atribuição de marketing (ADR-0010): free existente que chega pelo anúncio e
+  // inicia o checkout. Grava o identificador de clique só se o User ainda não
+  // tiver nenhum (updateMany com as 3 colunas null — não sobrescreve atribuição
+  // prévia). Nunca bloqueia o checkout.
+  try {
+    const clickData = {
+      gclid: request.cookies.get("bfin_gclid")?.value,
+      gbraid: request.cookies.get("bfin_gbraid")?.value,
+      wbraid: request.cookies.get("bfin_wbraid")?.value,
+    };
+    if (clickData.gclid || clickData.gbraid || clickData.wbraid) {
+      await prisma.user.updateMany({
+        where: { id: session.user.id, gclid: null, gbraid: null, wbraid: null },
+        data: clickData,
+      });
+    }
+  } catch (e) {
+    console.error("[google-ads] falha ao capturar click id no checkout:", e);
+  }
+
   const body = await request.json();
   const cycle = body?.cycle as BillingCycle | undefined;
   if (!cycle || !PLAN_PRICES[cycle]) return Response.json({ error: "Ciclo inválido" }, { status: 400 });

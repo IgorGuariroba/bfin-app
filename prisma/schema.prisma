@@ -18,6 +18,15 @@ model User {
   planExpiresAt    DateTime?
   mpSubscriptionId String?
   autoBaixaDiario  Boolean   @default(false)
+  // Atribuição de marketing (ADR-0010): identificador de clique capturado na
+  // landing e persistido no cadastro (gclid no caso geral; gbraid/wbraid quando
+  // o Google não emite gclid — tráfego iOS/app). conversionReportedAt marca se
+  // a conversão da 1ª ativação pro já foi reportada ao Google Ads (dedup de
+  // renovação).
+  gclid                String?
+  gbraid               String?
+  wbraid               String?
+  conversionReportedAt DateTime?
   accounts         Account[]
   sessions       Session[]
   transactions   Transaction[]

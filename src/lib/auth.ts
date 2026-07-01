@@ -2,10 +2,12 @@ import NextAuth from "next-auth";
 import Google from "next-auth/providers/google";
 import Credentials from "next-auth/providers/credentials";
 import { PrismaAdapter } from "@auth/prisma-adapter";
+import { cookies } from "next/headers";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { ensureSystemTags } from "@/lib/seed-system-tags";
 import { isAdmin } from "@/lib/admin";
+import { resolveClickId, uploadConversion } from "@/lib/google-ads";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma),
@@ -47,8 +49,39 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   ],
   events: {
     async createUser({ user }) {
-      if (user.id) {
-        await ensureSystemTags(user.id);
+      if (!user.id) return;
+      await ensureSystemTags(user.id);
+
+      // Atribuição de marketing (ADR-0010): grava o identificador de clique
+      // capturado na entrada (cookies bfin_gclid/gbraid/wbraid, ver
+      // GclidCapture) para que a 1ª ativação pro deste User reporte a Conversão,
+      // e reporta o Sinal de cadastro (secundário, sem valor) para dar volume
+      // ao Smart Bidding. Nunca quebra o cadastro.
+      try {
+        const store = await cookies();
+        const data = {
+          gclid: store.get("bfin_gclid")?.value,
+          gbraid: store.get("bfin_gbraid")?.value,
+          wbraid: store.get("bfin_wbraid")?.value,
+        };
+        const clickId = resolveClickId(data);
+        if (!clickId) return;
+
+        await prisma.user.update({ where: { id: user.id }, data });
+
+        const signupActionId = process.env.GOOGLE_ADS_SIGNUP_CONVERSION_ACTION_ID;
+        if (signupActionId) {
+          const result = await uploadConversion({
+            clickId,
+            occurredAt: new Date(),
+            conversionActionId: signupActionId,
+          });
+          if (!result.ok && result.reason === "error") {
+            console.error("[google-ads] sinal de cadastro falhou:", result.error);
+          }
+        }
+      } catch (e) {
+        console.error("[google-ads] falha na atribuição do cadastro:", e);
       }
     },
   },
