@@ -14,7 +14,7 @@ export function LogoutButton() {
       <Button
         type="submit"
         variant="ghost"
-        className="flex w-full h-auto items-center gap-3 rounded-[14px] p-4 justify-start active:scale-95 transition-transform"
+        className="flex w-full h-auto items-center gap-3 rounded-[14px] p-4 justify-start active:scale-95 transition-transform hover:bg-feedback-negative-surface"
       >
         <div className="flex h-10 w-10 items-center justify-center rounded-full bg-surface-strong text-error shrink-0">
           <LogOut size={20} />
