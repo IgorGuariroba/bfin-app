@@ -47,6 +47,10 @@ next-env.d.ts
 .agents/
 .claude/skills/
 .claude/scheduled_tasks.lock
+.codex/
+.gemini/skills/
+.github/skills/
+.impeccable/
 skills-lock.json
 
 # IDE

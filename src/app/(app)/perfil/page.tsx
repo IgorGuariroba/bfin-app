@@ -11,7 +11,6 @@ export default function EditarPerfilPage() {
   const router = useRouter();
 
   const user = session?.user;
-  const hasPassword = !!(user as { hasPassword?: boolean } | undefined)?.hasPassword;
 
   const [name, setName] = useState(user?.name ?? "");
   const [currentPassword, setCurrentPassword] = useState("");

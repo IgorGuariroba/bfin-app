@@ -10,7 +10,7 @@ const tagSchema = z.object({
   color: z.string().min(4, "Cor inválida").max(30, "Cor inválida"),
 });
 
-export async function GET(req: Request) {
+export async function GET() {
   try {
     const session = await auth();
     if (!session?.user?.id) {

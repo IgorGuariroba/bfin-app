@@ -27,9 +27,6 @@ const todayStr = () => {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 };
 
-const fmtCurrency = (val: number) =>
-  new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(val / 100);
-
 const fmtDateDisplay = (dateStr: string) => {
   const [y, m, d] = dateStr.split("-");
   return `${parseInt(d, 10)}/${parseInt(m, 10)}/${y}`;
@@ -259,7 +256,7 @@ export function QuickAddModal() {
               onClick={(e) => {
                 try {
                   (e.target as HTMLInputElement).showPicker?.();
-                } catch (err) {}
+                } catch {}
               }}
               className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
             />
