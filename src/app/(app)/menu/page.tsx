@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { User, CalendarClock, Settings, Lightbulb, HelpCircle, ChevronRight, Zap, Shield } from "lucide-react";
 import { LogoutButton } from "./logout-button";
 import { Badge } from "@/components/ui/badge";
@@ -33,7 +34,7 @@ export default async function MenuPage() {
         <CardContent className="flex flex-col items-center p-0">
           <div className="h-20 w-20 rounded-full bg-surface-soft border border-hairline flex items-center justify-center mb-4 overflow-hidden">
             {user.image ? (
-              <img src={user.image} alt={user.name || "Usuário"} referrerPolicy="no-referrer" className="h-full w-full object-cover" />
+              <Image src={user.image} alt={user.name || "Usuário"} width={80} height={80} unoptimized referrerPolicy="no-referrer" className="h-full w-full object-cover" />
             ) : (
               <User size={32} className="text-muted" />
             )}

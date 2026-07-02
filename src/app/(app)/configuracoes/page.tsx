@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { useTheme } from "next-themes";
 import {
   Users,
@@ -190,9 +191,12 @@ export default function ConfiguracoesPage() {
                   }`}
                 >
                   {inv.owner.image ? (
-                    <img
+                    <Image
                       src={inv.owner.image}
                       alt={inv.owner.name}
+                      width={40}
+                      height={40}
+                      unoptimized
                       referrerPolicy="no-referrer"
                       className="h-10 w-10 rounded-full object-cover"
                     />

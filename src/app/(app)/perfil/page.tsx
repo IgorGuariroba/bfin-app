@@ -2,6 +2,7 @@
 
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { useState } from "react";
 import { ChevronLeft, User, Loader2, Check } from "lucide-react";
 import { AssistentePanel } from "@/components/assistente/assistente-panel";
@@ -81,7 +82,7 @@ export default function EditarPerfilPage() {
       <div className="flex flex-col items-center mb-8">
         <div className="h-20 w-20 rounded-full bg-surface-soft border border-hairline flex items-center justify-center overflow-hidden">
           {user?.image ? (
-            <img src={user.image} alt={user.name ?? ""} referrerPolicy="no-referrer" className="h-full w-full object-cover" />
+            <Image src={user.image} alt={user.name ?? ""} width={80} height={80} unoptimized referrerPolicy="no-referrer" className="h-full w-full object-cover" />
           ) : (
             <User size={32} className="text-[#6a6a6a]" />
           )}
