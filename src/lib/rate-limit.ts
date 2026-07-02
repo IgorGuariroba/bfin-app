@@ -31,6 +31,19 @@ export const RATE_LIMITS = {
 
 export type RateLimitKind = keyof typeof RATE_LIMITS;
 
+/**
+ * Login por credentials: cota por IP+email contra brute-force de senha.
+ * Conta toda tentativa (válida ou não); estourar devolve o mesmo erro
+ * genérico de credenciais inválidas.
+ */
+export const LOGIN_RATE_LIMIT: RateLimitConfig = { limit: 5, windowMs: 15 * 60_000 };
+
+/**
+ * Comentários do blog: cota por usuário contra spam em volume — a moderação
+ * (`status: pending`) cuida do conteúdo, esta cota cuida do ritmo.
+ */
+export const COMMENT_RATE_LIMIT: RateLimitConfig = { limit: 5, windowMs: 10 * 60_000 };
+
 /** Tools que alteram dados — contam contra a cota de escrita. As demais são leitura. */
 const WRITE_TOOLS = new Set([
   "create_transaction",
