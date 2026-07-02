@@ -7,6 +7,22 @@ on:
 jobs:
   validate:
     runs-on: ubuntu-latest
+    services:
+      # Banco para a suíte de testes (integração real, como no dev local).
+      # Mesma major do docker-compose.yml.
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: bfin_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     steps:
       - uses: actions/checkout@v4
 
@@ -28,6 +44,16 @@ jobs:
 
       - name: Lint
         run: npm run lint
+
+      # Rede de segurança do ADR-0013: os testes (unitários do core + integração
+      # contra Postgres) precisam ficar verdes a cada fatia da migração.
+      # Secrets exigidos pelos testes são stubados neles próprios (vi.stubEnv).
+      - name: Test
+        run: |
+          npx prisma migrate deploy
+          npm test
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/bfin_test
 
       # next build sai com exit 0 mesmo logando erros de prerender (ex.: ReferenceError
       # 'window is not defined' ao renderizar no servidor). Capturamos o log e
