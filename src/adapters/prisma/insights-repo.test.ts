@@ -1,11 +1,8 @@
 import { afterAll, afterEach, describe, it, expect } from "vitest";
 import { prisma } from "@/lib/prisma";
-import {
-  getTotais,
-  getSaldos,
-  getMonthSummary,
-  getSugestoes,
-} from "@/lib/insights-service";
+import { insightsService } from "@/adapters";
+
+const { getTotais, getSaldos, getMonthSummary, getSugestoes } = insightsService;
 
 let createdUserIds: string[] = [];
 
@@ -86,7 +83,7 @@ describe("getTotais", () => {
 
   it("rejeita mês malformado", async () => {
     const user = await seedUser();
-    const { InsightsValidationError } = await import("@/lib/insights-service");
+    const { InsightsValidationError } = await import("@/core/insights");
     await expect(getTotais(user.id, "2026/06")).rejects.toBeInstanceOf(
       InsightsValidationError
     );

@@ -4,20 +4,15 @@ import { z } from "zod";
 import { resolvePrincipal } from "@/lib/mcp-principal";
 import { checkRateLimit, classifyRpc, RATE_LIMITS } from "@/lib/rate-limit";
 import { prisma } from "@/lib/prisma";
-import { tagsService, transactionsService } from "@/adapters";
+import { insightsService, tagsService, transactionsService } from "@/adapters";
 import { suggestTag, suggestType, TransactionValidationError } from "@/core/transactions";
 import { TagValidationError } from "@/core/tags";
+import { InsightsValidationError } from "@/core/insights";
 
 const { createTransaction, updateTransaction, deleteTransaction, listTransactions } =
   transactionsService;
+const { getMonthSummary, getSaldos, getSugestoes, getTotais } = insightsService;
 import { recordAgentWrite } from "@/lib/agent-audit";
-import {
-  getMonthSummary,
-  getSaldos,
-  getSugestoes,
-  getTotais,
-  InsightsValidationError,
-} from "@/lib/insights-service";
 import { fmt } from "@/lib/utils";
 
 /** Empacota um resultado de leitura como conteúdo JSON para o agente consumir. */
