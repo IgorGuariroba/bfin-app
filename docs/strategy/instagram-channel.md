@@ -16,7 +16,7 @@ O bfin é app de finanças pessoais com diferencial conceitual: **separação ga
 2. **Lead é métrica de marketing, não entidade de domínio.** Capturada via UTM no signup; vira `User` direto (não `Contact`).
 3. **Conta é faceless brand.** Asset do produto, sem rosto. Identidade vem de design + conceito + copy.
 4. **Pilares:** P1 Conceito (~50%) / P2 Produto em ação (~30%) / P3 Cabeça de quem controla (~20%).
-5. **Voz deriva de dor + gatilho.** Gatilhos-mãe: **validação/alívio** + **aversão à perda**.
+5. **Voz desce da Brand Strategy** ([brand-strategy.md](../discovery/brand-strategy.md) — personalidade: leveza sem culpa, clareza, calma, esperteza; arquétipo narrativo: Guia/Sábio-aliado). No canal, se expressa via dor + gatilho. Gatilhos-mãe: **validação/alívio** + **aversão à perda**.
 6. **Estética = extensão do design system do app** ([ADR-0009](../adr/0009-identidade-visual-do-canal-instagram.md)). Hero tipográfico-numérico.
 7. **Formatos:** Reel 65% / Carrossel 20% / Story 15%.
 8. **Áudio dos Reels:** voz IA + música baixa + legenda dinâmica.
@@ -58,7 +58,7 @@ Excluído de propósito: build-in-public como pilar regular (faceless + early st
 
 ## 5. Tom de voz
 
-A voz **deriva** das dores do ICP e dos gatilhos mentais que as respondem (método: dor → gatilho → traço de voz). Não é arquétipo estético — é a função que ativa os gatilhos.
+A voz **desce da Estratégia de Marca** ([brand-strategy.md](../discovery/brand-strategy.md)): a fonte é a personalidade da marca (filosofia: leveza sem culpa, clareza, calma, esperteza; arquétipo narrativo de Guia/Sábio-aliado). Aqui no canal ela se **expressa** via dor + gatilho (método: dor → gatilho → traço de voz) — os gatilhos são técnica de canal a serviço da identidade, não a fonte dela. Arquétipo **estético** (adorno visual) segue descartado.
 
 **Gatilhos-mãe** (prioridade): **validação/alívio** (ancora no diferencial "não te trata como mau aluno") + **aversão à perda** (ancora na proposta prospectiva: mostrar a consequência antes do susto).
 
