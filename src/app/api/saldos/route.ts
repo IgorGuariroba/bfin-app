@@ -1,7 +1,8 @@
 import { auth } from "@/lib/auth";
 import { getEffectiveUserId } from "@/lib/effective-user";
 import { getUserPlan, isFutureMonthAllowed } from "@/lib/plan";
-import { getSaldos, InsightsValidationError } from "@/lib/insights-service";
+import { insightsService } from "@/adapters";
+import { InsightsValidationError } from "@/core/insights";
 import type { NextRequest } from "next/server";
 
 export async function GET(request: NextRequest) {
@@ -25,7 +26,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    return Response.json(await getSaldos(userId, month));
+    return Response.json(await insightsService.getSaldos(userId, month));
   } catch (error) {
     if (error instanceof InsightsValidationError) {
       return Response.json({ error: error.message }, { status: 400 });
