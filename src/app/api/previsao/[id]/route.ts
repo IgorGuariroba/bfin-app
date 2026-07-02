@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
 import { getEffectiveUserId } from "@/lib/effective-user";
+import { previsaoService } from "@/adapters";
+import { PrevisaoNotFoundError } from "@/core/previsao";
 import type { NextRequest } from "next/server";
 
 export async function PUT(
@@ -14,27 +15,15 @@ export async function PUT(
   const { id } = await params;
 
   try {
-    const data = await request.json();
-    const { name, amount } = data;
+    const { name, amount } = await request.json();
 
-    const existing = await prisma.previsao.findUnique({
-      where: { id },
-    });
-
-    if (!existing || existing.userId !== userId) {
-      return Response.json({ error: "Not found or unauthorized" }, { status: 404 });
-    }
-
-    const updated = await prisma.previsao.update({
-      where: { id },
-      data: {
-        ...(name !== undefined && { name }),
-        ...(amount !== undefined && { amount }),
-      },
-    });
+    const updated = await previsaoService.updatePrevisao({ userId, id, name, amount });
 
     return Response.json(updated);
   } catch (error) {
+    if (error instanceof PrevisaoNotFoundError) {
+      return Response.json({ error: "Not found or unauthorized" }, { status: 404 });
+    }
     const message = error instanceof Error ? error.message : "Erro";
     return Response.json({ error: message }, { status: 400 });
   }
@@ -51,20 +40,13 @@ export async function DELETE(
   const { id } = await params;
 
   try {
-    const existing = await prisma.previsao.findUnique({
-      where: { id },
-    });
-
-    if (!existing || existing.userId !== userId) {
-      return Response.json({ error: "Not found or unauthorized" }, { status: 404 });
-    }
-
-    await prisma.previsao.delete({
-      where: { id },
-    });
+    await previsaoService.deletePrevisao(userId, id);
 
     return Response.json({ success: true });
   } catch (error) {
+    if (error instanceof PrevisaoNotFoundError) {
+      return Response.json({ error: "Not found or unauthorized" }, { status: 404 });
+    }
     const message = error instanceof Error ? error.message : "Erro";
     return Response.json({ error: message }, { status: 400 });
   }

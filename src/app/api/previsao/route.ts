@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
 import { getEffectiveUserId } from "@/lib/effective-user";
+import { previsaoService } from "@/adapters";
+import { PrevisaoValidationError } from "@/core/previsao";
 import type { NextRequest } from "next/server";
 
 export async function GET() {
@@ -9,10 +10,7 @@ export async function GET() {
 
   const userId = await getEffectiveUserId(session.user.id);
 
-  const previsoes = await prisma.previsao.findMany({
-    where: { userId },
-    orderBy: { name: "asc" },
-  });
+  const previsoes = await previsaoService.listPrevisoes(userId);
 
   return Response.json(previsoes);
 }
@@ -24,23 +22,15 @@ export async function POST(request: NextRequest) {
   const userId = await getEffectiveUserId(session.user.id);
 
   try {
-    const data = await request.json();
-    const { name, amount } = data;
+    const { name, amount } = await request.json();
 
-    if (!name || typeof amount !== "number") {
-      return Response.json({ error: "Invalid data" }, { status: 400 });
-    }
-
-    const previsao = await prisma.previsao.create({
-      data: {
-        userId,
-        name,
-        amount,
-      },
-    });
+    const previsao = await previsaoService.createPrevisao({ userId, name, amount });
 
     return Response.json(previsao, { status: 201 });
   } catch (error) {
+    if (error instanceof PrevisaoValidationError) {
+      return Response.json({ error: "Invalid data" }, { status: 400 });
+    }
     const message = error instanceof Error ? error.message : "Erro";
     return Response.json({ error: message }, { status: 400 });
   }
