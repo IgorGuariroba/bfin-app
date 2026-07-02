@@ -14,10 +14,11 @@ export const metadata: Metadata = {
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
-  const [delegation, plan] = await Promise.all([
-    session?.user?.id ? getDelegationInfo(session.user.id) : Promise.resolve(null),
-    session?.user?.id ? getUserPlan(session.user.id) : Promise.resolve("free" as const),
-  ]);
+  const delegation = session?.user?.id ? await getDelegationInfo(session.user.id) : null;
+  // Plano da conta efetiva (dono, em delegação), consistente com a API — ADR-0011.
+  const plan = session?.user?.id
+    ? await getUserPlan(delegation?.effectiveUserId ?? session.user.id)
+    : ("free" as const);
 
   return (
     <AddModalProvider>

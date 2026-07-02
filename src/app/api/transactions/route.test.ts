@@ -3,12 +3,16 @@ import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { currentYearMonth } from "@/lib/plan-utils";
 
-const { mockAuth } = vi.hoisted(() => ({ mockAuth: vi.fn() }));
+const { mockAuth, mockCookieGet } = vi.hoisted(() => ({
+  mockAuth: vi.fn(),
+  mockCookieGet: vi.fn(),
+}));
 
 vi.mock("@/lib/auth", () => ({ auth: mockAuth }));
-// getEffectiveUserId lê cookies de delegação; sem cookie → conta própria.
+// getEffectiveUserId lê cookies de delegação; default (mock resetado) → sem
+// cookie → conta própria. Testes de delegação setam active-account.
 vi.mock("next/headers", () => ({
-  cookies: async () => ({ get: () => undefined }),
+  cookies: async () => ({ get: mockCookieGet }),
 }));
 
 import { GET } from "./route";
@@ -55,7 +59,8 @@ function getRequest(qs: string) {
 }
 
 afterEach(async () => {
-  vi.clearAllMocks();
+  // reset (não clear): descarta a implementação do cookie de delegação entre testes.
+  vi.resetAllMocks();
   if (createdUserIds.length) {
     await prisma.user.deleteMany({ where: { id: { in: createdUserIds } } });
     createdUserIds = [];
@@ -119,6 +124,63 @@ describe("GET /api/transactions — paywall de histórico (free)", () => {
     const res = await GET(getRequest(`?from=${currentYearMonth()}-01`));
 
     expect(res.status).toBe(200);
+  });
+});
+
+describe("GET /api/transactions — gate pelo plano do dono efetivo em delegação (ADR-0011)", () => {
+  /** Convidado com delegação ativa na conta do dono (cookie + AccountMember). */
+  async function delegate(ownerId: string, guestId: string) {
+    await prisma.accountMember.create({
+      data: {
+        ownerId,
+        memberId: guestId,
+        inviteEmail: `invite-${crypto.randomUUID()}@example.com`,
+        inviteToken: crypto.randomUUID(),
+        status: "active",
+      },
+    });
+    mockAuth.mockResolvedValue({ user: { id: guestId } });
+    mockCookieGet.mockImplementation((name: string) =>
+      name === "active-account" ? { value: ownerId } : undefined
+    );
+  }
+
+  it("convidado free vendo conta de dono pro acessa histórico completo", async () => {
+    const owner = await makeUser("pro");
+    const guest = await makeUser("free");
+    await seedHistory(owner.id);
+    await delegate(owner.id, guest.id);
+
+    const res = await GET(getRequest("?from=2020-01-01"));
+
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.map((t: { description: string }) => t.description)).toContain("Gasto antigo");
+  });
+
+  it("convidado pro vendo conta de dono free é limitado à janela de 3 meses", async () => {
+    const owner = await makeUser("free");
+    const guest = await makeUser("pro");
+    await delegate(owner.id, guest.id);
+
+    const res = await GET(getRequest("?month=2020-01"));
+
+    expect(res.status).toBe(403);
+    expect((await res.json()).upgrade).toBe(true);
+  });
+
+  it("convidado pro em conta free: sem filtro, resposta clampada à janela", async () => {
+    const owner = await makeUser("free");
+    const guest = await makeUser("pro");
+    await seedHistory(owner.id);
+    await delegate(owner.id, guest.id);
+
+    const res = await GET(getRequest(""));
+
+    expect(res.status).toBe(200);
+    const descriptions = (await res.json()).map((t: { description: string }) => t.description);
+    expect(descriptions).toContain("Gasto atual");
+    expect(descriptions).not.toContain("Gasto antigo");
   });
 });
 
