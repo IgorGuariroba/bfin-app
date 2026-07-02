@@ -4,17 +4,12 @@ import { z } from "zod";
 import { resolvePrincipal } from "@/lib/mcp-principal";
 import { checkRateLimit, classifyRpc, RATE_LIMITS } from "@/lib/rate-limit";
 import { prisma } from "@/lib/prisma";
-import {
-  createTransaction,
-  updateTransaction,
-  deleteTransaction,
-  listTransactions,
-  suggestTag,
-  suggestType,
-  TransactionValidationError,
-} from "@/lib/transactions-service";
-import { tagsService } from "@/adapters";
+import { tagsService, transactionsService } from "@/adapters";
+import { suggestTag, suggestType, TransactionValidationError } from "@/core/transactions";
 import { TagValidationError } from "@/core/tags";
+
+const { createTransaction, updateTransaction, deleteTransaction, listTransactions } =
+  transactionsService;
 import { recordAgentWrite } from "@/lib/agent-audit";
 import {
   getMonthSummary,

@@ -2,11 +2,10 @@ import { auth } from "@/lib/auth";
 import { getEffectiveUserId } from "@/lib/effective-user";
 import type { NextRequest } from "next/server";
 import { freeOldestMonth, getUserPlan, isMonthAllowed } from "@/lib/plan";
-import {
-  createTransaction,
-  listTransactions,
-  TransactionValidationError,
-} from "@/lib/transactions-service";
+import { transactionsService } from "@/adapters";
+import { TransactionValidationError } from "@/core/transactions";
+
+const { createTransaction, listTransactions } = transactionsService;
 
 export async function GET(request: NextRequest) {
   const session = await auth();
