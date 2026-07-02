@@ -94,12 +94,15 @@ beforeEach(() => {
 });
 
 describe("createPrevisao", () => {
-  it("rejeita name vazio e amount não numérico", async () => {
+  it("rejeita name vazio e amount não numérico ou NaN", async () => {
     await expect(
       service.createPrevisao({ userId: "u1", name: "", amount: 100 })
     ).rejects.toThrow(PrevisaoValidationError);
     await expect(
       service.createPrevisao({ userId: "u1", name: "Mercado", amount: "100" as never })
+    ).rejects.toThrow(PrevisaoValidationError);
+    await expect(
+      service.createPrevisao({ userId: "u1", name: "Mercado", amount: NaN })
     ).rejects.toThrow(PrevisaoValidationError);
   });
 });
@@ -122,6 +125,23 @@ describe("updatePrevisao", () => {
     await expect(
       service.updatePrevisao({ userId: "u1", id: alheia.id, name: "X" })
     ).rejects.toThrow(PrevisaoNotFoundError);
+  });
+
+  it("rejeita name vazio e amount não numérico ou NaN nos campos enviados", async () => {
+    const prev = await service.createPrevisao({ userId: "u1", name: "Mercado", amount: 800 });
+
+    await expect(
+      service.updatePrevisao({ userId: "u1", id: prev.id, name: "" })
+    ).rejects.toThrow(PrevisaoValidationError);
+    await expect(
+      service.updatePrevisao({ userId: "u1", id: prev.id, amount: "900" as never })
+    ).rejects.toThrow(PrevisaoValidationError);
+    await expect(
+      service.updatePrevisao({ userId: "u1", id: prev.id, amount: NaN })
+    ).rejects.toThrow(PrevisaoValidationError);
+
+    const [intacta] = await service.listPrevisoes("u1");
+    expect(intacta).toMatchObject({ name: "Mercado", amount: 800 });
   });
 });
 
@@ -207,6 +227,16 @@ describe("applyPrevisao", () => {
     await service.applyPrevisao({ userId: "u1", amount: -150 }, now);
 
     expect(fake.diarios[0].amount).toBe(150);
+  });
+
+  it("rejeita amount não numérico ou NaN", async () => {
+    await expect(
+      service.applyPrevisao({ userId: "u1", amount: "150" as never }, now)
+    ).rejects.toThrow(PrevisaoValidationError);
+    await expect(service.applyPrevisao({ userId: "u1", amount: NaN }, now)).rejects.toThrow(
+      PrevisaoValidationError
+    );
+    expect(fake.diarios).toHaveLength(0);
   });
 
   it("rejeita amount nulo sem deletar nada", async () => {

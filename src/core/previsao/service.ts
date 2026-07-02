@@ -5,6 +5,11 @@ import { saoPauloTodayRange } from "../dates";
 export class PrevisaoValidationError extends Error {}
 export class PrevisaoNotFoundError extends Error {}
 
+// typeof NaN === "number" — sem o guard extra, NaN persistiria no banco.
+function isValidAmount(amount: unknown): amount is number {
+  return typeof amount === "number" && !Number.isNaN(amount);
+}
+
 export function makePrevisaoService(repo: PrevisaoRepo) {
   /** Lista as Previsões do usuário (ordenação: name asc — contrato da porta). */
   async function listPrevisoes(userId: string): Promise<Previsao[]> {
@@ -16,7 +21,7 @@ export function makePrevisaoService(repo: PrevisaoRepo) {
     name: string;
     amount: number;
   }): Promise<Previsao> {
-    if (!input.name || typeof input.amount !== "number") {
+    if (!input.name || !isValidAmount(input.amount)) {
       throw new PrevisaoValidationError("Invalid data");
     }
     return repo.create(input);
@@ -33,6 +38,12 @@ export function makePrevisaoService(repo: PrevisaoRepo) {
     amount?: number;
   }): Promise<Previsao> {
     const { userId, id, name, amount } = input;
+    if (name !== undefined && !name) {
+      throw new PrevisaoValidationError("Invalid data");
+    }
+    if (amount !== undefined && !isValidAmount(amount)) {
+      throw new PrevisaoValidationError("Invalid data");
+    }
     const existing = await repo.findById(id);
     if (!existing || existing.userId !== userId) {
       throw new PrevisaoNotFoundError("Not found or unauthorized");
@@ -63,7 +74,7 @@ export function makePrevisaoService(repo: PrevisaoRepo) {
     now: Date = new Date()
   ): Promise<{ count: number }> {
     const { userId, amount } = input;
-    if (amount == null) {
+    if (!isValidAmount(amount)) {
       throw new PrevisaoValidationError("Invalid parameters");
     }
 
