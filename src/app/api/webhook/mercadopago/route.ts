@@ -3,6 +3,7 @@ import { createHmac } from "crypto";
 import { PreApproval } from "mercadopago";
 import { mpClient, PLAN_PRICES } from "@/lib/mercadopago";
 import { prisma } from "@/lib/prisma";
+import { safeEqual } from "@/lib/safe-equal";
 import {
   isGoogleAdsConfigured,
   resolveClickId,
@@ -10,10 +11,10 @@ import {
   type ClickId,
 } from "@/lib/google-ads";
 
-function verifySignature(request: Request, rawBody: string, dataId: string): boolean {
-  const secret = process.env.MERCADO_PAGO_WEBHOOK_SECRET;
-  if (!secret) return true; // skip validation when secret not configured
+/** Tolerância do ts da assinatura: além disso é replay de webhook capturado. */
+const SIGNATURE_TOLERANCE_MS = 5 * 60_000;
 
+function verifySignature(request: Request, dataId: string, secret: string): boolean {
   const xSignature = request.headers.get("x-signature") ?? "";
   const xRequestId = request.headers.get("x-request-id") ?? "";
 
@@ -21,10 +22,17 @@ function verifySignature(request: Request, rawBody: string, dataId: string): boo
   const v1 = xSignature.match(/v1=([^,]+)/)?.[1];
   if (!ts || !v1) return false;
 
+  // Frescor: o ts é assinado, então um replay carrega o ts original.
+  // MP envia em segundos; < 1e12 cobre qualquer data até ~2286 em segundos.
+  const tsNum = Number(ts);
+  if (!Number.isFinite(tsNum)) return false;
+  const tsMs = tsNum < 1e12 ? tsNum * 1000 : tsNum;
+  if (Math.abs(Date.now() - tsMs) > SIGNATURE_TOLERANCE_MS) return false;
+
   const message = `id:${dataId};request-id:${xRequestId};ts:${ts}`;
   const expected = createHmac("sha256", secret).update(message).digest("hex");
 
-  return expected === v1;
+  return safeEqual(expected, v1);
 }
 
 /**
@@ -82,7 +90,17 @@ export async function POST(request: Request) {
     return Response.json({ ok: true });
   }
 
-  if (!verifySignature(request, rawBody, data.id)) {
+  // Fail-closed: sem secret não há como verificar a origem — processar seria
+  // aceitar webhook forjado ativando Pro de graça (mesmo padrão do CRON_SECRET).
+  const secret = process.env.MERCADO_PAGO_WEBHOOK_SECRET;
+  if (!secret) {
+    return Response.json(
+      { error: "MERCADO_PAGO_WEBHOOK_SECRET not configured" },
+      { status: 500 }
+    );
+  }
+
+  if (!verifySignature(request, data.id, secret)) {
     return Response.json({ error: "Invalid signature" }, { status: 401 });
   }
 
