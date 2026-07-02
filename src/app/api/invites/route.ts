@@ -1,31 +1,18 @@
 import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
 import { cookies } from "next/headers";
 import type { NextRequest } from "next/server";
-import { getUserPlan } from "@/lib/plan";
+import { membersService } from "@/adapters";
+import { InviteValidationError, ProRequiredError } from "@/core/identity";
 
 export async function GET() {
   const session = await auth();
   if (!session?.user?.id) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
-  const userId = session.user.id;
-
   const cookieStore = await cookies();
   const activeOwnerId = cookieStore.get("active-account")?.value ?? null;
   const preferredOwnerId = cookieStore.get("preferred-account")?.value ?? null;
 
-  const [sent, received] = await Promise.all([
-    prisma.accountMember.findMany({
-      where: { ownerId: userId },
-      include: { member: { select: { name: true, email: true, image: true } } },
-      orderBy: { createdAt: "desc" },
-    }),
-    prisma.accountMember.findMany({
-      where: { memberId: userId, status: "active" },
-      include: { owner: { select: { id: true, name: true, email: true, image: true } } },
-      orderBy: { createdAt: "desc" },
-    }),
-  ]);
+  const { sent, received } = await membersService.listInvites(session.user.id);
 
   return Response.json({ sent, received, activeOwnerId, preferredOwnerId });
 }
@@ -34,53 +21,29 @@ export async function POST(request: NextRequest) {
   const session = await auth();
   if (!session?.user?.id) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
-  const plan = await getUserPlan(session.user.id);
-  if (plan === "free") {
-    return Response.json(
-      { error: "Convites disponíveis apenas no plano Pro", upgrade: true },
-      { status: 403 }
-    );
-  }
+  const { email } = await request.json();
 
-  const body = await request.json();
-  const { email } = body;
-
-  if (!email || typeof email !== "string") {
-    return Response.json({ error: "Email inválido" }, { status: 400 });
-  }
-
-  const normalizedEmail = email.toLowerCase().trim();
-
-  if (normalizedEmail === session.user.email?.toLowerCase()) {
-    return Response.json({ error: "Não pode convidar a si mesmo" }, { status: 400 });
-  }
-
-  const existing = await prisma.accountMember.findFirst({
-    where: {
+  try {
+    const invite = await membersService.createInvite({
       ownerId: session.user.id,
-      inviteEmail: normalizedEmail,
-      status: { in: ["pending", "active"] },
-    },
-  });
+      ownerEmail: session.user.email,
+      email,
+    });
 
-  if (existing) {
-    return Response.json({ error: "Convite já enviado para este email" }, { status: 400 });
+    const origin = process.env.AUTH_URL?.replace(/\/$/, "") ?? request.nextUrl.origin;
+    const inviteUrl = `${origin}/convite/${invite.inviteToken}`;
+
+    return Response.json({ invite, inviteUrl }, { status: 201 });
+  } catch (error) {
+    if (error instanceof ProRequiredError) {
+      return Response.json(
+        { error: "Convites disponíveis apenas no plano Pro", upgrade: true },
+        { status: 403 }
+      );
+    }
+    if (error instanceof InviteValidationError) {
+      return Response.json({ error: error.message }, { status: 400 });
+    }
+    throw error;
   }
-
-  const inviteToken = crypto.randomUUID();
-
-  const invite = await prisma.accountMember.create({
-    data: {
-      ownerId: session.user.id,
-      inviteEmail: normalizedEmail,
-      inviteToken,
-      role: "editor",
-      status: "pending",
-    },
-  });
-
-  const origin = process.env.AUTH_URL?.replace(/\/$/, "") ?? request.nextUrl.origin;
-  const inviteUrl = `${origin}/convite/${inviteToken}`;
-
-  return Response.json({ invite, inviteUrl }, { status: 201 });
 }

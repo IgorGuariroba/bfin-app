@@ -18,3 +18,39 @@ export interface DelegationInfo {
   ownerName?: string;
   ownerEmail?: string;
 }
+
+// AccountMember espelha as colunas persistidas (ADR-0013) — as rotas de invites
+// serializam estes objetos inteiros, então remover campo é breaking change.
+export interface AccountMember {
+  id: string;
+  ownerId: string;
+  memberId: string | null;
+  inviteEmail: string;
+  inviteToken: string;
+  role: string;
+  status: string;
+  createdAt: Date;
+}
+
+/** Projeção do convidado anexada a um convite enviado (o que a UI lista). */
+export interface InviteMemberProfile {
+  name: string;
+  email: string;
+  image: string | null;
+}
+
+/** Projeção do dono anexada a um convite recebido (inclui id para o switch). */
+export interface InviteOwnerProfile {
+  id: string;
+  name: string;
+  email: string;
+  image: string | null;
+}
+
+export interface SentInvite extends AccountMember {
+  member: InviteMemberProfile | null;
+}
+
+export interface ReceivedInvite extends AccountMember {
+  owner: InviteOwnerProfile;
+}

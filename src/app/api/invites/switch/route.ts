@@ -1,7 +1,7 @@
 import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
 import { cookies } from "next/headers";
 import type { NextRequest } from "next/server";
+import { identityService } from "@/adapters";
 
 export async function POST(request: NextRequest) {
   const session = await auth();
@@ -18,11 +18,11 @@ export async function POST(request: NextRequest) {
     return Response.json({ success: true, effectiveUserId: session.user.id });
   }
 
-  const member = await prisma.accountMember.findFirst({
-    where: { ownerId, memberId: session.user.id, status: "active" },
-  });
-
-  if (!member) {
+  // Mesma regra da resolução por cookie (ADR-0011): só troca para dono com
+  // vínculo AccountMember ativo — trocar "para si mesmo" também é negado,
+  // pois voltar à própria conta é o ramo sem ownerId acima.
+  const { isDelegated } = await identityService.getDelegationInfo(session.user.id, ownerId);
+  if (!isDelegated) {
     return Response.json({ error: "Sem permissão para acessar esta conta" }, { status: 403 });
   }
 
