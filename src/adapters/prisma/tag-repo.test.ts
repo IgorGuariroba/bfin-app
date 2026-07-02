@@ -1,7 +1,7 @@
 import { afterAll, afterEach, describe, it, expect } from "vitest";
 import { prisma } from "@/lib/prisma";
-import { ensureSystemTags } from "@/lib/seed-system-tags";
-import { DEFAULT_SYSTEM_TAGS, CATEGORY_TAGS } from "@/lib/constants";
+import { tagsService } from "@/adapters";
+import { DEFAULT_SYSTEM_TAGS, CATEGORY_TAGS } from "@/core/tags";
 
 let createdUserIds: string[] = [];
 
@@ -28,7 +28,7 @@ describe("ensureSystemTags", () => {
   it("semeia type-mirrors + categorias canônicas como system tags", async () => {
     const user = await seedUser();
 
-    await ensureSystemTags(user.id);
+    await tagsService.ensureSystemTags(user.id);
 
     const tags = await prisma.tag.findMany({ where: { userId: user.id, isSystem: true } });
     const names = tags.map((t) => t.name).sort();
@@ -46,9 +46,9 @@ describe("ensureSystemTags", () => {
   it("é idempotente: rodar duas vezes não duplica nem recria", async () => {
     const user = await seedUser();
 
-    await ensureSystemTags(user.id);
+    await tagsService.ensureSystemTags(user.id);
     const after1 = await prisma.tag.count({ where: { userId: user.id, isSystem: true } });
-    await ensureSystemTags(user.id);
+    await tagsService.ensureSystemTags(user.id);
     const after2 = await prisma.tag.count({ where: { userId: user.id, isSystem: true } });
 
     expect(after2).toBe(after1);

@@ -5,7 +5,7 @@ import { PrismaAdapter } from "@auth/prisma-adapter";
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { authorizeCredentials, clientIp } from "@/lib/credentials-authorize";
-import { ensureSystemTags } from "@/lib/seed-system-tags";
+import { tagsService } from "@/adapters";
 import { isAdmin } from "@/lib/admin";
 import { resolveClickId, uploadConversion } from "@/lib/google-ads";
 
@@ -35,7 +35,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   events: {
     async createUser({ user }) {
       if (!user.id) return;
-      await ensureSystemTags(user.id);
+      await tagsService.ensureSystemTags(user.id);
 
       // Atribuição de marketing (ADR-0010): grava o identificador de clique
       // capturado na entrada (cookies bfin_gclid/gbraid/wbraid, ver

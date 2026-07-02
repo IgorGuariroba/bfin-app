@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
 import { getEffectiveUserId } from "@/lib/effective-user";
 import { z } from "zod";
-import { ensureSystemTags } from "@/lib/seed-system-tags";
+import { tagsService } from "@/adapters";
+import { TagValidationError } from "@/core/tags";
 
 const tagSchema = z.object({
   name: z.string().min(1, "Nome é obrigatório").max(50, "Nome muito longo"),
@@ -19,12 +19,7 @@ export async function GET() {
 
     const userId = await getEffectiveUserId(session.user.id);
 
-    await ensureSystemTags(userId);
-
-    const tags = await prisma.tag.findMany({
-      where: { userId },
-      orderBy: [{ isSystem: "desc" }, { name: "asc" }],
-    });
+    const tags = await tagsService.listTags(userId);
 
     return NextResponse.json(tags);
   } catch (error) {
@@ -45,29 +40,13 @@ export async function POST(req: Request) {
     const body = await req.json();
     const data = tagSchema.parse(body);
 
-    const existingTag = await prisma.tag.findUnique({
-      where: {
-        userId_name: {
-          userId,
-          name: data.name,
-        },
-      },
-    });
-
-    if (existingTag) {
-      return NextResponse.json({ error: "Tag com este nome já existe" }, { status: 400 });
-    }
-
-    const tag = await prisma.tag.create({
-      data: {
-        ...data,
-        userId,
-        isSystem: false,
-      },
-    });
+    const tag = await tagsService.createTag({ userId, ...data });
 
     return NextResponse.json(tag, { status: 201 });
   } catch (error) {
+    if (error instanceof TagValidationError) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
     console.error("POST /api/tags error:", error);
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: error.issues[0].message }, { status: 400 });

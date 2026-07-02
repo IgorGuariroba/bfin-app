@@ -13,7 +13,8 @@ import {
   suggestType,
   TransactionValidationError,
 } from "@/lib/transactions-service";
-import { createTag, listTags, TagValidationError } from "@/lib/tags-service";
+import { tagsService } from "@/adapters";
+import { TagValidationError } from "@/core/tags";
 import { recordAgentWrite } from "@/lib/agent-audit";
 import {
   getMonthSummary,
@@ -379,7 +380,7 @@ function buildServer(userId: string, apiKeyId: string): McpServer {
     },
     async ({ name, color }) => {
       try {
-        const tag = await createTag({ userId, name, color });
+        const tag = await tagsService.createTag({ userId, name, color });
         await recordAgentWrite({ apiKeyId, userId, action: "create", entityId: tag.id });
         return {
           content: [{ type: "text", text: `Tag criada: ${tag.name}.` }],
@@ -401,7 +402,7 @@ function buildServer(userId: string, apiKeyId: string): McpServer {
         "Lista as Tags (categorias) do usuário, para escolher um filtro ou descobrir a taxonomia disponível.",
       inputSchema: {},
     },
-    async () => readContent(() => listTags(userId))
+    async () => readContent(() => tagsService.listTags(userId))
   );
 
   server.registerTool(
