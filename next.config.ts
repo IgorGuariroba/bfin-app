@@ -5,6 +5,7 @@ const isProd = process.env.NODE_ENV === "production";
 
 const nextConfig: NextConfig = {
   output: "standalone",
+  poweredByHeader: false,
   // Source maps gerados em prod para upload ao Faro; deletados após upload pelo plugin
   productionBrowserSourceMaps: isProd,
   experimental: {
@@ -12,6 +13,21 @@ const nextConfig: NextConfig = {
   },
   async headers() {
     return [
+      {
+        // Headers de segurança (#116). Produção é servida pelo Traefik do
+        // Dokploy — o Caddyfile do repo não está no caminho de prod; aplicar
+        // aqui garante os headers independentemente do proxy à frente.
+        source: "/:path*",
+        headers: [
+          {
+            key: "Strict-Transport-Security",
+            value: "max-age=31536000; includeSubDomains",
+          },
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "Content-Security-Policy", value: "frame-ancestors 'none'" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+        ],
+      },
       {
         source: "/sw.js",
         headers: [
