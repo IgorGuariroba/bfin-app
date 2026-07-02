@@ -72,11 +72,12 @@ export function useTransactions(filters: Filters = {}) {
     [buildUrl]
   );
 
+  const { month, type, from, to, tagId } = filters;
   useEffect(() => {
     // fetch_ só altera estado após o await do fetch (fonte externa), não de forma síncrona.
-    // eslint-disable-next-line react-hooks/set-state-in-effect, react-hooks/exhaustive-deps
-    fetch_(filters);
-  }, [filters.month, filters.type, filters.from, filters.to]);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetch_({ month, type, from, to, tagId });
+  }, [fetch_, month, type, from, to, tagId]);
 
   const create = useCallback(
     async (input: TransactionInput): Promise<Transaction> => {
