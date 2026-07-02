@@ -4,7 +4,7 @@ import { z } from "zod";
 import { resolvePrincipal } from "@/lib/mcp-principal";
 import { checkRateLimit, classifyRpc, RATE_LIMITS } from "@/lib/rate-limit";
 import { prisma } from "@/lib/prisma";
-import { insightsService, tagsService, transactionsService } from "@/adapters";
+import { insightsService, previsaoService, tagsService, transactionsService } from "@/adapters";
 import { suggestTag, suggestType, TransactionValidationError } from "@/core/transactions";
 import { TagValidationError } from "@/core/tags";
 import { InsightsValidationError } from "@/core/insights";
@@ -403,10 +403,7 @@ function buildServer(userId: string, apiKeyId: string): McpServer {
         "Não aplica nem altera nada.",
       inputSchema: {},
     },
-    async () =>
-      readContent(() =>
-        prisma.previsao.findMany({ where: { userId }, orderBy: { name: "asc" } })
-      )
+    async () => readContent(() => previsaoService.listPrevisoes(userId))
   );
 
   return server;
