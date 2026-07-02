@@ -1,7 +1,7 @@
 import { auth } from "@/lib/auth";
 import { getEffectiveUserId } from "@/lib/effective-user";
 import type { NextRequest } from "next/server";
-import { getUserPlan, isMonthAllowed } from "@/lib/plan";
+import { freeOldestMonth, getUserPlan, isMonthAllowed } from "@/lib/plan";
 import {
   createTransaction,
   listTransactions,
@@ -16,13 +16,29 @@ export async function GET(request: NextRequest) {
 
   const { searchParams } = request.nextUrl;
   const month = searchParams.get("month"); // YYYY-MM
+  let from = searchParams.get("from") ?? undefined; // YYYY-MM-DD
 
-  const plan = await getUserPlan(session.user.id);
-  if (plan === "free" && month && !isMonthAllowed(month, plan)) {
-    return Response.json(
+  const upgradeResponse = () =>
+    Response.json(
       { error: "Histórico além de 3 meses disponível apenas no plano Pro", upgrade: true },
       { status: 403 }
     );
+
+  // Gate de histórico do free: vale para qualquer forma de filtro temporal —
+  // month, from/to ou ausência de filtro (senão from/to furaria o paywall).
+  const plan = await getUserPlan(session.user.id);
+  if (plan === "free") {
+    const oldestMonth = freeOldestMonth();
+    if (month) {
+      if (!isMonthAllowed(month, plan)) return upgradeResponse();
+    } else if (from && /^\d{4}-\d{2}/.test(from) && from.slice(0, 7) < oldestMonth) {
+      // from malformado passa direto: listTransactions valida e responde 400.
+      return upgradeResponse();
+    } else if (!from) {
+      // Sem limite inferior (só `to` ou nenhum filtro): clampa à janela do
+      // free em vez de 403 — não quebra chamadas sem filtro da UI/agente.
+      from = `${oldestMonth}-01`;
+    }
   }
 
   try {
@@ -30,7 +46,7 @@ export async function GET(request: NextRequest) {
       month: month ?? undefined,
       type: searchParams.get("type") ?? undefined,
       tagId: searchParams.get("tagId") ?? undefined,
-      from: searchParams.get("from") ?? undefined,
+      from,
       to: searchParams.get("to") ?? undefined,
     });
     return Response.json(transactions);
