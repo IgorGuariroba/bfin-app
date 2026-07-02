@@ -1,3 +1,5 @@
+import "server-only";
+
 // Adapter Next da delegação (ADR-0011/ADR-0013): lê os cookies de conta ativa
 // e delega a regra "membro ativo opera como dono" ao core (identityService).
 import { cookies } from "next/headers";
