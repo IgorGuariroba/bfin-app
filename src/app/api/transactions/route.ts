@@ -26,7 +26,8 @@ export async function GET(request: NextRequest) {
 
   // Gate de histórico do free: vale para qualquer forma de filtro temporal —
   // month, from/to ou ausência de filtro (senão from/to furaria o paywall).
-  const plan = await getUserPlan(session.user.id);
+  // Avalia o plano da conta efetiva (dono, em delegação) — ADR-0011.
+  const plan = await getUserPlan(userId);
   if (plan === "free") {
     const oldestMonth = freeOldestMonth();
     if (month) {
