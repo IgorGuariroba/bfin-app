@@ -5,6 +5,7 @@ import {
   updateTransaction,
   deleteTransaction,
   listTransactions,
+  MAX_LIST_RESULTS,
   suggestTag,
   suggestType,
   TransactionValidationError,
@@ -704,6 +705,23 @@ describe("listTransactions", () => {
     await expect(
       listTransactions(user.id, { to: "2026-02-31" })
     ).rejects.toBeInstanceOf(TransactionValidationError);
+  });
+
+  it("corta no teto MAX_LIST_RESULTS quando há mais registros que o limite", async () => {
+    const user = await seedUser();
+    await prisma.transaction.createMany({
+      data: Array.from({ length: MAX_LIST_RESULTS + 5 }, (_, i) => ({
+        userId: user.id,
+        type: "saida",
+        description: `Gasto ${i}`,
+        amount: 1,
+        date: new Date(2026, 5, 10, 12),
+      })),
+    });
+
+    const result = await listTransactions(user.id, {});
+
+    expect(result).toHaveLength(MAX_LIST_RESULTS);
   });
 
   it("não vaza transações de outro usuário", async () => {
