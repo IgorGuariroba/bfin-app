@@ -20,18 +20,6 @@ export function saoPauloTodayRange(now: Date = new Date()): { gte: Date; lt: Dat
   return { gte, lt };
 }
 
-export function addDays(date: Date, n: number): Date {
-  const d = new Date(date);
-  d.setDate(d.getDate() + n);
-  return d;
-}
-
-export function addWeeks(date: Date, n: number): Date {
-  return addDays(date, n * 7);
-}
-
-export function addMonths(date: Date, n: number): Date {
-  const d = new Date(date);
-  d.setMonth(d.getMonth() + n);
-  return d;
-}
+// A aritmética de datas é domínio e mudou-se para o core (ADR-0013); re-export
+// mantido para os consumidores existentes até suas fatias migrarem.
+export { addDays, addWeeks, addMonths } from "@/core/dates";

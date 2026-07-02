@@ -1,15 +1,17 @@
 import { afterAll, afterEach, describe, it, expect } from "vitest";
 import { prisma } from "@/lib/prisma";
+import { transactionsService } from "@/adapters";
 import {
-  createTransaction,
-  updateTransaction,
-  deleteTransaction,
-  listTransactions,
   MAX_LIST_RESULTS,
   suggestTag,
   suggestType,
   TransactionValidationError,
-} from "@/lib/transactions-service";
+} from "@/core/transactions";
+
+// A suíte antecede a extração do core (ADR-0013) e chama as operações como
+// funções soltas; o service composto preserva o contrato — só o import mudou.
+const { createTransaction, updateTransaction, deleteTransaction, listTransactions } =
+  transactionsService;
 
 let createdUserIds: string[] = [];
 
