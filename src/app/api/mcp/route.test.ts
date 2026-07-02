@@ -1,7 +1,7 @@
 import { afterAll, afterEach, describe, it, expect, vi } from "vitest";
 import { prisma } from "@/lib/prisma";
 import { generateApiKey } from "@/lib/api-key";
-import { ensureSystemTags } from "@/lib/seed-system-tags";
+import { tagsService } from "@/adapters";
 import { logger } from "@/lib/logger";
 import { RATE_LIMITS } from "@/lib/rate-limit";
 import { POST } from "./route";
@@ -425,7 +425,7 @@ describe("POST /api/mcp", () => {
 
   it("T12: cadeia #93 — categorias semeadas por ensureSystemTags são sugeridas via MCP", async () => {
     const { user, plain } = await seedProKey();
-    await ensureSystemTags(user.id); // semeia Transporte/Alimentação/Moradia/... como system tags
+    await tagsService.ensureSystemTags(user.id); // semeia Transporte/Alimentação/Moradia/... como system tags
 
     const res = await POST(
       mcpRequest(plain, {
