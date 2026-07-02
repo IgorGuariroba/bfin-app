@@ -1,10 +1,19 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { checkRateLimit, COMMENT_RATE_LIMIT } from "@/lib/rate-limit";
 
 export async function POST(req: Request) {
   const session = await auth();
   if (!session?.user?.id) {
     return Response.json({ error: "Não autenticado" }, { status: 401 });
+  }
+
+  const limit = checkRateLimit(`comment:${session.user.id}`, COMMENT_RATE_LIMIT);
+  if (!limit.allowed) {
+    return Response.json(
+      { error: "Muitos comentários em sequência. Tente novamente mais tarde." },
+      { status: 429, headers: { "retry-after": String(limit.retryAfter) } }
+    );
   }
 
   const data = await req.json().catch(() => null);
