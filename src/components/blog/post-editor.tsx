@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
-import { POST_CATEGORIES, POST_STATUSES, type PostCategory, type PostStatus } from "@/lib/blog";
+import { POST_CATEGORIES, type PostCategory, type PostStatus } from "@/lib/blog";
 import "@uiw/react-md-editor/markdown-editor.css";
 
 const MDEditor = dynamic(() => import("@uiw/react-md-editor"), { ssr: false });

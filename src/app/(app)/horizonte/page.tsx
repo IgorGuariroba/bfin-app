@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -25,7 +25,10 @@ export default function HorizontePage() {
   const [upsellOpen, setUpsellOpen] = useState(false);
   const router = useRouter();
 
-  const months = Array.from({ length: period }, (_, i) => addMonths(firstMonth, i));
+  const months = useMemo(
+    () => Array.from({ length: period }, (_, i) => addMonths(firstMonth, i)),
+    [firstMonth, period]
+  );
 
   const blockedMonths =
     plan === "free" ? months.filter((m) => m >= freeNewestMonth()) : [];
@@ -57,9 +60,9 @@ export default function HorizontePage() {
 
   useEffect(() => {
     // fetchData só altera estado após o await do fetch (fonte externa), não de forma síncrona.
-    // eslint-disable-next-line react-hooks/set-state-in-effect, react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchData(months);
-  }, [firstMonth, period]);
+  }, [fetchData, months]);
 
   const shift = useCallback((delta: number) => {
     setFirstMonth((m) => addMonths(m, delta));

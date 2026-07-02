@@ -7,7 +7,6 @@ import {
   freeNewestMonth,
   currentYearMonth,
   isMonthAllowed,
-  isFutureMonthAllowed,
 } from "@/lib/plan-utils";
 
 export { freeOldestMonth, freeNewestMonth, currentYearMonth };

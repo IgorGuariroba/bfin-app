@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Users, X, LogOut } from "lucide-react";
+import { Users, LogOut } from "lucide-react";
 
 interface Props {
   ownerName: string;
