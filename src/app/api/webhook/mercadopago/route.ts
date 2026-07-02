@@ -1,9 +1,7 @@
 import "server-only";
-import { createHmac } from "crypto";
-import { PreApproval } from "mercadopago";
+import { PreApproval, WebhookSignatureValidator } from "mercadopago";
 import { mpClient, PLAN_PRICES } from "@/lib/mercadopago";
 import { prisma } from "@/lib/prisma";
-import { safeEqual } from "@/lib/safe-equal";
 import {
   isGoogleAdsConfigured,
   resolveClickId,
@@ -16,23 +14,30 @@ const SIGNATURE_TOLERANCE_MS = 5 * 60_000;
 
 function verifySignature(request: Request, dataId: string, secret: string): boolean {
   const xSignature = request.headers.get("x-signature") ?? "";
-  const xRequestId = request.headers.get("x-request-id") ?? "";
 
+  // Frescor: o ts é assinado, então um replay carrega o ts original. Feito
+  // aqui (e não via toleranceSeconds do SDK) porque a doc do MP exemplifica ts
+  // em segundos e o SDK assume ms — < 1e12 cobre segundos até ~2286.
   const ts = xSignature.match(/ts=([^,]+)/)?.[1];
-  const v1 = xSignature.match(/v1=([^,]+)/)?.[1];
-  if (!ts || !v1) return false;
-
-  // Frescor: o ts é assinado, então um replay carrega o ts original.
-  // MP envia em segundos; < 1e12 cobre qualquer data até ~2286 em segundos.
   const tsNum = Number(ts);
-  if (!Number.isFinite(tsNum)) return false;
+  if (!ts || !Number.isFinite(tsNum)) return false;
   const tsMs = tsNum < 1e12 ? tsNum * 1000 : tsNum;
   if (Math.abs(Date.now() - tsMs) > SIGNATURE_TOLERANCE_MS) return false;
 
-  const message = `id:${dataId};request-id:${xRequestId};ts:${ts}`;
-  const expected = createHmac("sha256", secret).update(message).digest("hex");
-
-  return safeEqual(expected, v1);
+  // Assinatura: delegada ao validador oficial do SDK, que monta o manifesto
+  // documentado (`id:<lowercase>;request-id:...;ts:...;`) e compara o HMAC em
+  // tempo constante.
+  try {
+    WebhookSignatureValidator.validate({
+      xSignature,
+      xRequestId: request.headers.get("x-request-id"),
+      dataId,
+      secret,
+    });
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 /**

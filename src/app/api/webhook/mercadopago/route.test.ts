@@ -4,8 +4,10 @@ import { prisma } from "@/lib/prisma";
 
 const { mockPreApprovalGet } = vi.hoisted(() => ({ mockPreApprovalGet: vi.fn() }));
 
-vi.mock("mercadopago", () => ({
-  MercadoPagoConfig: class {},
+// Mock parcial: só PreApproval (evita chamada real à API). O
+// WebhookSignatureValidator fica o real — é ele que está sob teste.
+vi.mock("mercadopago", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("mercadopago")>()),
   PreApproval: class {
     get = mockPreApprovalGet;
   },
@@ -32,7 +34,8 @@ async function makeUser() {
 }
 
 function sign(dataId: string, ts: string, secret = SECRET) {
-  const message = `id:${dataId};request-id:${REQUEST_ID};ts:${ts}`;
+  // Manifesto oficial do MP: id em lowercase e `;` no final.
+  const message = `id:${dataId.toLowerCase()};request-id:${REQUEST_ID};ts:${ts};`;
   return createHmac("sha256", secret).update(message).digest("hex");
 }
 
