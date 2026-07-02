@@ -1,24 +1,18 @@
+import "server-only";
+
+// Adapter Next da delegação (ADR-0011/ADR-0013): lê os cookies de conta ativa
+// e delega a regra "membro ativo opera como dono" ao core (identityService).
 import { cookies } from "next/headers";
-import { prisma } from "@/lib/prisma";
+import { identityService } from "@/adapters";
 
-async function resolveTargetOwnerId(sessionUserId: string): Promise<string | null> {
+/** Dono pedido via cookie: `active-account` (sessão) > `preferred-account` (persistente). */
+async function requestedOwnerId(): Promise<string | undefined> {
   const cookieStore = await cookies();
-  const active = cookieStore.get("active-account")?.value;
-  const preferred = cookieStore.get("preferred-account")?.value;
-  const target = active ?? preferred;
-
-  if (!target || target === sessionUserId) return null;
-
-  const member = await prisma.accountMember.findFirst({
-    where: { ownerId: target, memberId: sessionUserId, status: "active" },
-  });
-
-  return member ? target : null;
+  return cookieStore.get("active-account")?.value ?? cookieStore.get("preferred-account")?.value;
 }
 
 export async function getEffectiveUserId(sessionUserId: string): Promise<string> {
-  const target = await resolveTargetOwnerId(sessionUserId);
-  return target ?? sessionUserId;
+  return identityService.resolveEffectiveUser(sessionUserId, await requestedOwnerId());
 }
 
 export async function getDelegationInfo(sessionUserId: string): Promise<{
@@ -27,26 +21,5 @@ export async function getDelegationInfo(sessionUserId: string): Promise<{
   ownerName?: string;
   ownerEmail?: string;
 }> {
-  const cookieStore = await cookies();
-  const active = cookieStore.get("active-account")?.value;
-  const preferred = cookieStore.get("preferred-account")?.value;
-  const target = active ?? preferred;
-
-  if (!target || target === sessionUserId) {
-    return { effectiveUserId: sessionUserId, isDelegated: false };
-  }
-
-  const member = await prisma.accountMember.findFirst({
-    where: { ownerId: target, memberId: sessionUserId, status: "active" },
-    include: { owner: { select: { name: true, email: true } } },
-  });
-
-  if (!member) return { effectiveUserId: sessionUserId, isDelegated: false };
-
-  return {
-    effectiveUserId: target,
-    isDelegated: true,
-    ownerName: member.owner.name,
-    ownerEmail: member.owner.email,
-  };
+  return identityService.getDelegationInfo(sessionUserId, await requestedOwnerId());
 }

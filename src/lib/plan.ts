@@ -1,5 +1,6 @@
 import "server-only";
-import { prisma } from "@/lib/prisma";
+import { identityService } from "@/adapters";
+import type { Plan } from "@/core/identity";
 export {
   FREE_HISTORY_MONTHS,
   FREE_FUTURE_MONTHS,
@@ -10,17 +11,9 @@ export {
   isMonthAllowed,
   isFutureMonthAllowed,
 } from "@/lib/plan-utils";
-import type { Plan } from "@/lib/plan-utils";
 
-export async function getUserPlan(userId: string): Promise<Plan> {
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { plan: true, planExpiresAt: true },
-  });
-  if (!user || user.plan !== "pro") return "free";
-  if (user.planExpiresAt && user.planExpiresAt < new Date()) {
-    await prisma.user.update({ where: { id: userId }, data: { plan: "free" } });
-    return "free";
-  }
-  return "pro";
+// A regra mudou-se para o core (ADR-0013); wrapper mantido para os consumidores
+// existentes até suas fatias migrarem para @/adapters.
+export function getUserPlan(userId: string): Promise<Plan> {
+  return identityService.getUserPlan(userId);
 }
