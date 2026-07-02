@@ -1,6 +1,7 @@
 import "server-only";
 
 import { prisma } from "@/lib/prisma";
+import { logger } from "@/lib/logger";
 import { addDays, addWeeks, addMonths } from "@/lib/date-utils";
 import { CATEGORY_TAGS } from "@/lib/constants";
 
@@ -126,6 +127,13 @@ function parseTransactionDay(s: string): Date {
  * from/to). Sempre escopado ao próprio userId (anti-IDOR). Extraído de
  * GET /api/transactions para ser reutilizado por REST e MCP.
  */
+/**
+ * Teto de resultados do listTransactions: proteção de borda contra resposta
+ * ilimitada (sem filtro de data ela cresce com a vida do usuário). Paginação
+ * completa fica fora de escopo — ao atingir o teto o corte é logado.
+ */
+export const MAX_LIST_RESULTS = 1000;
+
 export async function listTransactions(
   userId: string,
   filter: ListTransactionsFilter = {}
@@ -153,11 +161,23 @@ export async function listTransactions(
   if (type) where.type = type;
   if (tagId) where.tags = { some: { id: tagId } };
 
-  return prisma.transaction.findMany({
+  // +1 para distinguir "exatamente o teto" de "havia mais registros".
+  const rows = await prisma.transaction.findMany({
     where,
     include: { tags: { select: { id: true, name: true, color: true } } },
     orderBy: { date: "asc" },
+    take: MAX_LIST_RESULTS + 1,
   });
+
+  if (rows.length > MAX_LIST_RESULTS) {
+    logger.warn(
+      { userId, filter, max: MAX_LIST_RESULTS },
+      "listTransactions truncado no teto de resultados"
+    );
+    return rows.slice(0, MAX_LIST_RESULTS);
+  }
+
+  return rows;
 }
 
 export interface CreateTransactionInput {
