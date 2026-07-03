@@ -50,7 +50,7 @@ jobs:
       # Secrets exigidos pelos testes são stubados neles próprios (vi.stubEnv).
       - name: Test
         run: |
-          npx prisma migrate deploy
+          node scripts/db-migrate.mjs
           npm test
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/bfin_test

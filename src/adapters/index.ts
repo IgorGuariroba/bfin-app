@@ -23,8 +23,8 @@ import { prismaIdentityRepo } from "./prisma/identity-repo";
 import { prismaInsightsRepo } from "./prisma/insights-repo";
 import { prismaMembersRepo } from "./prisma/members-repo";
 import { prismaPrevisaoRepo } from "./prisma/previsao-repo";
-import { prismaTagRepo } from "./prisma/tag-repo";
 import { prismaTransactionRepo } from "./prisma/transaction-repo";
+import { drizzleTagRepo } from "./drizzle/tag-repo";
 
 export const identityService = makeIdentityService(prismaIdentityRepo);
 export const membersService = makeMembersService(prismaMembersRepo, {
@@ -47,5 +47,5 @@ export const billingService = makeBillingService(prismaBillingRepo, mercadoPagoG
 });
 export const insightsService = makeInsightsService(prismaInsightsRepo);
 export const previsaoService = makePrevisaoService(prismaPrevisaoRepo);
-export const tagsService = makeTagsService(prismaTagRepo);
+export const tagsService = makeTagsService(drizzleTagRepo);
 export const transactionsService = makeTransactionsService(prismaTransactionRepo, { logger });
