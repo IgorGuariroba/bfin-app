@@ -1,29 +1,40 @@
-import { prisma } from "@/lib/prisma";
+import { eq } from "drizzle-orm";
+import { db } from "@/lib/drizzle";
+import { post } from "@/db/schema";
+import { fromDbTimestamp, fromDbTimestampOrNull, toDbTimestamp } from "@/adapters/drizzle/timestamp";
+import { attachTopics, setPostTopics } from "@/lib/blog-db";
 import { requireBlogAdmin } from "@/lib/blog-admin";
 import { POST_CATEGORIES, POST_STATUSES, type PostCategory, type PostStatus } from "@/lib/blog";
+
+function serializePost(row: typeof post.$inferSelect) {
+  return {
+    ...row,
+    publishedAt: fromDbTimestampOrNull(row.publishedAt),
+    createdAt: fromDbTimestamp(row.createdAt),
+    updatedAt: fromDbTimestamp(row.updatedAt),
+  };
+}
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   if (!(await requireBlogAdmin())) return Response.json({ error: "Forbidden" }, { status: 403 });
   const { id } = await params;
-  const post = await prisma.post.findUnique({
-    where: { id },
-    include: { topics: { select: { id: true, name: true, slug: true } } },
-  });
-  if (!post) return Response.json({ error: "Não encontrado" }, { status: 404 });
-  return Response.json(post);
+  const [row] = await db.select().from(post).where(eq(post.id, id));
+  if (!row) return Response.json({ error: "Não encontrado" }, { status: 404 });
+  const [withTopics] = await attachTopics([row]);
+  return Response.json({ ...serializePost(withTopics), topics: withTopics.topics });
 }
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   if (!(await requireBlogAdmin())) return Response.json({ error: "Forbidden" }, { status: 403 });
   const { id } = await params;
 
-  const existing = await prisma.post.findUnique({ where: { id } });
+  const [existing] = await db.select().from(post).where(eq(post.id, id));
   if (!existing) return Response.json({ error: "Não encontrado" }, { status: 404 });
 
   const data = await req.json().catch(() => null);
   if (!data) return Response.json({ error: "Body inválido" }, { status: 400 });
 
-  const update: Record<string, unknown> = {};
+  const update: Partial<typeof post.$inferInsert> = { updatedAt: toDbTimestamp(new Date()) };
 
   if (typeof data.title === "string" && data.title.trim()) update.title = data.title.trim();
   if (typeof data.content === "string") update.content = data.content;
@@ -46,31 +57,27 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     const newStatus = data.status as PostStatus;
     update.status = newStatus;
     if (newStatus === "published" && !existing.publishedAt) {
-      update.publishedAt = new Date();
+      update.publishedAt = update.updatedAt;
     }
   }
 
-  let topicConnect: { id: string }[] | undefined;
+  let topicIds: string[] | undefined;
   if (Array.isArray(data.topicIds)) {
-    topicConnect = data.topicIds
-      .filter((s: unknown): s is string => typeof s === "string")
-      .map((id: string) => ({ id }));
+    topicIds = data.topicIds.filter((s: unknown): s is string => typeof s === "string");
   }
 
-  const post = await prisma.post.update({
-    where: { id },
-    data: {
-      ...update,
-      ...(topicConnect ? { topics: { set: topicConnect } } : {}),
-    },
+  const updated = await db.transaction(async (tx) => {
+    const [row] = await tx.update(post).set(update).where(eq(post.id, id)).returning();
+    if (topicIds) await setPostTopics(tx, id, topicIds);
+    return row;
   });
 
-  return Response.json(post);
+  return Response.json(serializePost(updated));
 }
 
 export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   if (!(await requireBlogAdmin())) return Response.json({ error: "Forbidden" }, { status: 403 });
   const { id } = await params;
-  await prisma.post.deleteMany({ where: { id } });
+  await db.delete(post).where(eq(post.id, id));
   return Response.json({ ok: true });
 }

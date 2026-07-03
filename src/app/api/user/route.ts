@@ -1,5 +1,7 @@
 import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { db } from "@/lib/drizzle";
+import { user as userTable } from "@/db/schema";
+import { eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { setAutoBaixaDiario, ProRequiredError } from "@/lib/user-settings";
@@ -8,10 +10,17 @@ export async function GET() {
   const session = await auth();
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const user = await prisma.user.findUnique({
-    where: { id: session.user.id },
-    select: { id: true, name: true, email: true, image: true, plan: true, autoBaixaDiario: true },
-  });
+  const [user] = await db
+    .select({
+      id: userTable.id,
+      name: userTable.name,
+      email: userTable.email,
+      image: userTable.image,
+      plan: userTable.plan,
+      autoBaixaDiario: userTable.autoBaixaDiario,
+    })
+    .from(userTable)
+    .where(eq(userTable.id, session.user.id));
 
   if (!user) return NextResponse.json({ error: "Not found" }, { status: 404 });
   return NextResponse.json(user);
@@ -26,7 +35,7 @@ export async function PATCH(req: Request) {
   const body = await req.json();
   const { name, currentPassword, newPassword, autoBaixaDiario } = body;
 
-  const user = await prisma.user.findUnique({ where: { id: session.user.id } });
+  const [user] = await db.select().from(userTable).where(eq(userTable.id, session.user.id));
   if (!user) return NextResponse.json({ error: "Usuário não encontrado" }, { status: 404 });
 
   // Toggle da baixa automática: regra de plano vive no serviço (ADR-0005).
@@ -74,13 +83,19 @@ export async function PATCH(req: Request) {
   }
 
   if (Object.keys(data).length > 0) {
-    await prisma.user.update({ where: { id: session.user.id }, data });
+    await db.update(userTable).set(data).where(eq(userTable.id, session.user.id));
   }
 
-  const updated = await prisma.user.findUnique({
-    where: { id: session.user.id },
-    select: { id: true, name: true, email: true, image: true, autoBaixaDiario: true },
-  });
+  const [updated] = await db
+    .select({
+      id: userTable.id,
+      name: userTable.name,
+      email: userTable.email,
+      image: userTable.image,
+      autoBaixaDiario: userTable.autoBaixaDiario,
+    })
+    .from(userTable)
+    .where(eq(userTable.id, session.user.id));
 
   return NextResponse.json(updated);
 }

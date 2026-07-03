@@ -1,15 +1,20 @@
-import { Prisma } from "@/generated/prisma/client";
-import { prisma } from "@/lib/prisma";
+import { asc } from "drizzle-orm";
+import { db } from "@/lib/drizzle";
+import { postTopic } from "@/db/schema";
+import { countPostsByTopic } from "@/lib/blog-db";
+import { isUniqueViolation } from "@/lib/db-errors";
 import { requireBlogAdmin } from "@/lib/blog-admin";
 import { slugify } from "@/lib/blog";
 
 export async function GET() {
   if (!(await requireBlogAdmin())) return Response.json({ error: "Forbidden" }, { status: 403 });
-  const topics = await prisma.postTopic.findMany({
-    orderBy: { name: "asc" },
-    include: { _count: { select: { posts: true } } },
-  });
-  return Response.json(topics);
+  const [topics, postCounts] = await Promise.all([
+    db.select().from(postTopic).orderBy(asc(postTopic.name)),
+    countPostsByTopic(),
+  ]);
+  return Response.json(
+    topics.map((t) => ({ ...t, _count: { posts: postCounts.get(t.id) ?? 0 } }))
+  );
 }
 
 export async function POST(req: Request) {
@@ -22,10 +27,13 @@ export async function POST(req: Request) {
   let slug = baseSlug;
   for (let attempt = 1; attempt <= 10; attempt += 1) {
     try {
-      const topic = await prisma.postTopic.create({ data: { name, slug } });
+      const [topic] = await db
+        .insert(postTopic)
+        .values({ id: crypto.randomUUID(), name, slug })
+        .returning();
       return Response.json(topic, { status: 201 });
     } catch (err) {
-      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
+      if (isUniqueViolation(err)) {
         slug = `${baseSlug}-${attempt + 1}`;
         continue;
       }

@@ -1,31 +1,32 @@
-import { afterAll, afterEach, describe, it, expect } from "vitest";
-import { prisma } from "@/lib/prisma";
+import { afterEach, describe, it, expect } from "vitest";
+import { and, asc, eq, inArray } from "drizzle-orm";
+import { db } from "@/lib/drizzle";
+import { previsao, transaction, user as userTable } from "@/db/schema";
+import { toDbTimestamp } from "@/adapters/drizzle/timestamp";
 import { previsaoService } from "@/adapters";
 import { PrevisaoNotFoundError } from "@/core/previsao";
 
 let createdUserIds: string[] = [];
 
 async function seedUser() {
-  const user = await prisma.user.create({
-    data: {
+  const [row] = await db
+    .insert(userTable)
+    .values({
+      id: crypto.randomUUID(),
       name: "Previsao User",
       email: `previsao-${crypto.randomUUID()}@example.com`,
       plan: "pro",
-    },
-  });
-  createdUserIds.push(user.id);
-  return user;
+    })
+    .returning();
+  createdUserIds.push(row.id);
+  return row;
 }
 
 afterEach(async () => {
   if (createdUserIds.length) {
-    await prisma.user.deleteMany({ where: { id: { in: createdUserIds } } });
+    await db.delete(userTable).where(inArray(userTable.id, createdUserIds));
     createdUserIds = [];
   }
-});
-
-afterAll(async () => {
-  await prisma.$disconnect();
 });
 
 describe("previsao-service CRUD", () => {
@@ -50,7 +51,7 @@ describe("previsao-service CRUD", () => {
     expect(updated).toMatchObject({ name: "Mercado", amount: 900 });
 
     await previsaoService.deletePrevisao(user.id, mercado.id);
-    expect(await prisma.previsao.findUnique({ where: { id: mercado.id } })).toBeNull();
+    expect((await db.select().from(previsao).where(eq(previsao.id, mercado.id)))[0]).toBeUndefined();
   });
 
   it("não deixa editar previsão de outro dono (not found)", async () => {
@@ -74,10 +75,11 @@ describe("previsao-service applyPrevisao", () => {
 
     const { count } = await previsaoService.applyPrevisao({ userId: user.id, amount: 150 });
 
-    const stored = await prisma.transaction.findMany({
-      where: { userId: user.id, type: "diario" },
-      orderBy: { date: "asc" },
-    });
+    const stored = await db
+      .select()
+      .from(transaction)
+      .where(and(eq(transaction.userId, user.id), eq(transaction.type, "diario")))
+      .orderBy(asc(transaction.date));
     expect(stored).toHaveLength(count);
     expect(count).toBeGreaterThanOrEqual(365);
     expect(stored[0]).toMatchObject({
@@ -91,34 +93,41 @@ describe("previsao-service applyPrevisao", () => {
     const user = await seedUser();
     const emUmMes = new Date();
     emUmMes.setMonth(emUmMes.getMonth() + 1);
+    const now = toDbTimestamp(new Date());
 
-    const manualAntigo = await prisma.transaction.create({
-      data: {
+    const [manualAntigo] = await db
+      .insert(transaction)
+      .values({
+        id: crypto.randomUUID(),
         userId: user.id,
         type: "diario",
         description: "Previsão Diária",
         amount: 99,
-        date: emUmMes,
-      },
-    });
-    const importado = await prisma.transaction.create({
-      data: {
+        date: toDbTimestamp(emUmMes),
+        updatedAt: now,
+      })
+      .returning();
+    const [importado] = await db
+      .insert(transaction)
+      .values({
+        id: crypto.randomUUID(),
         userId: user.id,
         type: "diario",
         source: "pluggy",
         description: "Previsão Diária",
         amount: 99,
-        date: emUmMes,
-      },
-    });
+        date: toDbTimestamp(emUmMes),
+        updatedAt: now,
+      })
+      .returning();
 
     await previsaoService.applyPrevisao({ userId: user.id, amount: 150 });
 
     expect(
-      await prisma.transaction.findUnique({ where: { id: manualAntigo.id } })
-    ).toBeNull();
+      (await db.select().from(transaction).where(eq(transaction.id, manualAntigo.id)))[0]
+    ).toBeUndefined();
     expect(
-      await prisma.transaction.findUnique({ where: { id: importado.id } })
-    ).not.toBeNull();
+      (await db.select().from(transaction).where(eq(transaction.id, importado.id)))[0]
+    ).not.toBeUndefined();
   });
 });

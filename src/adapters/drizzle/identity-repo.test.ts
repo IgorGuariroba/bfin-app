@@ -1,18 +1,23 @@
-import { afterAll, afterEach, describe, it, expect } from "vitest";
-import { prisma } from "@/lib/prisma";
+import { afterEach, describe, it, expect } from "vitest";
+import { eq, inArray } from "drizzle-orm";
+import { db } from "@/lib/drizzle";
+import { accountMember, user as userTable } from "@/db/schema";
+import { toDbTimestamp } from "@/adapters/drizzle/timestamp";
 import { identityService } from "@/adapters";
 
 let createdUserIds: string[] = [];
 
 async function seedUser(opts: { plan?: string; planExpiresAt?: Date } = {}) {
-  const user = await prisma.user.create({
-    data: {
+  const [user] = await db
+    .insert(userTable)
+    .values({
+      id: crypto.randomUUID(),
       name: "Identity User",
       email: `identity-${crypto.randomUUID()}@example.com`,
       plan: opts.plan ?? "free",
-      planExpiresAt: opts.planExpiresAt,
-    },
-  });
+      planExpiresAt: opts.planExpiresAt ? toDbTimestamp(opts.planExpiresAt) : undefined,
+    })
+    .returning();
   createdUserIds.push(user.id);
   return user;
 }
@@ -20,13 +25,9 @@ async function seedUser(opts: { plan?: string; planExpiresAt?: Date } = {}) {
 afterEach(async () => {
   if (createdUserIds.length) {
     // AccountMember cai em cascade junto com o User (onDelete: cascade).
-    await prisma.user.deleteMany({ where: { id: { in: createdUserIds } } });
+    await db.delete(userTable).where(inArray(userTable.id, createdUserIds));
     createdUserIds = [];
   }
-});
-
-afterAll(async () => {
-  await prisma.$disconnect();
 });
 
 describe("getUserPlan", () => {
@@ -34,7 +35,7 @@ describe("getUserPlan", () => {
     const user = await seedUser({ plan: "pro", planExpiresAt: new Date(Date.now() - 1000) });
 
     expect(await identityService.getUserPlan(user.id)).toBe("free");
-    const after = await prisma.user.findUnique({ where: { id: user.id } });
+    const [after] = await db.select().from(userTable).where(eq(userTable.id, user.id));
     expect(after?.plan).toBe("free");
   });
 
@@ -52,14 +53,13 @@ describe("resolveEffectiveUser / getDelegationInfo", () => {
   it("resolve o dono quando há AccountMember ativo", async () => {
     const dono = await seedUser({ plan: "pro" });
     const membro = await seedUser();
-    await prisma.accountMember.create({
-      data: {
-        ownerId: dono.id,
-        memberId: membro.id,
-        inviteEmail: membro.email,
-        inviteToken: crypto.randomUUID(),
-        status: "active",
-      },
+    await db.insert(accountMember).values({
+      id: crypto.randomUUID(),
+      ownerId: dono.id,
+      memberId: membro.id,
+      inviteEmail: membro.email,
+      inviteToken: crypto.randomUUID(),
+      status: "active",
     });
 
     expect(await identityService.resolveEffectiveUser(membro.id, dono.id)).toBe(dono.id);

@@ -1,6 +1,6 @@
 # bfin
 
-Aplicativo de finanças pessoais (Next.js + Prisma + Postgres). Este documento é o glossário do domínio — sem detalhes de implementação.
+Aplicativo de finanças pessoais (Next.js + Drizzle + Postgres). Este documento é o glossário do domínio — sem detalhes de implementação.
 
 ## Language
 

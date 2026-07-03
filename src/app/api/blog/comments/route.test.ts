@@ -1,5 +1,8 @@
 import { afterEach, describe, it, expect, vi } from "vitest";
-import { prisma } from "@/lib/prisma";
+import { inArray } from "drizzle-orm";
+import { db } from "@/lib/drizzle";
+import { post, user as userTable } from "@/db/schema";
+import { toDbTimestamp } from "@/adapters/drizzle/timestamp";
 import { COMMENT_RATE_LIMIT } from "@/lib/rate-limit";
 
 const { mockAuth } = vi.hoisted(() => ({ mockAuth: vi.fn() }));
@@ -13,16 +16,21 @@ let createdUserIds: string[] = [];
 let createdPostIds: string[] = [];
 
 async function makeUserAndPost() {
-  const user = await prisma.user.create({
-    data: {
+  const [user] = await db
+    .insert(userTable)
+    .values({
+      id: crypto.randomUUID(),
       name: "Comment User",
       email: `comment-${crypto.randomUUID()}@example.com`,
-    },
-  });
+    })
+    .returning();
   createdUserIds.push(user.id);
 
-  const post = await prisma.post.create({
-    data: {
+  const now = toDbTimestamp(new Date());
+  const [postRow] = await db
+    .insert(post)
+    .values({
+      id: crypto.randomUUID(),
       slug: `post-${crypto.randomUUID()}`,
       title: "Post de teste",
       excerpt: "Excerpt",
@@ -30,12 +38,13 @@ async function makeUserAndPost() {
       category: "financas",
       status: "published",
       authorId: user.id,
-    },
-  });
-  createdPostIds.push(post.id);
+      updatedAt: now,
+    })
+    .returning();
+  createdPostIds.push(postRow.id);
 
   mockAuth.mockResolvedValue({ user: { id: user.id } });
-  return { user, post };
+  return { user, post: postRow };
 }
 
 function commentRequest(postId: string) {
@@ -50,11 +59,11 @@ afterEach(async () => {
   vi.useRealTimers();
   mockAuth.mockReset();
   if (createdPostIds.length) {
-    await prisma.post.deleteMany({ where: { id: { in: createdPostIds } } });
+    await db.delete(post).where(inArray(post.id, createdPostIds));
     createdPostIds = [];
   }
   if (createdUserIds.length) {
-    await prisma.user.deleteMany({ where: { id: { in: createdUserIds } } });
+    await db.delete(userTable).where(inArray(userTable.id, createdUserIds));
     createdUserIds = [];
   }
 });
@@ -99,7 +108,7 @@ describe("POST /api/blog/comments", () => {
     }
     expect((await POST(commentRequest(post.id))).status).toBe(429);
 
-    // Só o Date é mockado: prisma continua com scheduling real.
+    // Só o Date é mockado: drizzle continua com scheduling real.
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(Date.now() + COMMENT_RATE_LIMIT.windowMs);
 

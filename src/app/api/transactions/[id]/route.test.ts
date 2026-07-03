@@ -1,6 +1,9 @@
 import { afterEach, describe, it, expect, vi } from "vitest";
 import { NextRequest } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { eq, inArray } from "drizzle-orm";
+import { db } from "@/lib/drizzle";
+import { transaction, user as userTable } from "@/db/schema";
+import { toDbTimestamp } from "@/adapters/drizzle/timestamp";
 
 const { mockAuth, mockCookieGet } = vi.hoisted(() => ({
   mockAuth: vi.fn(),
@@ -19,21 +22,39 @@ import { PUT, DELETE } from "./route";
 let createdUserIds: string[] = [];
 
 async function makeUser() {
-  const user = await prisma.user.create({
-    data: {
+  const [user] = await db
+    .insert(userTable)
+    .values({
+      id: crypto.randomUUID(),
       name: "Tx User",
       email: `tx-${crypto.randomUUID()}@example.com`,
       plan: "pro",
-    },
-  });
+    })
+    .returning();
   createdUserIds.push(user.id);
   return user;
 }
 
 async function makeTx(userId: string, type = "saida") {
-  return prisma.transaction.create({
-    data: { userId, type, description: "Mercado", amount: 120, date: new Date(2026, 5, 10, 12) },
-  });
+  const now = toDbTimestamp(new Date());
+  const [row] = await db
+    .insert(transaction)
+    .values({
+      id: crypto.randomUUID(),
+      userId,
+      type,
+      description: "Mercado",
+      amount: 120,
+      date: toDbTimestamp(new Date(2026, 5, 10, 12)),
+      updatedAt: now,
+    })
+    .returning();
+  return row;
+}
+
+async function findTx(id: string) {
+  const [row] = await db.select().from(transaction).where(eq(transaction.id, id));
+  return row ?? null;
 }
 
 function putRequest(id: string, body: unknown) {
@@ -49,7 +70,7 @@ function putRequest(id: string, body: unknown) {
 afterEach(async () => {
   vi.resetAllMocks();
   if (createdUserIds.length) {
-    await prisma.user.deleteMany({ where: { id: { in: createdUserIds } } });
+    await db.delete(userTable).where(inArray(userTable.id, createdUserIds));
     createdUserIds = [];
   }
 });
@@ -84,7 +105,7 @@ describe("PUT /api/transactions/[id]", () => {
     const res = await PUT(request, ctx);
 
     expect(res.status).toBe(404);
-    const stored = await prisma.transaction.findUnique({ where: { id: tx.id } });
+    const stored = await findTx(tx.id);
     expect(stored?.description).toBe("Mercado");
   });
 
@@ -111,7 +132,7 @@ describe("PUT /api/transactions/[id]", () => {
     const res = await PUT(request, ctx);
 
     expect(res.status).toBe(400);
-    const stored = await prisma.transaction.findUnique({ where: { id: tx.id } });
+    const stored = await findTx(tx.id);
     expect(stored?.type).toBe("saida");
   });
 });
@@ -131,6 +152,6 @@ describe("DELETE /api/transactions/[id]", () => {
 
     mockAuth.mockResolvedValue({ user: { id: owner.id } });
     expect((await DELETE(req, ctx)).status).toBe(204);
-    expect(await prisma.transaction.findUnique({ where: { id: tx.id } })).toBeNull();
+    expect(await findTx(tx.id)).toBeNull();
   });
 });

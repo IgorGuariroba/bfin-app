@@ -1,31 +1,31 @@
-import { afterAll, afterEach, describe, it, expect } from "vitest";
-import { prisma } from "@/lib/prisma";
+import { afterEach, describe, it, expect } from "vitest";
+import { eq, inArray } from "drizzle-orm";
+import { db } from "@/lib/drizzle";
+import { accountMember, user as userTable } from "@/db/schema";
 import { membersService } from "@/adapters";
 import { InviteNotFoundError } from "@/core/identity";
 
 let createdUserIds: string[] = [];
 
 async function seedUser(plan = "pro") {
-  const user = await prisma.user.create({
-    data: {
+  const [row] = await db
+    .insert(userTable)
+    .values({
+      id: crypto.randomUUID(),
       name: "Members User",
       email: `members-${crypto.randomUUID()}@example.com`,
       plan,
-    },
-  });
-  createdUserIds.push(user.id);
-  return user;
+    })
+    .returning();
+  createdUserIds.push(row.id);
+  return row;
 }
 
 afterEach(async () => {
   if (createdUserIds.length) {
-    await prisma.user.deleteMany({ where: { id: { in: createdUserIds } } });
+    await db.delete(userTable).where(inArray(userTable.id, createdUserIds));
     createdUserIds = [];
   }
-});
-
-afterAll(async () => {
-  await prisma.$disconnect();
 });
 
 describe("members-service fluxo completo", () => {
@@ -57,7 +57,9 @@ describe("members-service fluxo completo", () => {
     expect(doConvidado.received[0].owner.id).toBe(dono.id);
 
     await membersService.revokeInvite(dono.id, invite.id);
-    expect(await prisma.accountMember.findUnique({ where: { id: invite.id } })).toBeNull();
+    expect(
+      (await db.select().from(accountMember).where(eq(accountMember.id, invite.id)))[0]
+    ).toBeUndefined();
   });
 
   it("convidado não revoga convite do dono (not found)", async () => {

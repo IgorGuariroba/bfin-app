@@ -1,5 +1,8 @@
 import Link from "next/link";
-import { prisma } from "@/lib/prisma";
+import { count, desc, eq } from "drizzle-orm";
+import { db } from "@/lib/drizzle";
+import { post, postComment, user } from "@/db/schema";
+import { fromDbTimestamp } from "@/adapters/drizzle/timestamp";
 import { CommentsModeration } from "@/components/blog/comments-moderation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -12,19 +15,28 @@ export default async function AdminCommentsPage({
   const { status } = await searchParams;
   const filter = status === "approved" || status === "rejected" ? status : "pending";
 
-  const [comments, counts] = await Promise.all([
-    prisma.postComment.findMany({
-      where: { status: filter },
-      orderBy: { createdAt: "desc" },
-      include: {
-        user: { select: { name: true, email: true } },
-        post: { select: { title: true, slug: true } },
-      },
-    }),
-    prisma.postComment.groupBy({ by: ["status"], _count: { _all: true } }),
+  const [rows, counts] = await Promise.all([
+    db
+      .select({
+        id: postComment.id,
+        body: postComment.body,
+        createdAt: postComment.createdAt,
+        status: postComment.status,
+        userName: user.name,
+        userEmail: user.email,
+        postTitle: post.title,
+        postSlug: post.slug,
+      })
+      .from(postComment)
+      .innerJoin(user, eq(postComment.userId, user.id))
+      .innerJoin(post, eq(postComment.postId, post.id))
+      .where(eq(postComment.status, filter))
+      .orderBy(desc(postComment.createdAt)),
+    db.select({ status: postComment.status, n: count() }).from(postComment).groupBy(postComment.status),
   ]);
+  const comments = rows.map((c) => ({ ...c, createdAt: fromDbTimestamp(c.createdAt) }));
 
-  const countBy = (s: string) => counts.find((c) => c.status === s)?._count._all ?? 0;
+  const countBy = (s: string) => counts.find((c) => c.status === s)?.n ?? 0;
 
   const tabs = [
     { value: "pending", label: "Pendentes", count: countBy("pending") },
@@ -63,10 +75,10 @@ export default async function AdminCommentsPage({
           body: c.body,
           createdAt: c.createdAt.toISOString(),
           status: c.status,
-          userName: c.user.name,
-          userEmail: c.user.email,
-          postTitle: c.post.title,
-          postSlug: c.post.slug,
+          userName: c.userName,
+          userEmail: c.userEmail,
+          postTitle: c.postTitle,
+          postSlug: c.postSlug,
         }))}
       />
     </div>

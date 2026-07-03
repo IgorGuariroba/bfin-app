@@ -1,16 +1,18 @@
 import NextAuth from "next-auth";
 import Google from "next-auth/providers/google";
 import Credentials from "next-auth/providers/credentials";
-import { PrismaAdapter } from "@auth/prisma-adapter";
 import { cookies } from "next/headers";
-import { prisma } from "@/lib/prisma";
+import { buildAuthAdapter } from "@/lib/auth-adapter";
+import { db } from "@/lib/drizzle";
+import { user as userTable } from "@/db/schema";
+import { eq } from "drizzle-orm";
 import { authorizeCredentials, clientIp } from "@/lib/credentials-authorize";
 import { tagsService } from "@/adapters";
 import { isAdmin } from "@/lib/admin";
 import { resolveClickId, uploadConversion } from "@/lib/google-ads";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
-  adapter: PrismaAdapter(prisma),
+  adapter: buildAuthAdapter(),
   session: { strategy: "jwt" },
   trustHost: true,
   pages: {
@@ -52,7 +54,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const clickId = resolveClickId(data);
         if (!clickId) return;
 
-        await prisma.user.update({ where: { id: user.id }, data });
+        await db.update(userTable).set(data).where(eq(userTable.id, user.id));
 
         const signupActionId = process.env.GOOGLE_ADS_SIGNUP_CONVERSION_ACTION_ID;
         if (signupActionId) {

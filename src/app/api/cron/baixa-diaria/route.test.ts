@@ -1,5 +1,8 @@
-import { afterAll, afterEach, beforeEach, describe, it, expect, vi } from "vitest";
-import { prisma } from "@/lib/prisma";
+import { afterEach, beforeEach, describe, it, expect, vi } from "vitest";
+import { eq, inArray } from "drizzle-orm";
+import { db } from "@/lib/drizzle";
+import { transaction, user as userTable } from "@/db/schema";
+import { toDbTimestamp } from "@/adapters/drizzle/timestamp";
 import { saoPauloTodayRange } from "@/lib/date-utils";
 import { POST } from "./route";
 
@@ -18,23 +21,42 @@ async function makeUser(opts: {
   autoBaixaDiario: boolean;
   planExpiresAt?: Date;
 }) {
-  const user = await prisma.user.create({
-    data: {
+  const [user] = await db
+    .insert(userTable)
+    .values({
+      id: crypto.randomUUID(),
       name: "Cron User",
       email: `cron-${crypto.randomUUID()}@example.com`,
       plan: opts.plan,
       autoBaixaDiario: opts.autoBaixaDiario,
-      planExpiresAt: opts.planExpiresAt,
-    },
-  });
+      planExpiresAt: opts.planExpiresAt ? toDbTimestamp(opts.planExpiresAt) : undefined,
+    })
+    .returning();
   createdUserIds.push(user.id);
   return user;
 }
 
-function makeDiario(userId: string, date: Date) {
-  return prisma.transaction.create({
-    data: { userId, type: "diario", description: "Previsão Diária", amount: 300, date },
-  });
+async function makeDiario(userId: string, date: Date, source?: string) {
+  const now = toDbTimestamp(new Date());
+  const [row] = await db
+    .insert(transaction)
+    .values({
+      id: crypto.randomUUID(),
+      userId,
+      type: "diario",
+      description: "Previsão Diária",
+      amount: 300,
+      date: toDbTimestamp(date),
+      source: source ?? "manual",
+      updatedAt: now,
+    })
+    .returning();
+  return row;
+}
+
+async function findTx(id: string) {
+  const [row] = await db.select().from(transaction).where(eq(transaction.id, id));
+  return row ?? null;
 }
 
 function cronRequest(secret: string | null) {
@@ -53,13 +75,9 @@ beforeEach(() => {
 afterEach(async () => {
   vi.unstubAllEnvs();
   if (createdUserIds.length) {
-    await prisma.user.deleteMany({ where: { id: { in: createdUserIds } } });
+    await db.delete(userTable).where(inArray(userTable.id, createdUserIds));
     createdUserIds = [];
   }
-});
-
-afterAll(async () => {
-  await prisma.$disconnect();
 });
 
 describe("POST /api/cron/baixa-diaria", () => {
@@ -88,7 +106,7 @@ describe("POST /api/cron/baixa-diaria", () => {
 
     expect(res.status).toBe(200);
     expect(body.count).toBeGreaterThanOrEqual(1);
-    expect(await prisma.transaction.findUnique({ where: { id: diario.id } })).toBeNull();
+    expect(await findTx(diario.id)).toBeNull();
   });
 
   it("preserva o diário futuro (só apaga o de hoje)", async () => {
@@ -99,7 +117,7 @@ describe("POST /api/cron/baixa-diaria", () => {
 
     await POST(cronRequest(SECRET));
 
-    expect(await prisma.transaction.findUnique({ where: { id: futuro.id } })).not.toBeNull();
+    expect(await findTx(futuro.id)).not.toBeNull();
   });
 
   it("preserva o diário de quem não optou (free e pro com flag desligada)", async () => {
@@ -110,37 +128,38 @@ describe("POST /api/cron/baixa-diaria", () => {
 
     await POST(cronRequest(SECRET));
 
-    expect(await prisma.transaction.findUnique({ where: { id: dFree.id } })).not.toBeNull();
-    expect(await prisma.transaction.findUnique({ where: { id: dProOff.id } })).not.toBeNull();
+    expect(await findTx(dFree.id)).not.toBeNull();
+    expect(await findTx(dProOff.id)).not.toBeNull();
   });
 
   it("não toca em outros tipos (saida) de hoje, mesmo de pro com flag ligada", async () => {
     const user = await makeUser({ plan: "pro", autoBaixaDiario: true });
-    const saida = await prisma.transaction.create({
-      data: { userId: user.id, type: "saida", description: "Mercado", amount: 400, date: todayInside() },
-    });
+    const now = toDbTimestamp(new Date());
+    const [saida] = await db
+      .insert(transaction)
+      .values({
+        id: crypto.randomUUID(),
+        userId: user.id,
+        type: "saida",
+        description: "Mercado",
+        amount: 400,
+        date: toDbTimestamp(todayInside()),
+        updatedAt: now,
+      })
+      .returning();
 
     await POST(cronRequest(SECRET));
 
-    expect(await prisma.transaction.findUnique({ where: { id: saida.id } })).not.toBeNull();
+    expect(await findTx(saida.id)).not.toBeNull();
   });
 
   it("preserva diário importado do Open Finance (source != manual)", async () => {
     const user = await makeUser({ plan: "pro", autoBaixaDiario: true });
-    const importado = await prisma.transaction.create({
-      data: {
-        userId: user.id,
-        type: "diario",
-        source: "pluggy",
-        description: "Previsão Diária",
-        amount: 300,
-        date: todayInside(),
-      },
-    });
+    const importado = await makeDiario(user.id, todayInside(), "pluggy");
 
     await POST(cronRequest(SECRET));
 
-    expect(await prisma.transaction.findUnique({ where: { id: importado.id } })).not.toBeNull();
+    expect(await findTx(importado.id)).not.toBeNull();
   });
 
   it("preserva o diário de um pro com plano vencido (planExpiresAt no passado)", async () => {
@@ -153,6 +172,6 @@ describe("POST /api/cron/baixa-diaria", () => {
 
     await POST(cronRequest(SECRET));
 
-    expect(await prisma.transaction.findUnique({ where: { id: diario.id } })).not.toBeNull();
+    expect(await findTx(diario.id)).not.toBeNull();
   });
 });

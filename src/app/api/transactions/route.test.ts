@@ -1,6 +1,9 @@
 import { afterEach, describe, it, expect, vi } from "vitest";
 import { NextRequest } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { inArray } from "drizzle-orm";
+import { db } from "@/lib/drizzle";
+import { accountMember, transaction, user as userTable } from "@/db/schema";
+import { toDbTimestamp } from "@/adapters/drizzle/timestamp";
 import { currentYearMonth } from "@/lib/plan-utils";
 
 const { mockAuth, mockCookieGet } = vi.hoisted(() => ({
@@ -20,38 +23,37 @@ import { GET } from "./route";
 let createdUserIds: string[] = [];
 
 async function makeUser(plan: "free" | "pro") {
-  const user = await prisma.user.create({
-    data: {
+  const [user] = await db
+    .insert(userTable)
+    .values({
+      id: crypto.randomUUID(),
       name: "Paywall User",
       email: `paywall-${crypto.randomUUID()}@example.com`,
       plan,
-    },
-  });
+    })
+    .returning();
   createdUserIds.push(user.id);
   return user;
+}
+
+async function seedTx(userId: string, description: string, amount: number, date: Date) {
+  const now = toDbTimestamp(new Date());
+  await db.insert(transaction).values({
+    id: crypto.randomUUID(),
+    userId,
+    type: "gasto",
+    description,
+    amount,
+    date: toDbTimestamp(date),
+    updatedAt: now,
+  });
 }
 
 /** Uma transação antiga (fora da janela free) e uma no mês corrente. */
 async function seedHistory(userId: string) {
   const [year, month] = currentYearMonth().split("-").map(Number);
-  await prisma.transaction.create({
-    data: {
-      userId,
-      type: "gasto",
-      description: "Gasto antigo",
-      amount: 100,
-      date: new Date(2020, 0, 15),
-    },
-  });
-  await prisma.transaction.create({
-    data: {
-      userId,
-      type: "gasto",
-      description: "Gasto atual",
-      amount: 200,
-      date: new Date(year, month - 1, 10),
-    },
-  });
+  await seedTx(userId, "Gasto antigo", 100, new Date(2020, 0, 15));
+  await seedTx(userId, "Gasto atual", 200, new Date(year, month - 1, 10));
 }
 
 function getRequest(qs: string) {
@@ -62,7 +64,7 @@ afterEach(async () => {
   // reset (não clear): descarta a implementação do cookie de delegação entre testes.
   vi.resetAllMocks();
   if (createdUserIds.length) {
-    await prisma.user.deleteMany({ where: { id: { in: createdUserIds } } });
+    await db.delete(userTable).where(inArray(userTable.id, createdUserIds));
     createdUserIds = [];
   }
 });
@@ -130,14 +132,13 @@ describe("GET /api/transactions — paywall de histórico (free)", () => {
 describe("GET /api/transactions — gate pelo plano do dono efetivo em delegação (ADR-0011)", () => {
   /** Convidado com delegação ativa na conta do dono (cookie + AccountMember). */
   async function delegate(ownerId: string, guestId: string) {
-    await prisma.accountMember.create({
-      data: {
-        ownerId,
-        memberId: guestId,
-        inviteEmail: `invite-${crypto.randomUUID()}@example.com`,
-        inviteToken: crypto.randomUUID(),
-        status: "active",
-      },
+    await db.insert(accountMember).values({
+      id: crypto.randomUUID(),
+      ownerId,
+      memberId: guestId,
+      inviteEmail: `invite-${crypto.randomUUID()}@example.com`,
+      inviteToken: crypto.randomUUID(),
+      status: "active",
     });
     mockAuth.mockResolvedValue({ user: { id: guestId } });
     mockCookieGet.mockImplementation((name: string) =>

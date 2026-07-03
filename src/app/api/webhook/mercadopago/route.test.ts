@@ -1,6 +1,8 @@
 import { afterEach, beforeEach, describe, it, expect, vi } from "vitest";
 import { createHmac } from "node:crypto";
-import { prisma } from "@/lib/prisma";
+import { eq, inArray } from "drizzle-orm";
+import { db } from "@/lib/drizzle";
+import { user as userTable } from "@/db/schema";
 
 const { mockPreApprovalGet } = vi.hoisted(() => ({ mockPreApprovalGet: vi.fn() }));
 
@@ -22,13 +24,15 @@ const REQUEST_ID = "req-abc";
 let createdUserIds: string[] = [];
 
 async function makeUser() {
-  const user = await prisma.user.create({
-    data: {
+  const [user] = await db
+    .insert(userTable)
+    .values({
+      id: crypto.randomUUID(),
       name: "MP User",
       email: `mp-${crypto.randomUUID()}@example.com`,
       plan: "free",
-    },
-  });
+    })
+    .returning();
   createdUserIds.push(user.id);
   return user;
 }
@@ -66,7 +70,7 @@ afterEach(async () => {
   vi.unstubAllEnvs();
   vi.clearAllMocks();
   if (createdUserIds.length) {
-    await prisma.user.deleteMany({ where: { id: { in: createdUserIds } } });
+    await db.delete(userTable).where(inArray(userTable.id, createdUserIds));
     createdUserIds = [];
   }
 });
@@ -108,7 +112,7 @@ describe("POST /api/webhook/mercadopago — verificação de assinatura", () => 
     const res = await POST(webhookRequest());
 
     expect(res.status).toBe(200);
-    const updated = await prisma.user.findUniqueOrThrow({ where: { id: user.id } });
+    const [updated] = await db.select().from(userTable).where(eq(userTable.id, user.id));
     expect(updated.plan).toBe("pro");
     expect(updated.mpSubscriptionId).toBe("sub-1");
   });

@@ -1,27 +1,26 @@
-import { afterAll, afterEach, describe, it, expect } from "vitest";
-import { prisma } from "@/lib/prisma";
+import { afterEach, describe, it, expect } from "vitest";
+import { eq, inArray } from "drizzle-orm";
+import { db } from "@/lib/drizzle";
+import { user as userTable } from "@/db/schema";
 import { apiKeysService } from "@/adapters";
 import { ApiKeyNotFoundError } from "@/core/apikeys";
 
 let createdUserIds: string[] = [];
 
 async function seedUser(plan = "pro") {
-  const user = await prisma.user.create({
-    data: { name: "ApiKey User", email: `apikey-${crypto.randomUUID()}@example.com`, plan },
-  });
-  createdUserIds.push(user.id);
-  return user;
+  const [row] = await db
+    .insert(userTable)
+    .values({ id: crypto.randomUUID(), name: "ApiKey User", email: `apikey-${crypto.randomUUID()}@example.com`, plan })
+    .returning();
+  createdUserIds.push(row.id);
+  return row;
 }
 
 afterEach(async () => {
   if (createdUserIds.length) {
-    await prisma.user.deleteMany({ where: { id: { in: createdUserIds } } });
+    await db.delete(userTable).where(inArray(userTable.id, createdUserIds));
     createdUserIds = [];
   }
-});
-
-afterAll(async () => {
-  await prisma.$disconnect();
 });
 
 describe("issueApiKey", () => {
@@ -87,7 +86,7 @@ describe("resolvePrincipal", () => {
   it("rejeita chave de usuário que sofreu downgrade para free", async () => {
     const user = await seedUser("pro");
     const issued = await apiKeysService.issueApiKey(user.id);
-    await prisma.user.update({ where: { id: user.id }, data: { plan: "free" } });
+    await db.update(userTable).set({ plan: "free" }).where(eq(userTable.id, user.id));
 
     expect(await apiKeysService.resolvePrincipal(issued.plain)).toBeNull();
   });

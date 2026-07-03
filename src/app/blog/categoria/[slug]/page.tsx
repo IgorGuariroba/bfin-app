@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { prisma } from "@/lib/prisma";
+import { and, desc, eq } from "drizzle-orm";
+import { db } from "@/lib/drizzle";
+import { post, user } from "@/db/schema";
+import { fromDbTimestampOrNull } from "@/adapters/drizzle/timestamp";
 import { LandingHeader } from "@/components/landing/landing-header";
 import { LandingFooter } from "@/components/landing/landing-footer";
 import { findCategoryBySlug, postExcerpt, readingMinutes } from "@/lib/blog";
@@ -24,19 +27,25 @@ export default async function BlogCategoryPage({ params }: { params: Promise<{ s
   const category = findCategoryBySlug(slug);
   if (!category) notFound();
 
-  const posts = await prisma.post.findMany({
-    where: { status: "published", category },
-    orderBy: { publishedAt: "desc" },
-    select: {
-      id: true,
-      slug: true,
-      title: true,
-      excerpt: true,
-      content: true,
-      publishedAt: true,
-      author: { select: { name: true } },
-    },
-  });
+  const rows = await db
+    .select({
+      id: post.id,
+      slug: post.slug,
+      title: post.title,
+      excerpt: post.excerpt,
+      content: post.content,
+      publishedAt: post.publishedAt,
+      authorName: user.name,
+    })
+    .from(post)
+    .innerJoin(user, eq(post.authorId, user.id))
+    .where(and(eq(post.status, "published"), eq(post.category, category)))
+    .orderBy(desc(post.publishedAt));
+  const posts = rows.map((p) => ({
+    ...p,
+    publishedAt: fromDbTimestampOrNull(p.publishedAt),
+    author: { name: p.authorName },
+  }));
 
   return (
     <div className="min-h-screen bg-canvas text-ink">

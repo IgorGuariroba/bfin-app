@@ -1,5 +1,8 @@
-import { afterAll, afterEach, describe, it, expect } from "vitest";
-import { prisma } from "@/lib/prisma";
+import { afterEach, describe, it, expect } from "vitest";
+import { inArray } from "drizzle-orm";
+import { db } from "@/lib/drizzle";
+import { previsao, transaction, user as userTable } from "@/db/schema";
+import { toDbTimestamp } from "@/adapters/drizzle/timestamp";
 import { insightsService } from "@/adapters";
 
 const { getTotais, getSaldos, getMonthSummary, getSugestoes } = insightsService;
@@ -7,15 +10,17 @@ const { getTotais, getSaldos, getMonthSummary, getSugestoes } = insightsService;
 let createdUserIds: string[] = [];
 
 async function seedUser() {
-  const user = await prisma.user.create({
-    data: {
+  const [row] = await db
+    .insert(userTable)
+    .values({
+      id: crypto.randomUUID(),
       name: "Insights User",
       email: `insights-${crypto.randomUUID()}@example.com`,
       plan: "pro",
-    },
-  });
-  createdUserIds.push(user.id);
-  return user;
+    })
+    .returning();
+  createdUserIds.push(row.id);
+  return row;
 }
 
 function tx(
@@ -24,20 +29,24 @@ function tx(
   amount: number,
   date: Date
 ) {
-  return prisma.transaction.create({
-    data: { userId, type, description: type, amount, date, source: "manual" },
+  const now = toDbTimestamp(new Date());
+  return db.insert(transaction).values({
+    id: crypto.randomUUID(),
+    userId,
+    type,
+    description: type,
+    amount,
+    date: toDbTimestamp(date),
+    source: "manual",
+    updatedAt: now,
   });
 }
 
 afterEach(async () => {
   if (createdUserIds.length) {
-    await prisma.user.deleteMany({ where: { id: { in: createdUserIds } } });
+    await db.delete(userTable).where(inArray(userTable.id, createdUserIds));
     createdUserIds = [];
   }
-});
-
-afterAll(async () => {
-  await prisma.$disconnect();
 });
 
 describe("getTotais", () => {
@@ -156,9 +165,7 @@ describe("getSugestoes", () => {
 
   it("aponta diário acima do previsto quando o gasto diário supera a Previsão", async () => {
     const user = await seedUser();
-    await prisma.previsao.create({
-      data: { userId: user.id, name: "Variável", amount: 30 },
-    });
+    await db.insert(previsao).values({ id: crypto.randomUUID(), userId: user.id, name: "Variável", amount: 30 });
     // Mês passado (maio): diário acumulado 3000 / 31 dias ≈ 96,7/dia >> previsão 30/31 ≈ 0,97/dia.
     await tx(user.id, "entrada", 9000, new Date(2026, 4, 1, 12)); // mantém saldo positivo
     await tx(user.id, "diario", 3000, new Date(2026, 4, 10, 12));

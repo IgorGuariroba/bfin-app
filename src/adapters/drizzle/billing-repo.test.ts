@@ -1,5 +1,8 @@
-import { afterAll, afterEach, beforeEach, describe, it, expect, vi } from "vitest";
-import { prisma } from "@/lib/prisma";
+import { afterEach, beforeEach, describe, it, expect, vi } from "vitest";
+import { eq, inArray } from "drizzle-orm";
+import { db } from "@/lib/drizzle";
+import { planConfig, user as userTable } from "@/db/schema";
+import { fromDbTimestampOrNull, toDbTimestamp } from "@/adapters/drizzle/timestamp";
 
 const { mockPreApprovalGet, mockPreApprovalCreate, mockPreApprovalUpdate } = vi.hoisted(() => ({
   mockPreApprovalGet: vi.fn(),
@@ -36,15 +39,20 @@ async function seedUser(opts: Partial<{
   wbraid: string;
   conversionReportedAt: Date;
 }> = {}) {
-  const user = await prisma.user.create({
-    data: {
+  const { planExpiresAt, conversionReportedAt, ...rest } = opts;
+  const [user] = await db
+    .insert(userTable)
+    .values({
+      id: crypto.randomUUID(),
       name: "Billing User",
       email: `billing-${crypto.randomUUID()}@example.com`,
-      ...opts,
-    },
-  });
+      ...rest,
+      planExpiresAt: planExpiresAt ? toDbTimestamp(planExpiresAt) : undefined,
+      conversionReportedAt: conversionReportedAt ? toDbTimestamp(conversionReportedAt) : undefined,
+    })
+    .returning();
   createdUserIds.push(user.id);
-  return user;
+  return { ...user, planExpiresAt: fromDbTimestampOrNull(user.planExpiresAt) };
 }
 
 beforeEach(() => {
@@ -54,15 +62,11 @@ beforeEach(() => {
 afterEach(async () => {
   vi.unstubAllEnvs();
   vi.clearAllMocks();
-  await prisma.planConfig.deleteMany({ where: { id: "default" } });
+  await db.delete(planConfig).where(eq(planConfig.id, "default"));
   if (createdUserIds.length) {
-    await prisma.user.deleteMany({ where: { id: { in: createdUserIds } } });
+    await db.delete(userTable).where(inArray(userTable.id, createdUserIds));
     createdUserIds = [];
   }
-});
-
-afterAll(async () => {
-  await prisma.$disconnect();
 });
 
 describe("getPlanConfig", () => {
@@ -70,7 +74,7 @@ describe("getPlanConfig", () => {
     const config = await billingService.getPlanConfig();
 
     expect(config).toMatchObject({ id: "default", monthlyAmount: 14.9, annualAmount: 119.9 });
-    const inDb = await prisma.planConfig.findUnique({ where: { id: "default" } });
+    const [inDb] = await db.select().from(planConfig).where(eq(planConfig.id, "default"));
     expect(inDb).toMatchObject({ monthlyAmount: 14.9, annualAmount: 119.9 });
   });
 
@@ -91,7 +95,7 @@ describe("updatePlanConfig", () => {
 
     expect(updated).toMatchObject({ monthlyAmount: 24.9, annualAmount: 249.9 });
     expect(updated.updatedAt.getTime()).toBeGreaterThanOrEqual(before.updatedAt.getTime());
-    const inDb = await prisma.planConfig.findUnique({ where: { id: "default" } });
+    const [inDb] = await db.select().from(planConfig).where(eq(planConfig.id, "default"));
     expect(inDb).toMatchObject({ monthlyAmount: 24.9, annualAmount: 249.9 });
   });
 });
@@ -128,7 +132,7 @@ describe("checkout", () => {
       click: { gclid: "click-1" },
     });
 
-    const inDb = await prisma.user.findUniqueOrThrow({ where: { id: user.id } });
+    const [inDb] = await db.select().from(userTable).where(eq(userTable.id, user.id));
     expect(inDb.gclid).toBe("click-1");
   });
 
@@ -144,7 +148,7 @@ describe("checkout", () => {
       click: { gclid: "click-novo" },
     });
 
-    const inDb = await prisma.user.findUniqueOrThrow({ where: { id: user.id } });
+    const [inDb] = await db.select().from(userTable).where(eq(userTable.id, user.id));
     expect(inDb.gclid).toBe("click-original");
   });
 });
@@ -156,7 +160,7 @@ describe("cancelSubscription", () => {
 
     await billingService.cancelSubscription(user.id);
 
-    const inDb = await prisma.user.findUniqueOrThrow({ where: { id: user.id } });
+    const [inDb] = await db.select().from(userTable).where(eq(userTable.id, user.id));
     expect(inDb.mpSubscriptionId).toBeNull();
     expect(inDb.plan).toBe("pro");
   });
@@ -173,7 +177,7 @@ describe("processSubscriptionEvent", () => {
 
     await billingService.processSubscriptionEvent("sub-2");
 
-    const inDb = await prisma.user.findUniqueOrThrow({ where: { id: user.id } });
+    const [inDb] = await db.select().from(userTable).where(eq(userTable.id, user.id));
     expect(inDb.plan).toBe("pro");
     expect(inDb.mpSubscriptionId).toBe("sub-2");
     expect(inDb.planExpiresAt).not.toBeNull();
@@ -189,7 +193,7 @@ describe("processSubscriptionEvent", () => {
 
     await billingService.processSubscriptionEvent("sub-3");
 
-    const inDb = await prisma.user.findUniqueOrThrow({ where: { id: user.id } });
+    const [inDb] = await db.select().from(userTable).where(eq(userTable.id, user.id));
     expect(inDb.mpSubscriptionId).toBeNull();
   });
 
@@ -210,7 +214,7 @@ describe("markConversionReported", () => {
 
     await drizzleBillingRepo.markConversionReported(user.id);
 
-    const inDb = await prisma.user.findUniqueOrThrow({ where: { id: user.id } });
+    const [inDb] = await db.select().from(userTable).where(eq(userTable.id, user.id));
     expect(inDb.conversionReportedAt).not.toBeNull();
   });
 

@@ -1,6 +1,8 @@
 import { afterEach, describe, it, expect, vi } from "vitest";
 import bcrypt from "bcryptjs";
-import { prisma } from "@/lib/prisma";
+import { inArray } from "drizzle-orm";
+import { db } from "@/lib/drizzle";
+import { user as userTable } from "@/db/schema";
 import { authorizeCredentials, clientIp } from "@/lib/credentials-authorize";
 import { LOGIN_RATE_LIMIT } from "@/lib/rate-limit";
 import { logger } from "@/lib/logger";
@@ -10,13 +12,15 @@ const PASSWORD = "senha-correta-123";
 let createdUserIds: string[] = [];
 
 async function makeUser() {
-  const user = await prisma.user.create({
-    data: {
+  const [user] = await db
+    .insert(userTable)
+    .values({
+      id: crypto.randomUUID(),
       name: "Login User",
       email: `login-${crypto.randomUUID()}@example.com`,
       password: await bcrypt.hash(PASSWORD, 4),
-    },
-  });
+    })
+    .returning();
   createdUserIds.push(user.id);
   return user;
 }
@@ -30,7 +34,7 @@ afterEach(async () => {
   vi.useRealTimers();
   vi.restoreAllMocks();
   if (createdUserIds.length) {
-    await prisma.user.deleteMany({ where: { id: { in: createdUserIds } } });
+    await db.delete(userTable).where(inArray(userTable.id, createdUserIds));
     createdUserIds = [];
   }
 });
@@ -147,7 +151,7 @@ describe("authorizeCredentials", () => {
       await authorizeCredentials({ email: user.email, password: PASSWORD }, ip)
     ).toBeNull();
 
-    // Só o Date é mockado: bcrypt/prisma continuam com scheduling real.
+    // Só o Date é mockado: bcrypt/drizzle continuam com scheduling real.
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(Date.now() + LOGIN_RATE_LIMIT.windowMs);
 

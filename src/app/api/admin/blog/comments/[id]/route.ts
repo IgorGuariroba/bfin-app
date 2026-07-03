@@ -1,4 +1,7 @@
-import { prisma } from "@/lib/prisma";
+import { eq } from "drizzle-orm";
+import { db } from "@/lib/drizzle";
+import { postComment } from "@/db/schema";
+import { fromDbTimestamp } from "@/adapters/drizzle/timestamp";
 import { requireBlogAdmin } from "@/lib/blog-admin";
 import { COMMENT_STATUSES, type CommentStatus } from "@/lib/blog";
 
@@ -10,16 +13,18 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   if (!status || !(COMMENT_STATUSES as readonly string[]).includes(status)) {
     return Response.json({ error: "Status inválido" }, { status: 400 });
   }
-  const comment = await prisma.postComment.update({
-    where: { id },
-    data: { status: status as CommentStatus },
-  });
-  return Response.json(comment);
+  const [comment] = await db
+    .update(postComment)
+    .set({ status: status as CommentStatus })
+    .where(eq(postComment.id, id))
+    .returning();
+  if (!comment) throw new Error(`PostComment ${id} not found`);
+  return Response.json({ ...comment, createdAt: fromDbTimestamp(comment.createdAt) });
 }
 
 export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   if (!(await requireBlogAdmin())) return Response.json({ error: "Forbidden" }, { status: 403 });
   const { id } = await params;
-  await prisma.postComment.deleteMany({ where: { id } });
+  await db.delete(postComment).where(eq(postComment.id, id));
   return Response.json({ ok: true });
 }

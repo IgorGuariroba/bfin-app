@@ -1,7 +1,9 @@
 import "server-only";
 
 import bcrypt from "bcryptjs";
-import { prisma } from "@/lib/prisma";
+import { eq } from "drizzle-orm";
+import { db } from "@/lib/drizzle";
+import { user as userTable } from "@/db/schema";
 import { checkRateLimit, LOGIN_RATE_LIMIT } from "@/lib/rate-limit";
 import { logger } from "@/lib/logger";
 
@@ -24,7 +26,7 @@ export async function authorizeCredentials(
     return null;
   }
 
-  const user = await prisma.user.findUnique({ where: { email } });
+  const [user] = await db.select().from(userTable).where(eq(userTable.email, email));
   if (!user || !user.password) {
     logger.warn({ ip, email }, "auth: login failed");
     return null;

@@ -1,21 +1,22 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ExternalLink } from "lucide-react";
-import { prisma } from "@/lib/prisma";
+import { asc, eq } from "drizzle-orm";
+import { db } from "@/lib/drizzle";
+import { post as postTable, postTopic } from "@/db/schema";
+import { attachTopics } from "@/lib/blog-db";
 import { PostEditor } from "@/components/blog/post-editor";
 import type { PostCategory, PostStatus } from "@/lib/blog";
 import { Button } from "@/components/ui/button";
 
 export default async function EditPostPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const [post, topics] = await Promise.all([
-    prisma.post.findUnique({
-      where: { id },
-      include: { topics: { select: { id: true } } },
-    }),
-    prisma.postTopic.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
+  const [[row], topics] = await Promise.all([
+    db.select().from(postTable).where(eq(postTable.id, id)),
+    db.select({ id: postTopic.id, name: postTopic.name }).from(postTopic).orderBy(asc(postTopic.name)),
   ]);
-  if (!post) notFound();
+  if (!row) notFound();
+  const [post] = await attachTopics([row]);
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">
