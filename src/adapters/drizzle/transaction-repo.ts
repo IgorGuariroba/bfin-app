@@ -182,6 +182,12 @@ export const drizzleTransactionRepo: TransactionRepo = {
     if (patch.date !== undefined) set.date = toDbTimestamp(patch.date);
 
     const [row] = await db.update(transaction).set(set).where(eq(transaction.id, id)).returning();
+    // O service sempre chama update() após um findById() bem-sucedido; row só
+    // fica undefined numa corrida (delete concorrente entre as duas chamadas).
+    // Sem esse guard, connectTags() estouraria FK e attachTags() um TypeError.
+    if (!row) {
+      throw new Error(`Transaction ${id} not found`);
+    }
 
     // `undefined` = não mexe nas tags; `[]` = desconecta todas (set vazio) —
     // substitui o conjunto por completo, igual ao `tags: { set }` do Prisma.
