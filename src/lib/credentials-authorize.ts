@@ -3,6 +3,7 @@ import "server-only";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { checkRateLimit, LOGIN_RATE_LIMIT } from "@/lib/rate-limit";
+import { logger } from "@/lib/logger";
 
 /**
  * Fluxo `authorize` do provider Credentials, extraído do NextAuth para ser
@@ -18,13 +19,22 @@ export async function authorizeCredentials(
   const email = credentials.email as string;
 
   const limit = checkRateLimit(`login:${ip}:${email}`, LOGIN_RATE_LIMIT);
-  if (!limit.allowed) return null;
+  if (!limit.allowed) {
+    logger.warn({ ip, email }, "auth: login rate limited");
+    return null;
+  }
 
   const user = await prisma.user.findUnique({ where: { email } });
-  if (!user || !user.password) return null;
+  if (!user || !user.password) {
+    logger.warn({ ip, email }, "auth: login failed");
+    return null;
+  }
 
   const isValid = await bcrypt.compare(credentials.password as string, user.password);
-  if (!isValid) return null;
+  if (!isValid) {
+    logger.warn({ ip, email }, "auth: login failed");
+    return null;
+  }
 
   return { id: user.id, name: user.name, email: user.email };
 }

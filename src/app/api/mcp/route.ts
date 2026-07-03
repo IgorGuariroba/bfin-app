@@ -3,6 +3,7 @@ import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/
 import { z } from "zod";
 import { resolvePrincipal } from "@/lib/mcp-principal";
 import { checkRateLimit, classifyRpc, RATE_LIMITS } from "@/lib/rate-limit";
+import { logger } from "@/lib/logger";
 import { insightsService, previsaoService, tagsService, transactionsService } from "@/adapters";
 import { suggestTag, suggestType, TransactionValidationError } from "@/core/transactions";
 import { TagValidationError } from "@/core/tags";
@@ -408,11 +409,13 @@ function buildServer(userId: string, apiKeyId: string): McpServer {
 export async function POST(request: Request) {
   const token = bearerToken(request);
   if (!token) {
+    logger.warn({ reason: "missing_token" }, "apikey: auth denied");
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const principal = await resolvePrincipal(token);
   if (!principal) {
+    logger.warn({ reason: "invalid_token" }, "apikey: auth denied");
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -423,6 +426,7 @@ export async function POST(request: Request) {
   const kind = classifyRpc(rawBody);
   const limit = checkRateLimit(`${principal.apiKeyId}:${kind}`, RATE_LIMITS[kind]);
   if (!limit.allowed) {
+    logger.warn({ apiKeyId: principal.apiKeyId, kind }, "apikey: rate limited");
     return Response.json(
       { error: "Rate limit exceeded" },
       { status: 429, headers: { "retry-after": String(limit.retryAfter) } }

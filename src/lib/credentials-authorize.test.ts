@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { authorizeCredentials, clientIp } from "@/lib/credentials-authorize";
 import { LOGIN_RATE_LIMIT } from "@/lib/rate-limit";
+import { logger } from "@/lib/logger";
 
 const PASSWORD = "senha-correta-123";
 
@@ -27,6 +28,7 @@ function uniqueIp() {
 
 afterEach(async () => {
   vi.useRealTimers();
+  vi.restoreAllMocks();
   if (createdUserIds.length) {
     await prisma.user.deleteMany({ where: { id: { in: createdUserIds } } });
     createdUserIds = [];
@@ -52,6 +54,35 @@ describe("authorizeCredentials", () => {
     expect(result).toBeNull();
   });
 
+  it("loga warn quando o usuário não existe", async () => {
+    const ip = uniqueIp();
+    const email = `nao-existe-${crypto.randomUUID()}@example.com`;
+    const warnSpy = vi.spyOn(logger, "warn");
+
+    await authorizeCredentials({ email, password: "qualquer" }, ip);
+
+    expect(warnSpy).toHaveBeenCalledWith({ ip, email }, "auth: login failed");
+  });
+
+  it("loga warn quando a senha é inválida", async () => {
+    const user = await makeUser();
+    const ip = uniqueIp();
+    const warnSpy = vi.spyOn(logger, "warn");
+
+    await authorizeCredentials({ email: user.email, password: "senha-errada" }, ip);
+
+    expect(warnSpy).toHaveBeenCalledWith({ ip, email: user.email }, "auth: login failed");
+  });
+
+  it("não loga warn em login bem-sucedido", async () => {
+    const user = await makeUser();
+    const warnSpy = vi.spyOn(logger, "warn");
+
+    await authorizeCredentials({ email: user.email, password: PASSWORD }, uniqueIp());
+
+    expect(warnSpy).not.toHaveBeenCalled();
+  });
+
   it("bloqueia além da cota mesmo com a senha correta (erro genérico)", async () => {
     const user = await makeUser();
     const ip = uniqueIp();
@@ -65,6 +96,22 @@ describe("authorizeCredentials", () => {
       ip
     );
     expect(result).toBeNull();
+  });
+
+  it("loga warn quando a cota é estourada", async () => {
+    const user = await makeUser();
+    const ip = uniqueIp();
+    for (let i = 0; i < LOGIN_RATE_LIMIT.limit; i++) {
+      await authorizeCredentials({ email: user.email, password: "senha-errada" }, ip);
+    }
+
+    const warnSpy = vi.spyOn(logger, "warn");
+    await authorizeCredentials({ email: user.email, password: PASSWORD }, ip);
+
+    expect(warnSpy).toHaveBeenCalledWith(
+      { ip, email: user.email },
+      "auth: login rate limited"
+    );
   });
 
   it("cota estourada não revela se o email existe (mesmo null para ambos)", async () => {

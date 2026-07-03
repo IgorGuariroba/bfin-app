@@ -62,13 +62,22 @@ afterAll(async () => {
 
 describe("POST /api/mcp", () => {
   it("retorna 401 sem header Authorization", async () => {
+    const warnSpy = vi.spyOn(logger, "warn");
+
     const res = await POST(
       mcpRequest(null, { jsonrpc: "2.0", method: "tools/list", id: 1 })
     );
+
     expect(res.status).toBe(401);
+    expect(warnSpy).toHaveBeenCalledWith(
+      { reason: "missing_token" },
+      "apikey: auth denied"
+    );
   });
 
   it("retorna 401 com token inválido", async () => {
+    const warnSpy = vi.spyOn(logger, "warn");
+
     const res = await POST(
       mcpRequest("sk-bfin-token-invalido", {
         jsonrpc: "2.0",
@@ -76,7 +85,12 @@ describe("POST /api/mcp", () => {
         id: 1,
       })
     );
+
     expect(res.status).toBe(401);
+    expect(warnSpy).toHaveBeenCalledWith(
+      { reason: "invalid_token" },
+      "apikey: auth denied"
+    );
   });
 
   it("cria uma Transaction com source=agent via create_transaction", async () => {
@@ -660,7 +674,7 @@ describe("POST /api/mcp", () => {
   });
 
   it("T21: estourar o limite de escrita por ApiKey retorna 429 com retry-after", async () => {
-    const { plain } = await seedProKey();
+    const { apiKey, plain } = await seedProKey();
 
     const createCall = (day: number) =>
       POST(
@@ -688,9 +702,14 @@ describe("POST /api/mcp", () => {
     }
 
     // A próxima escrita, dentro da mesma janela, é barrada.
+    const warnSpy = vi.spyOn(logger, "warn");
     const blocked = await createCall(RATE_LIMITS.write.limit + 1);
     expect(blocked.status).toBe(429);
     expect(Number(blocked.headers.get("retry-after"))).toBeGreaterThan(0);
+    expect(warnSpy).toHaveBeenCalledWith(
+      { apiKeyId: apiKey.id, kind: "write" },
+      "apikey: rate limited"
+    );
   });
 
   it("T22: create_transaction devolve o id no structuredContent (ADR-0006) para encadear correção", async () => {
