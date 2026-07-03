@@ -13,6 +13,7 @@ import type {
 import { fromDbTimestamp, toDbTimestamp } from "./timestamp";
 
 type TransactionRow = typeof transaction.$inferSelect;
+type DbOrTx = typeof db | Parameters<Parameters<typeof db.transaction>[0]>[0];
 
 function mapRow(row: TransactionRow): Transaction {
   return {
@@ -65,10 +66,11 @@ function dateConditions(date: DateRange | undefined) {
 }
 
 // Substitui o `tags: { connect }` do Prisma: insere os pares na tabela de
-// junção para cada combinação transactionId x tagId.
-async function connectTags(transactionIds: string[], tagIds: string[]) {
+// junção para cada combinação transactionId x tagId. Recebe `db` ou `tx` para
+// poder rodar dentro da mesma transação da escrita da Transaction.
+async function connectTags(client: DbOrTx, transactionIds: string[], tagIds: string[]) {
   if (transactionIds.length === 0 || tagIds.length === 0) return;
-  await db
+  await client
     .insert(tagToTransaction)
     .values(transactionIds.flatMap((txId) => tagIds.map((tagId) => ({ a: tagId, b: txId }))))
     .onConflictDoNothing();
@@ -79,13 +81,15 @@ export const drizzleTransactionRepo: TransactionRepo = {
     const conditions = [eq(transaction.userId, userId), ...dateConditions(date)];
     if (type) conditions.push(eq(transaction.type, type));
     if (tagId) {
-      const matches = await db
-        .select({ id: tagToTransaction.b })
-        .from(tagToTransaction)
-        .where(eq(tagToTransaction.a, tagId));
-      const ids = matches.map((m) => m.id);
-      if (ids.length === 0) return [];
-      conditions.push(inArray(transaction.id, ids));
+      // Subquery em vez de duas queries + IN em memória: evita carregar todos
+      // os ids da tag no Node e estourar o limite de parâmetros do Postgres
+      // (65535) quando a tag tem muitas transações.
+      conditions.push(
+        inArray(
+          transaction.id,
+          db.select({ id: tagToTransaction.b }).from(tagToTransaction).where(eq(tagToTransaction.a, tagId))
+        )
+      );
     }
 
     const rows = await db
@@ -128,23 +132,29 @@ export const drizzleTransactionRepo: TransactionRepo = {
   create: async (data, tagIds) => {
     const id = crypto.randomUUID();
     const now = toDbTimestamp(new Date());
-    const [row] = await db
-      .insert(transaction)
-      .values({
-        id,
-        userId: data.userId,
-        type: data.type,
-        description: data.description,
-        amount: data.amount,
-        date: toDbTimestamp(data.date),
-        source: data.source,
-        repeat: data.repeat,
-        repeatEnd: data.repeatEnd,
-        repeatCount: data.repeatCount,
-        updatedAt: now,
-      })
-      .returning();
-    if (tagIds?.length) await connectTags([id], tagIds);
+    // Transação de banco: se o insert das tags falhar, a Transaction não fica
+    // órfã sem tags (igual à garantia que o `tags: { connect }` do Prisma dava
+    // de graça via nested write).
+    const row = await db.transaction(async (tx) => {
+      const [newRow] = await tx
+        .insert(transaction)
+        .values({
+          id,
+          userId: data.userId,
+          type: data.type,
+          description: data.description,
+          amount: data.amount,
+          date: toDbTimestamp(data.date),
+          source: data.source,
+          repeat: data.repeat,
+          repeatEnd: data.repeatEnd,
+          repeatCount: data.repeatCount,
+          updatedAt: now,
+        })
+        .returning();
+      if (tagIds?.length) await connectTags(tx, [id], tagIds);
+      return newRow;
+    });
     const [result] = await attachTags([row]);
     return result;
   },
@@ -165,8 +175,10 @@ export const drizzleTransactionRepo: TransactionRepo = {
       repeatCount: d.repeatCount,
       updatedAt: now,
     }));
-    const created = await db.insert(transaction).values(rows).returning({ id: transaction.id });
-    if (tagIds?.length) await connectTags(created.map((r) => r.id), tagIds);
+    await db.transaction(async (tx) => {
+      const created = await tx.insert(transaction).values(rows).returning({ id: transaction.id });
+      if (tagIds?.length) await connectTags(tx, created.map((r) => r.id), tagIds);
+    });
   },
 
   findById: async (id) => {
@@ -181,20 +193,28 @@ export const drizzleTransactionRepo: TransactionRepo = {
     if (patch.amount !== undefined) set.amount = patch.amount;
     if (patch.date !== undefined) set.date = toDbTimestamp(patch.date);
 
-    const [row] = await db.update(transaction).set(set).where(eq(transaction.id, id)).returning();
-    // O service sempre chama update() após um findById() bem-sucedido; row só
-    // fica undefined numa corrida (delete concorrente entre as duas chamadas).
-    // Sem esse guard, connectTags() estouraria FK e attachTags() um TypeError.
-    if (!row) {
-      throw new Error(`Transaction ${id} not found`);
-    }
+    // Transação de banco: sem ela, um insert de tag falho depois do delete
+    // deixaria a Transaction sem nenhuma tag (perda de dado), já que o
+    // `tags: { set }` do Prisma dava essa atomicidade de graça.
+    const row = await db.transaction(async (tx) => {
+      const [updatedRow] = await tx.update(transaction).set(set).where(eq(transaction.id, id)).returning();
+      // O service sempre chama update() após um findById() bem-sucedido;
+      // updatedRow só fica undefined numa corrida (delete concorrente entre
+      // as duas chamadas). Sem esse guard, connectTags() estouraria FK e
+      // attachTags() um TypeError.
+      if (!updatedRow) {
+        throw new Error(`Transaction ${id} not found`);
+      }
 
-    // `undefined` = não mexe nas tags; `[]` = desconecta todas (set vazio) —
-    // substitui o conjunto por completo, igual ao `tags: { set }` do Prisma.
-    if (tagIds !== undefined) {
-      await db.delete(tagToTransaction).where(eq(tagToTransaction.b, id));
-      if (tagIds.length) await connectTags([id], tagIds);
-    }
+      // `undefined` = não mexe nas tags; `[]` = desconecta todas (set vazio) —
+      // substitui o conjunto por completo, igual ao `tags: { set }` do Prisma.
+      if (tagIds !== undefined) {
+        await tx.delete(tagToTransaction).where(eq(tagToTransaction.b, id));
+        if (tagIds.length) await connectTags(tx, [id], tagIds);
+      }
+
+      return updatedRow;
+    });
 
     const [result] = await attachTags([row]);
     return result;
