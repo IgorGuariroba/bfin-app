@@ -1,7 +1,8 @@
 import "server-only";
 import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
 import { isAdmin } from "@/lib/admin";
+import { billingService } from "@/adapters";
+import { BillingValidationError } from "@/core/billing";
 
 async function requireAdmin() {
   const session = await auth();
@@ -12,28 +13,21 @@ async function requireAdmin() {
 export async function GET() {
   if (!await requireAdmin()) return Response.json({ error: "Forbidden" }, { status: 403 });
 
-  const config = await prisma.planConfig.upsert({
-    where: { id: "default" },
-    update: {},
-    create: { id: "default", monthlyAmount: 14.9, annualAmount: 119.9 },
-  });
-
-  return Response.json(config);
+  return Response.json(await billingService.getPlanConfig());
 }
 
 export async function POST(request: Request) {
   if (!await requireAdmin()) return Response.json({ error: "Forbidden" }, { status: 403 });
 
   const { monthlyAmount, annualAmount } = await request.json();
-  if (typeof monthlyAmount !== "number" || typeof annualAmount !== "number") {
-    return Response.json({ error: "Valores inválidos" }, { status: 400 });
+
+  try {
+    const config = await billingService.updatePlanConfig({ monthlyAmount, annualAmount });
+    return Response.json(config);
+  } catch (err) {
+    if (err instanceof BillingValidationError) {
+      return Response.json({ error: err.message }, { status: 400 });
+    }
+    throw err;
   }
-
-  const config = await prisma.planConfig.upsert({
-    where: { id: "default" },
-    update: { monthlyAmount, annualAmount },
-    create: { id: "default", monthlyAmount, annualAmount },
-  });
-
-  return Response.json(config);
 }
