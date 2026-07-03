@@ -2,8 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { Check, ShieldCheck, Zap } from "lucide-react";
-import { prisma } from "@/lib/prisma";
-import { PLAN_PRICES } from "@/lib/mercadopago";
+import { billingService } from "@/adapters";
 
 export const dynamic = "force-dynamic";
 
@@ -31,13 +30,7 @@ const currencyFormatter = new Intl.NumberFormat("pt-BR", {
 const fmt = (v: number) => currencyFormatter.format(v);
 
 async function getPrices() {
-  const config = await prisma.planConfig.findUnique({
-    where: { id: "default" },
-  });
-  return {
-    monthly: config?.monthlyAmount ?? PLAN_PRICES.monthly.amount,
-    annual: config?.annualAmount ?? PLAN_PRICES.annual.amount,
-  };
+  return billingService.getPlanPrices();
 }
 
 const PRO_BENEFITS = [

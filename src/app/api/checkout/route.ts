@@ -1,74 +1,38 @@
 import "server-only";
 import { auth } from "@/lib/auth";
-import { PreApproval } from "mercadopago";
-import type { PreApprovalRequest } from "mercadopago/dist/clients/preApproval/commonTypes";
-import { mpClient, PLAN_PRICES, BillingCycle } from "@/lib/mercadopago";
-import { prisma } from "@/lib/prisma";
+import { billingService } from "@/adapters";
+import { BillingValidationError } from "@/core/billing";
 import type { NextRequest } from "next/server";
 
 export async function POST(request: NextRequest) {
   const session = await auth();
   if (!session?.user?.id) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
-  // Atribuição de marketing (ADR-0010): free existente que chega pelo anúncio e
-  // inicia o checkout. Grava o identificador de clique só se o User ainda não
-  // tiver nenhum (updateMany com as 3 colunas null — não sobrescreve atribuição
-  // prévia). Nunca bloqueia o checkout.
-  try {
-    const clickData = {
-      gclid: request.cookies.get("bfin_gclid")?.value,
-      gbraid: request.cookies.get("bfin_gbraid")?.value,
-      wbraid: request.cookies.get("bfin_wbraid")?.value,
-    };
-    if (clickData.gclid || clickData.gbraid || clickData.wbraid) {
-      await prisma.user.updateMany({
-        where: { id: session.user.id, gclid: null, gbraid: null, wbraid: null },
-        data: clickData,
-      });
-    }
-  } catch (e) {
-    console.error("[google-ads] falha ao capturar click id no checkout:", e);
-  }
-
   const body = await request.json();
-  const cycle = body?.cycle as BillingCycle | undefined;
-  if (!cycle || !PLAN_PRICES[cycle]) return Response.json({ error: "Ciclo inválido" }, { status: 400 });
-
-  const planConfig = await prisma.planConfig.findUnique({ where: { id: "default" } });
-  const price = {
-    amount: cycle === "annual"
-      ? (planConfig?.annualAmount ?? PLAN_PRICES.annual.amount)
-      : (planConfig?.monthlyAmount ?? PLAN_PRICES.monthly.amount),
-    label: PLAN_PRICES[cycle].label,
-  };
-
-  if (!session.user.email) {
-    return Response.json({ error: "Conta sem e-mail" }, { status: 400 });
-  }
-
-  const origin = process.env.APP_URL?.replace(/\/$/, "") ?? process.env.AUTH_URL?.replace(/\/$/, "") ?? request.nextUrl.origin;
+  const origin =
+    process.env.APP_URL?.replace(/\/$/, "") ??
+    process.env.AUTH_URL?.replace(/\/$/, "") ??
+    request.nextUrl.origin;
 
   try {
-    const preApproval = new PreApproval(mpClient);
-    const sub = await preApproval.create({
-      body: {
-        reason: `bfin Pro — ${price.label}`,
-        payer_email: session.user.email,
-        auto_recurring: {
-          frequency: cycle === "annual" ? 12 : 1,
-          frequency_type: "months",
-          transaction_amount: price.amount,
-          currency_id: "BRL",
-        },
-        back_url: `${origin}/assinar`,
-        notification_url: `${origin}/api/webhook/mercadopago`,
-        external_reference: `${session.user.id}:${cycle}`,
-        // O tipo do SDK do Mercado Pago não cobre notification_url no body do
-        // PreApproval, embora a API aceite. Cast localizado em vez de any solto.
-      } as PreApprovalRequest,
+    const { initPoint } = await billingService.checkout({
+      userId: session.user.id,
+      email: session.user.email,
+      cycle: body?.cycle,
+      origin,
+      // Atribuição de marketing (ADR-0010): cookies são adapter — o core decide
+      // se/como gravar sem sobrescrever atribuição prévia.
+      click: {
+        gclid: request.cookies.get("bfin_gclid")?.value,
+        gbraid: request.cookies.get("bfin_gbraid")?.value,
+        wbraid: request.cookies.get("bfin_wbraid")?.value,
+      },
     });
-    return Response.json({ init_point: sub.init_point });
+    return Response.json({ init_point: initPoint });
   } catch (err) {
+    if (err instanceof BillingValidationError) {
+      return Response.json({ error: err.message }, { status: 400 });
+    }
     const message = err instanceof Error ? err.message : "Erro MP";
     console.error("[checkout] error:", message);
     return Response.json({ error: message }, { status: 500 });
