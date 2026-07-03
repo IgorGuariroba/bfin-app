@@ -1,6 +1,9 @@
 import type { MetadataRoute } from "next";
+import { eq } from "drizzle-orm";
 import { SITE_URL } from "@/lib/site-url";
-import { prisma } from "@/lib/prisma";
+import { db } from "@/lib/drizzle";
+import { post } from "@/db/schema";
+import { fromDbTimestamp } from "@/adapters/drizzle/timestamp";
 import { POST_CATEGORIES, categorySlug } from "@/lib/blog";
 
 export const dynamic = "force-dynamic";
@@ -8,10 +11,11 @@ export const dynamic = "force-dynamic";
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
 
-  const posts = await prisma.post.findMany({
-    where: { status: "published" },
-    select: { slug: true, updatedAt: true },
-  });
+  const rows = await db
+    .select({ slug: post.slug, updatedAt: post.updatedAt })
+    .from(post)
+    .where(eq(post.status, "published"));
+  const posts = rows.map((p) => ({ slug: p.slug, updatedAt: fromDbTimestamp(p.updatedAt) }));
 
   return [
     { url: `${SITE_URL}/`, lastModified: now, priority: 1, changeFrequency: "weekly" },

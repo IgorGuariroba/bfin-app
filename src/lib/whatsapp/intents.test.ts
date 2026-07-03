@@ -1,18 +1,17 @@
-import { afterAll, describe, it, expect } from "vitest";
-import { prisma } from "@/lib/prisma";
+import { describe, it, expect } from "vitest";
+import { sql } from "drizzle-orm";
+import { db } from "@/lib/drizzle";
+import { planConfig } from "@/db/schema";
+import { toDbTimestamp } from "@/adapters/drizzle/timestamp";
 import { priceText, detectIntent, isDeleteKeyword } from "./intents";
-
-afterAll(async () => {
-  await prisma.$disconnect();
-});
 
 describe("priceText", () => {
   it("responde com os preços correntes do PlanConfig (fonte única de preço)", async () => {
-    const config = await prisma.planConfig.upsert({
-      where: { id: "default" },
-      update: {},
-      create: { id: "default", monthlyAmount: 14.9, annualAmount: 119.9 },
-    });
+    const [config] = await db
+      .insert(planConfig)
+      .values({ id: "default", monthlyAmount: 14.9, annualAmount: 119.9, updatedAt: toDbTimestamp(new Date()) })
+      .onConflictDoUpdate({ target: planConfig.id, set: { id: sql`excluded.id` } })
+      .returning();
     const brl = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
 
     const text = await priceText();

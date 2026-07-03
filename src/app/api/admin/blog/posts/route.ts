@@ -1,14 +1,34 @@
-import { Prisma } from "@/generated/prisma/client";
-import { prisma } from "@/lib/prisma";
+import { desc, eq, inArray } from "drizzle-orm";
+import { db } from "@/lib/drizzle";
+import { post, postTopic, user } from "@/db/schema";
+import { fromDbTimestamp, fromDbTimestampOrNull, toDbTimestamp } from "@/adapters/drizzle/timestamp";
+import { attachTopics, setPostTopics } from "@/lib/blog-db";
+import { isUniqueViolation } from "@/lib/db-errors";
 import { requireBlogAdmin } from "@/lib/blog-admin";
 import { POST_CATEGORIES, POST_STATUSES, slugify, type PostCategory, type PostStatus } from "@/lib/blog";
 
+function serializePost(row: typeof post.$inferSelect) {
+  return {
+    ...row,
+    publishedAt: fromDbTimestampOrNull(row.publishedAt),
+    createdAt: fromDbTimestamp(row.createdAt),
+    updatedAt: fromDbTimestamp(row.updatedAt),
+  };
+}
+
 export async function GET() {
   if (!(await requireBlogAdmin())) return Response.json({ error: "Forbidden" }, { status: 403 });
-  const posts = await prisma.post.findMany({
-    orderBy: { updatedAt: "desc" },
-    include: { author: { select: { name: true } }, topics: { select: { id: true, name: true } } },
-  });
+  const rows = await db
+    .select({ post, authorName: user.name })
+    .from(post)
+    .innerJoin(user, eq(post.authorId, user.id))
+    .orderBy(desc(post.updatedAt));
+  const withTopics = await attachTopics(rows.map((r) => ({ id: r.post.id, ...r })));
+  const posts = withTopics.map((r) => ({
+    ...serializePost(r.post),
+    author: { name: r.authorName },
+    topics: r.topics.map((t) => ({ id: t.id, name: t.name })),
+  }));
   return Response.json(posts);
 }
 
@@ -43,10 +63,7 @@ export async function POST(req: Request) {
 
   let validTopicIds: string[] = [];
   if (topicIds.length > 0) {
-    const found = await prisma.postTopic.findMany({
-      where: { id: { in: topicIds } },
-      select: { id: true },
-    });
+    const found = await db.select({ id: postTopic.id }).from(postTopic).where(inArray(postTopic.id, topicIds));
     validTopicIds = found.map((t) => t.id);
     if (validTopicIds.length !== topicIds.length) {
       return Response.json({ error: "Um ou mais tópicos não existem" }, { status: 400 });
@@ -57,25 +74,32 @@ export async function POST(req: Request) {
   let slug = baseSlug;
   for (let attempt = 1; attempt <= 10; attempt += 1) {
     try {
-      const post = await prisma.post.create({
-        data: {
-          slug,
-          title,
-          excerpt,
-          content,
-          coverImageUrl,
-          category: category as PostCategory,
-          status,
-          publishedAt: status === "published" ? new Date() : null,
-          metaTitle,
-          metaDescription,
-          authorId: session.user!.id!,
-          topics: { connect: validTopicIds.map((id) => ({ id })) },
-        },
+      const now = toDbTimestamp(new Date());
+      const created = await db.transaction(async (tx) => {
+        const [row] = await tx
+          .insert(post)
+          .values({
+            id: crypto.randomUUID(),
+            slug,
+            title,
+            excerpt,
+            content,
+            coverImageUrl,
+            category: category as PostCategory,
+            status,
+            publishedAt: status === "published" ? now : null,
+            metaTitle,
+            metaDescription,
+            authorId: session.user!.id!,
+            updatedAt: now,
+          })
+          .returning();
+        await setPostTopics(tx, row.id, validTopicIds);
+        return row;
       });
-      return Response.json(post, { status: 201 });
+      return Response.json(serializePost(created), { status: 201 });
     } catch (err) {
-      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
+      if (isUniqueViolation(err)) {
         slug = `${baseSlug}-${attempt + 1}`;
         continue;
       }
@@ -84,4 +108,3 @@ export async function POST(req: Request) {
   }
   return Response.json({ error: "Não foi possível gerar slug único" }, { status: 409 });
 }
-

@@ -1,6 +1,9 @@
 import Link from "next/link";
 import { FileText, MessageCircle, Users, DollarSign, AlertTriangle, MessagesSquare } from "lucide-react";
-import { prisma } from "@/lib/prisma";
+import { count, desc, eq, inArray } from "drizzle-orm";
+import { db } from "@/lib/drizzle";
+import { planConfig, post, postComment, user, whatsappContact, whatsappConversation } from "@/db/schema";
+import { fromDbTimestamp } from "@/adapters/drizzle/timestamp";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -11,38 +14,55 @@ const dateFmt = new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle
 
 export default async function AdminDashboardPage() {
   const [
-    totalUsers,
-    proUsers,
-    publishedPosts,
-    draftPosts,
-    pendingComments,
-    waitingWhatsapp,
-    activeWhatsapp,
-    planConfig,
-    recentPosts,
-    recentConversations,
+    [{ n: totalUsers }],
+    [{ n: proUsers }],
+    [{ n: publishedPosts }],
+    [{ n: draftPosts }],
+    [{ n: pendingComments }],
+    [{ n: waitingWhatsapp }],
+    [{ n: activeWhatsapp }],
+    [planConfigRow],
+    recentPostRows,
+    recentConversationRows,
   ] = await Promise.all([
-    prisma.user.count(),
-    prisma.user.count({ where: { plan: "pro" } }),
-    prisma.post.count({ where: { status: "published" } }),
-    prisma.post.count({ where: { status: "draft" } }),
-    prisma.postComment.count({ where: { status: "pending" } }),
-    prisma.whatsappConversation.count({ where: { status: "waiting_human" } }),
-    prisma.whatsappConversation.count({ where: { status: { in: ["bot", "human", "waiting_human"] } } }),
-    prisma.planConfig.findFirst().catch(() => null),
-    prisma.post.findMany({
-      orderBy: { updatedAt: "desc" },
-      take: 5,
-      select: { id: true, title: true, status: true, updatedAt: true },
-    }),
-    prisma.whatsappConversation.findMany({
-      orderBy: { lastMessageAt: "desc" },
-      take: 5,
-      include: { contact: { select: { name: true, phone: true } } },
-    }),
+    db.select({ n: count() }).from(user),
+    db.select({ n: count() }).from(user).where(eq(user.plan, "pro")),
+    db.select({ n: count() }).from(post).where(eq(post.status, "published")),
+    db.select({ n: count() }).from(post).where(eq(post.status, "draft")),
+    db.select({ n: count() }).from(postComment).where(eq(postComment.status, "pending")),
+    db.select({ n: count() }).from(whatsappConversation).where(eq(whatsappConversation.status, "waiting_human")),
+    db
+      .select({ n: count() })
+      .from(whatsappConversation)
+      .where(inArray(whatsappConversation.status, ["bot", "human", "waiting_human"])),
+    db.select().from(planConfig).limit(1).catch(() => [null]),
+    db
+      .select({ id: post.id, title: post.title, status: post.status, updatedAt: post.updatedAt })
+      .from(post)
+      .orderBy(desc(post.updatedAt))
+      .limit(5),
+    db
+      .select({
+        id: whatsappConversation.id,
+        status: whatsappConversation.status,
+        lastMessageAt: whatsappConversation.lastMessageAt,
+        contactName: whatsappContact.name,
+        contactPhone: whatsappContact.phone,
+      })
+      .from(whatsappConversation)
+      .innerJoin(whatsappContact, eq(whatsappConversation.contactId, whatsappContact.id))
+      .orderBy(desc(whatsappConversation.lastMessageAt))
+      .limit(5),
   ]);
 
-  const mrr = planConfig ? proUsers * planConfig.monthlyAmount : 0;
+  const recentPosts = recentPostRows.map((p) => ({ ...p, updatedAt: fromDbTimestamp(p.updatedAt) }));
+  const recentConversations = recentConversationRows.map((c) => ({
+    ...c,
+    lastMessageAt: fromDbTimestamp(c.lastMessageAt),
+    contact: { name: c.contactName, phone: c.contactPhone },
+  }));
+
+  const mrr = planConfigRow ? proUsers * planConfigRow.monthlyAmount : 0;
 
   return (
     <div className="mx-auto max-w-7xl space-y-6">

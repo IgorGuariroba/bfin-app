@@ -1,5 +1,9 @@
 import "server-only";
-import { prisma } from "@/lib/prisma";
+import { count, eq, sql } from "drizzle-orm";
+import { db } from "@/lib/drizzle";
+import { whatsappContact, whatsappConversation, whatsappMessage } from "@/db/schema";
+import { toDbTimestamp } from "@/adapters/drizzle/timestamp";
+import { isUniqueViolation } from "@/lib/db-errors";
 import { sendListMenu, sendText } from "@/lib/whatsapp/client";
 import {
   DELETE_CONFIRMED_TEXT,
@@ -36,29 +40,36 @@ async function upsertContactAndConversation(
   phone: string,
   profileName: string | undefined,
 ): Promise<Conversation> {
-  const contact = await prisma.whatsappContact.upsert({
-    where: { phone },
-    update: profileName ? { name: profileName } : {},
-    create: { phone, name: profileName ?? null },
-  });
+  const [contact] = await db
+    .insert(whatsappContact)
+    .values({ id: crypto.randomUUID(), phone, name: profileName ?? null })
+    .onConflictDoUpdate({
+      target: whatsappContact.phone,
+      set: profileName ? { name: profileName } : { id: sql`excluded.id` },
+    })
+    .returning();
 
-  const conversation = await prisma.whatsappConversation.upsert({
-    where: { contactId: contact.id },
-    update: {},
-    create: { contactId: contact.id, status: "bot" },
-  });
+  const [conversation] = await db
+    .insert(whatsappConversation)
+    .values({ id: crypto.randomUUID(), contactId: contact.id, status: "bot" })
+    .onConflictDoUpdate({
+      target: whatsappConversation.contactId,
+      set: { id: sql`excluded.id` },
+    })
+    .returning();
 
   if (conversation.status === "closed") {
-    await prisma.whatsappConversation.update({
-      where: { id: conversation.id },
-      data: { status: "bot", lastMessageAt: new Date() },
-    });
+    await db
+      .update(whatsappConversation)
+      .set({ status: "bot", lastMessageAt: toDbTimestamp(new Date()) })
+      .where(eq(whatsappConversation.id, conversation.id));
     conversation.status = "bot";
   }
 
-  const messageCount = await prisma.whatsappMessage.count({
-    where: { conversationId: conversation.id },
-  });
+  const [{ n: messageCount }] = await db
+    .select({ n: count() })
+    .from(whatsappMessage)
+    .where(eq(whatsappMessage.conversationId, conversation.id));
 
   return {
     id: conversation.id,
@@ -80,22 +91,21 @@ async function persistInbound(
         : "[unknown]";
 
   try {
-    await prisma.whatsappMessage.create({
-      data: {
-        conversationId,
-        direction: "inbound",
-        sender: "contact",
-        body,
-        wamid: message.wamid,
-      },
+    await db.insert(whatsappMessage).values({
+      id: crypto.randomUUID(),
+      conversationId,
+      direction: "inbound",
+      sender: "contact",
+      body,
+      wamid: message.wamid,
     });
-    await prisma.whatsappConversation.update({
-      where: { id: conversationId },
-      data: { lastMessageAt: new Date() },
-    });
+    await db
+      .update(whatsappConversation)
+      .set({ lastMessageAt: toDbTimestamp(new Date()) })
+      .where(eq(whatsappConversation.id, conversationId));
     return { duplicate: false };
   } catch (err) {
-    if (err instanceof Error && err.message.includes("Unique constraint")) {
+    if (isUniqueViolation(err)) {
       return { duplicate: true };
     }
     throw err;
@@ -108,8 +118,13 @@ async function persistOutbound(
   sender: "bot" | "admin",
   wamid: string | undefined,
 ): Promise<void> {
-  await prisma.whatsappMessage.create({
-    data: { conversationId, direction: "outbound", sender, body, wamid: wamid ?? null },
+  await db.insert(whatsappMessage).values({
+    id: crypto.randomUUID(),
+    conversationId,
+    direction: "outbound",
+    sender,
+    body,
+    wamid: wamid ?? null,
   });
 }
 
@@ -131,14 +146,14 @@ async function respondIntent(to: string, conversationId: string, intent: IntentI
 }
 
 async function setStatus(conversationId: string, status: string): Promise<void> {
-  await prisma.whatsappConversation.update({
-    where: { id: conversationId },
-    data: { status },
-  });
+  await db
+    .update(whatsappConversation)
+    .set({ status })
+    .where(eq(whatsappConversation.id, conversationId));
 }
 
 async function handleDelete(conversationId: string, contactId: string, to: string): Promise<void> {
-  await prisma.whatsappContact.delete({ where: { id: contactId } });
+  await db.delete(whatsappContact).where(eq(whatsappContact.id, contactId));
   await sendText(to, DELETE_CONFIRMED_TEXT);
 }
 

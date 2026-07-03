@@ -1,4 +1,7 @@
-import { prisma } from "@/lib/prisma";
+import { desc, eq } from "drizzle-orm";
+import { db } from "@/lib/drizzle";
+import { post, user } from "@/db/schema";
+import { fromDbTimestampOrNull } from "@/adapters/drizzle/timestamp";
 import { SITE_URL } from "@/lib/site-url";
 import { postExcerpt } from "@/lib/blog";
 
@@ -14,30 +17,32 @@ function escapeXml(s: string): string {
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const posts = await prisma.post.findMany({
-    where: { status: "published" },
-    orderBy: { publishedAt: "desc" },
-    take: 50,
-    select: {
-      slug: true,
-      title: true,
-      excerpt: true,
-      content: true,
-      publishedAt: true,
-      author: { select: { name: true } },
-    },
-  });
+  const rows = await db
+    .select({
+      slug: post.slug,
+      title: post.title,
+      excerpt: post.excerpt,
+      content: post.content,
+      publishedAt: post.publishedAt,
+      authorName: user.name,
+    })
+    .from(post)
+    .innerJoin(user, eq(post.authorId, user.id))
+    .where(eq(post.status, "published"))
+    .orderBy(desc(post.publishedAt))
+    .limit(50);
 
-  const items = posts
+  const items = rows
     .map((p) => {
       const url = `${SITE_URL}/blog/${p.slug}`;
-      const pubDate = p.publishedAt?.toUTCString() ?? new Date().toUTCString();
+      const publishedAt = fromDbTimestampOrNull(p.publishedAt);
+      const pubDate = publishedAt?.toUTCString() ?? new Date().toUTCString();
       return `    <item>
       <title>${escapeXml(p.title)}</title>
       <link>${url}</link>
       <guid isPermaLink="true">${url}</guid>
       <pubDate>${pubDate}</pubDate>
-      <author>noreply@bfincont.com.br (${escapeXml(p.author.name)})</author>
+      <author>noreply@bfincont.com.br (${escapeXml(p.authorName)})</author>
       <description>${escapeXml(postExcerpt(p))}</description>
     </item>`;
     })

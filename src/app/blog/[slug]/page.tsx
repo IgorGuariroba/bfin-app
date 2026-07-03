@@ -1,7 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { prisma } from "@/lib/prisma";
+import { and, asc, eq, inArray } from "drizzle-orm";
+import { db } from "@/lib/drizzle";
+import { post, postComment, user } from "@/db/schema";
+import { fromDbTimestamp, fromDbTimestampOrNull } from "@/adapters/drizzle/timestamp";
+import { attachTopics } from "@/lib/blog-db";
 import { LandingHeader } from "@/components/landing/landing-header";
 import { LandingFooter } from "@/components/landing/landing-footer";
 import { Markdown } from "@/components/blog/markdown";
@@ -12,13 +16,32 @@ import { CommentForm } from "@/components/blog/comment-form";
 const dateFmt = new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "long", year: "numeric" });
 
 async function getPost(slug: string) {
-  return prisma.post.findFirst({
-    where: { slug, status: { in: ["published", "archived"] } },
-    include: {
-      author: { select: { name: true } },
-      topics: { select: { name: true, slug: true } },
-    },
-  });
+  const [row] = await db
+    .select({
+      id: post.id,
+      slug: post.slug,
+      title: post.title,
+      excerpt: post.excerpt,
+      content: post.content,
+      coverImageUrl: post.coverImageUrl,
+      category: post.category,
+      status: post.status,
+      metaTitle: post.metaTitle,
+      metaDescription: post.metaDescription,
+      publishedAt: post.publishedAt,
+      authorName: user.name,
+    })
+    .from(post)
+    .innerJoin(user, eq(post.authorId, user.id))
+    .where(and(eq(post.slug, slug), inArray(post.status, ["published", "archived"])));
+  if (!row) return null;
+
+  const [withTopics] = await attachTopics([row]);
+  return {
+    ...withTopics,
+    publishedAt: fromDbTimestampOrNull(row.publishedAt),
+    author: { name: row.authorName },
+  };
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
@@ -67,14 +90,21 @@ export default async function PostPage({ params }: { params: Promise<{ slug: str
     );
   }
 
-  const [session, comments] = await Promise.all([
+  const [session, commentRows] = await Promise.all([
     auth(),
-    prisma.postComment.findMany({
-      where: { postId: post.id, status: "approved" },
-      orderBy: { createdAt: "asc" },
-      include: { user: { select: { name: true } } },
-    }),
+    db
+      .select({ id: postComment.id, body: postComment.body, createdAt: postComment.createdAt, userName: user.name })
+      .from(postComment)
+      .innerJoin(user, eq(postComment.userId, user.id))
+      .where(and(eq(postComment.postId, post.id), eq(postComment.status, "approved")))
+      .orderBy(asc(postComment.createdAt)),
   ]);
+  const comments = commentRows.map((c) => ({
+    id: c.id,
+    body: c.body,
+    createdAt: fromDbTimestamp(c.createdAt),
+    user: { name: c.userName },
+  }));
 
   return (
     <div className="min-h-screen bg-canvas text-ink">

@@ -1,5 +1,7 @@
-import { afterAll, afterEach, describe, it, expect, vi } from "vitest";
-import { prisma } from "@/lib/prisma";
+import { afterEach, describe, it, expect, vi } from "vitest";
+import { eq, inArray } from "drizzle-orm";
+import { db } from "@/lib/drizzle";
+import { apiKey, user as userTable } from "@/db/schema";
 import { generateApiKey } from "@/lib/api-key";
 import { logger } from "@/lib/logger";
 import { recordAgentWrite } from "@/lib/agent-audit";
@@ -7,31 +9,30 @@ import { recordAgentWrite } from "@/lib/agent-audit";
 let createdUserIds: string[] = [];
 
 async function seedApiKey() {
-  const user = await prisma.user.create({
-    data: {
+  const [user] = await db
+    .insert(userTable)
+    .values({
+      id: crypto.randomUUID(),
       name: "Audit User",
       email: `audit-${crypto.randomUUID()}@example.com`,
       plan: "pro",
-    },
-  });
+    })
+    .returning();
   createdUserIds.push(user.id);
   const { prefix, hashedKey } = generateApiKey();
-  const apiKey = await prisma.apiKey.create({
-    data: { userId: user.id, name: "Assistente", prefix, hashedKey },
-  });
-  return { user, apiKey };
+  const [key] = await db
+    .insert(apiKey)
+    .values({ id: crypto.randomUUID(), userId: user.id, name: "Assistente", prefix, hashedKey })
+    .returning();
+  return { user, apiKey: key };
 }
 
 afterEach(async () => {
   vi.restoreAllMocks();
   if (createdUserIds.length) {
-    await prisma.user.deleteMany({ where: { id: { in: createdUserIds } } });
+    await db.delete(userTable).where(inArray(userTable.id, createdUserIds));
     createdUserIds = [];
   }
-});
-
-afterAll(async () => {
-  await prisma.$disconnect();
 });
 
 describe("recordAgentWrite", () => {
@@ -58,17 +59,17 @@ describe("recordAgentWrite", () => {
   });
 
   it("atualiza ApiKey.lastUsedAt", async () => {
-    const { user, apiKey } = await seedApiKey();
-    expect(apiKey.lastUsedAt).toBeNull();
+    const { user, apiKey: key } = await seedApiKey();
+    expect(key.lastUsedAt).toBeNull();
 
     await recordAgentWrite({
-      apiKeyId: apiKey.id,
+      apiKeyId: key.id,
       userId: user.id,
       action: "create",
       entityId: "tx-456",
     });
 
-    const stored = await prisma.apiKey.findUnique({ where: { id: apiKey.id } });
+    const [stored] = await db.select().from(apiKey).where(eq(apiKey.id, key.id));
     expect(stored?.lastUsedAt).not.toBeNull();
   });
 });

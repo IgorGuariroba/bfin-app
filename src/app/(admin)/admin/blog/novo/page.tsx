@@ -1,12 +1,14 @@
-import { prisma } from "@/lib/prisma";
+import { asc } from "drizzle-orm";
+import { db } from "@/lib/drizzle";
+import { postTopic } from "@/db/schema";
 import { PostEditor } from "@/components/blog/post-editor";
 import { POST_CATEGORIES } from "@/lib/blog";
 
 export default async function NewPostPage() {
-  const topics = await prisma.postTopic.findMany({
-    orderBy: { name: "asc" },
-    select: { id: true, name: true },
-  });
+  const topics = await db
+    .select({ id: postTopic.id, name: postTopic.name })
+    .from(postTopic)
+    .orderBy(asc(postTopic.name));
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">

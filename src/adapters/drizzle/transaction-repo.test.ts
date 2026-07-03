@@ -1,5 +1,8 @@
-import { afterAll, afterEach, describe, it, expect } from "vitest";
-import { prisma } from "@/lib/prisma";
+import { afterEach, describe, it, expect } from "vitest";
+import { and, eq, inArray } from "drizzle-orm";
+import { db } from "@/lib/drizzle";
+import { tag, tagToTransaction, transaction, user as userTable } from "@/db/schema";
+import { fromDbTimestamp, toDbTimestamp } from "@/adapters/drizzle/timestamp";
 import { transactionsService } from "@/adapters";
 import {
   MAX_LIST_RESULTS,
@@ -16,26 +19,86 @@ const { createTransaction, updateTransaction, deleteTransaction, listTransaction
 let createdUserIds: string[] = [];
 
 async function seedUser() {
-  const user = await prisma.user.create({
-    data: {
+  const [row] = await db
+    .insert(userTable)
+    .values({
+      id: crypto.randomUUID(),
       name: "Test User",
       email: `test-${crypto.randomUUID()}@example.com`,
       plan: "pro",
-    },
-  });
-  createdUserIds.push(user.id);
-  return user;
+    })
+    .returning();
+  createdUserIds.push(row.id);
+  return row;
+}
+
+async function seedTag(userId: string, name: string, color: string) {
+  const [row] = await db.insert(tag).values({ id: crypto.randomUUID(), userId, name, color }).returning();
+  return row;
+}
+
+async function seedTransaction(data: {
+  userId: string;
+  type: string;
+  description: string;
+  amount: number;
+  date: Date;
+  source?: string;
+  externalId?: string;
+}) {
+  const now = toDbTimestamp(new Date());
+  const [row] = await db
+    .insert(transaction)
+    .values({
+      id: crypto.randomUUID(),
+      userId: data.userId,
+      type: data.type,
+      description: data.description,
+      amount: data.amount,
+      date: toDbTimestamp(data.date),
+      source: data.source ?? "manual",
+      externalId: data.externalId,
+      updatedAt: now,
+    })
+    .returning();
+  return { ...row, date: fromDbTimestamp(row.date) };
+}
+
+async function findTransaction(id: string) {
+  const [row] = await db.select().from(transaction).where(eq(transaction.id, id));
+  return row ? { ...row, date: fromDbTimestamp(row.date) } : null;
+}
+
+async function findTransactions(userId: string) {
+  const rows = await db.select().from(transaction).where(eq(transaction.userId, userId));
+  return rows.map((r) => ({ ...r, date: fromDbTimestamp(r.date) }));
+}
+
+async function countTransactions(userId: string) {
+  return (await findTransactions(userId)).length;
+}
+
+async function tagsOf(transactionId: string) {
+  return db
+    .select({ id: tag.id, name: tag.name, color: tag.color })
+    .from(tagToTransaction)
+    .innerJoin(tag, eq(tag.id, tagToTransaction.a))
+    .where(eq(tagToTransaction.b, transactionId));
+}
+
+async function transactionsWithTag(userId: string, tagId: string) {
+  return db
+    .select({ id: transaction.id })
+    .from(transaction)
+    .innerJoin(tagToTransaction, eq(tagToTransaction.b, transaction.id))
+    .where(and(eq(transaction.userId, userId), eq(tagToTransaction.a, tagId)));
 }
 
 afterEach(async () => {
   if (createdUserIds.length) {
-    await prisma.user.deleteMany({ where: { id: { in: createdUserIds } } });
+    await db.delete(userTable).where(inArray(userTable.id, createdUserIds));
     createdUserIds = [];
   }
-});
-
-afterAll(async () => {
-  await prisma.$disconnect();
 });
 
 describe("transactions-service create", () => {
@@ -50,7 +113,7 @@ describe("transactions-service create", () => {
       date: "2026-06-10",
     });
 
-    const stored = await prisma.transaction.findUnique({ where: { id: tx.id } });
+    const stored = await findTransaction(tx.id);
     expect(stored).not.toBeNull();
     expect(stored?.userId).toBe(user.id);
     expect(stored?.type).toBe("entrada");
@@ -100,8 +163,7 @@ describe("transactions-service create", () => {
       })
     ).rejects.toBeInstanceOf(TransactionValidationError);
 
-    const count = await prisma.transaction.count({ where: { userId: user.id } });
-    expect(count).toBe(0);
+    expect(await countTransactions(user.id)).toBe(0);
   });
 
   it("rejeita type 'diario' no create (reservado à projeção — ADR-0004)", async () => {
@@ -117,8 +179,7 @@ describe("transactions-service create", () => {
       })
     ).rejects.toBeInstanceOf(TransactionValidationError);
 
-    const count = await prisma.transaction.count({ where: { userId: user.id } });
-    expect(count).toBe(0);
+    expect(await countTransactions(user.id)).toBe(0);
   });
 
   it("rejeita amount não-positivo", async () => {
@@ -148,8 +209,7 @@ describe("transactions-service create", () => {
       })
     ).rejects.toBeInstanceOf(TransactionValidationError);
 
-    const count = await prisma.transaction.count({ where: { userId: user.id } });
-    expect(count).toBe(0);
+    expect(await countTransactions(user.id)).toBe(0);
   });
 
   it("rejeita date não-string (número/objeto) como Missing required fields, sem TypeError", async () => {
@@ -167,8 +227,7 @@ describe("transactions-service create", () => {
       })
     ).rejects.toBeInstanceOf(TransactionValidationError);
 
-    const count = await prisma.transaction.count({ where: { userId: user.id } });
-    expect(count).toBe(0);
+    expect(await countTransactions(user.id)).toBe(0);
   });
 
   it("rejeita data impossível que o JS rolaria (formato válido, mas inexistente)", async () => {
@@ -197,8 +256,7 @@ describe("transactions-service create", () => {
       })
     ).rejects.toBeInstanceOf(TransactionValidationError);
 
-    const count = await prisma.transaction.count({ where: { userId: user.id } });
-    expect(count).toBe(0);
+    expect(await countTransactions(user.id)).toBe(0);
   });
 
   it("parseia date YYYY-MM-DD no dia correto (sem off-by-one)", async () => {
@@ -231,30 +289,23 @@ describe("transactions-service create", () => {
       repeatCount: 3,
     });
 
-    const all = await prisma.transaction.findMany({
-      where: { userId: user.id },
-      orderBy: { date: "asc" },
-    });
+    const all = (await findTransactions(user.id)).sort((a, b) => a.date.getTime() - b.date.getTime());
     expect(all).toHaveLength(3);
     expect(all.map((t) => t.date.getMonth())).toEqual([5, 6, 7]); // jun, jul, ago
   });
 
   it("associa tags só às ocorrências novas, sem contaminar transações pré-existentes coincidentes", async () => {
     const user = await seedUser();
-    const tag = await prisma.tag.create({
-      data: { userId: user.id, name: "Casa", color: "#abc" },
-    });
+    const tagRow = await seedTag(user.id, "Casa", "#abc");
 
     // Transação pré-existente que coincide em userId/description/type e data
     // com uma das ocorrências futuras do repeat — NÃO deve receber a tag.
-    const preexisting = await prisma.transaction.create({
-      data: {
-        userId: user.id,
-        type: "saida",
-        description: "Aluguel",
-        amount: 2000,
-        date: new Date(2026, 6, 10, 12, 0, 0), // 2026-07-10 12:00
-      },
+    const preexisting = await seedTransaction({
+      userId: user.id,
+      type: "saida",
+      description: "Aluguel",
+      amount: 2000,
+      date: new Date(2026, 6, 10, 12, 0, 0), // 2026-07-10 12:00
     });
 
     await createTransaction({
@@ -266,28 +317,21 @@ describe("transactions-service create", () => {
       repeat: "monthly",
       repeatEnd: "count",
       repeatCount: 3,
-      tagIds: [tag.id],
+      tagIds: [tagRow.id],
     });
 
-    const tagged = await prisma.transaction.findMany({
-      where: { userId: user.id, tags: { some: { id: tag.id } } },
-    });
+    const tagged = await transactionsWithTag(user.id, tagRow.id);
     expect(tagged).toHaveLength(3); // base + 2 extras, nenhuma a mais
 
-    const refreshedPre = await prisma.transaction.findUnique({
-      where: { id: preexisting.id },
-      include: { tags: true },
-    });
-    expect(refreshedPre?.tags).toHaveLength(0);
+    const refreshedPreTags = await tagsOf(preexisting.id);
+    expect(refreshedPreTags).toHaveLength(0);
   });
 
   it("rejeita tagIds de outro usuário (anti-IDOR) e não cria nada", async () => {
     const owner = await seedUser();
     const attacker = await seedUser();
     // Tag pertencente ao owner — o attacker não pode conectá-la.
-    const foreignTag = await prisma.tag.create({
-      data: { userId: owner.id, name: "Privada", color: "#abc" },
-    });
+    const foreignTag = await seedTag(owner.id, "Privada", "#abc");
 
     await expect(
       createTransaction({
@@ -300,15 +344,12 @@ describe("transactions-service create", () => {
       })
     ).rejects.toBeInstanceOf(TransactionValidationError);
 
-    const count = await prisma.transaction.count({ where: { userId: attacker.id } });
-    expect(count).toBe(0);
+    expect(await countTransactions(attacker.id)).toBe(0);
   });
 
   it("aceita tagIds duplicados (deduplica) e conecta a tag uma única vez", async () => {
     const user = await seedUser();
-    const tag = await prisma.tag.create({
-      data: { userId: user.id, name: "Casa", color: "#abc" },
-    });
+    const tagRow = await seedTag(user.id, "Casa", "#abc");
 
     const { transaction: tx } = await createTransaction({
       userId: user.id,
@@ -316,14 +357,11 @@ describe("transactions-service create", () => {
       description: "Aluguel",
       amount: 2000,
       date: "2026-06-10",
-      tagIds: [tag.id, tag.id], // duplicado: não deve falhar como "Invalid tags"
+      tagIds: [tagRow.id, tagRow.id], // duplicado: não deve falhar como "Invalid tags"
     });
 
-    const stored = await prisma.transaction.findUnique({
-      where: { id: tx.id },
-      include: { tags: true },
-    });
-    expect(stored?.tags.map((t) => t.id)).toEqual([tag.id]);
+    const stored = await tagsOf(tx.id);
+    expect(stored.map((t) => t.id)).toEqual([tagRow.id]);
   });
 });
 
@@ -331,15 +369,12 @@ describe("createTransaction — dedup defensivo (ADR-0004)", () => {
   it("T1: sem force, retorna a candidata existente (duplicated) e não cria linha nova", async () => {
     const user = await seedUser();
     // Candidata pré-existente: mesmo amount + mesmo dia + mesmo type.
-    const existing = await prisma.transaction.create({
-      data: {
-        userId: user.id,
-        type: "saida",
-        description: "Uber",
-        amount: 30,
-        date: new Date(2026, 5, 10, 12, 0, 0), // 2026-06-10
-        source: "manual",
-      },
+    const existing = await seedTransaction({
+      userId: user.id,
+      type: "saida",
+      description: "Uber",
+      amount: 30,
+      date: new Date(2026, 5, 10, 12, 0, 0), // 2026-06-10
     });
 
     const result = await createTransaction({
@@ -352,21 +387,17 @@ describe("createTransaction — dedup defensivo (ADR-0004)", () => {
 
     expect(result.duplicated).toBe(true);
     expect(result.transaction.id).toBe(existing.id);
-    const count = await prisma.transaction.count({ where: { userId: user.id } });
-    expect(count).toBe(1); // nenhuma linha nova
+    expect(await countTransactions(user.id)).toBe(1); // nenhuma linha nova
   });
 
   it("T2: com force=true, cria nova transação mesmo havendo candidata", async () => {
     const user = await seedUser();
-    await prisma.transaction.create({
-      data: {
-        userId: user.id,
-        type: "saida",
-        description: "Uber",
-        amount: 30,
-        date: new Date(2026, 5, 10, 12, 0, 0),
-        source: "manual",
-      },
+    await seedTransaction({
+      userId: user.id,
+      type: "saida",
+      description: "Uber",
+      amount: 30,
+      date: new Date(2026, 5, 10, 12, 0, 0),
     });
 
     const result = await createTransaction({
@@ -379,22 +410,18 @@ describe("createTransaction — dedup defensivo (ADR-0004)", () => {
     });
 
     expect(result.duplicated).toBe(false);
-    const all = await prisma.transaction.findMany({ where: { userId: user.id } });
-    expect(all).toHaveLength(2);
+    expect(await countTransactions(user.id)).toBe(2);
   });
 
   it("T3: janela de ±2 dias — 1 e 2 dias casam; 3 dias não", async () => {
     const user = await seedUser();
     const seed = (dayOffset: number) =>
-      prisma.transaction.create({
-        data: {
-          userId: user.id,
-          type: "saida",
-          description: "Gasto",
-          amount: 50,
-          date: new Date(2026, 5, 10 + dayOffset, 12, 0, 0),
-          source: "manual",
-        },
+      seedTransaction({
+        userId: user.id,
+        type: "saida",
+        description: "Gasto",
+        amount: 50,
+        date: new Date(2026, 5, 10 + dayOffset, 12, 0, 0),
       });
 
     // +1 dia → candidata
@@ -402,28 +429,25 @@ describe("createTransaction — dedup defensivo (ADR-0004)", () => {
     let r = await createTransaction({ userId: user.id, type: "saida", description: "Outro", amount: 50, date: "2026-06-10" });
     expect(r.duplicated).toBe(true);
     expect(r.transaction.id).toBe(near1.id);
-    await prisma.transaction.deleteMany({ where: { userId: user.id } });
+    await db.delete(transaction).where(eq(transaction.userId, user.id));
 
     // +2 dias → candidata (limite inclusivo)
     const near2 = await seed(2);
     r = await createTransaction({ userId: user.id, type: "saida", description: "Outro", amount: 50, date: "2026-06-10" });
     expect(r.duplicated).toBe(true);
     expect(r.transaction.id).toBe(near2.id);
-    await prisma.transaction.deleteMany({ where: { userId: user.id } });
+    await db.delete(transaction).where(eq(transaction.userId, user.id));
 
     // +3 dias → NÃO é candidata → cria normal
     await seed(3);
     r = await createTransaction({ userId: user.id, type: "saida", description: "Outro", amount: 50, date: "2026-06-10" });
     expect(r.duplicated).toBe(false);
-    const all = await prisma.transaction.findMany({ where: { userId: user.id } });
-    expect(all).toHaveLength(2); // a de +3 dias + a recém-criada
+    expect(await countTransactions(user.id)).toBe(2); // a de +3 dias + a recém-criada
   });
 
   it("T4: type ou amount diferente não é candidata → cria normal", async () => {
     const user = await seedUser();
-    await prisma.transaction.create({
-      data: { userId: user.id, type: "saida", description: "Uber", amount: 30, date: new Date(2026, 5, 10, 12, 0, 0), source: "manual" },
-    });
+    await seedTransaction({ userId: user.id, type: "saida", description: "Uber", amount: 30, date: new Date(2026, 5, 10, 12, 0, 0) });
 
     // type diferente
     let r = await createTransaction({ userId: user.id, type: "entrada", description: "Uber", amount: 30, date: "2026-06-10" });
@@ -433,22 +457,19 @@ describe("createTransaction — dedup defensivo (ADR-0004)", () => {
     r = await createTransaction({ userId: user.id, type: "saida", description: "Uber", amount: 31, date: "2026-06-10" });
     expect(r.duplicated).toBe(false);
 
-    const count = await prisma.transaction.count({ where: { userId: user.id } });
-    expect(count).toBe(3); // 1 pré-existente + 2 criadas
+    expect(await countTransactions(user.id)).toBe(3); // 1 pré-existente + 2 criadas
   });
 
   it("T5: cross-source — candidata pluggy é casada por create do agente", async () => {
     const user = await seedUser();
-    const pluggy = await prisma.transaction.create({
-      data: {
-        userId: user.id,
-        type: "saida",
-        description: "Mercado",
-        amount: 120,
-        date: new Date(2026, 5, 10, 12, 0, 0),
-        source: "pluggy",
-        externalId: "pluggy-xyz",
-      },
+    const pluggy = await seedTransaction({
+      userId: user.id,
+      type: "saida",
+      description: "Mercado",
+      amount: 120,
+      date: new Date(2026, 5, 10, 12, 0, 0),
+      source: "pluggy",
+      externalId: "pluggy-xyz",
     });
 
     const r = await createTransaction({
@@ -462,8 +483,7 @@ describe("createTransaction — dedup defensivo (ADR-0004)", () => {
 
     expect(r.duplicated).toBe(true);
     expect(r.transaction.id).toBe(pluggy.id);
-    const count = await prisma.transaction.count({ where: { userId: user.id } });
-    expect(count).toBe(1);
+    expect(await countTransactions(user.id)).toBe(1);
   });
 });
 
@@ -488,7 +508,7 @@ describe("updateTransaction", () => {
     expect(updated.description).toBe("Mercado do mês");
     expect(updated.amount).toBe(150);
 
-    const stored = await prisma.transaction.findUnique({ where: { id: tx.id } });
+    const stored = await findTransaction(tx.id);
     expect(stored?.description).toBe("Mercado do mês");
     expect(stored?.amount).toBe(150);
     expect(stored?.type).toBe("saida"); // campos não enviados ficam intactos
@@ -513,7 +533,7 @@ describe("updateTransaction", () => {
       })
     ).rejects.toBeInstanceOf(TransactionValidationError);
 
-    const stored = await prisma.transaction.findUnique({ where: { id: tx.id } });
+    const stored = await findTransaction(tx.id);
     expect(stored?.description).toBe("Privado"); // intacta
   });
 
@@ -542,7 +562,7 @@ describe("updateTransaction", () => {
       updateTransaction({ userId: user.id, id: tx.id, date: "2026-02-30" })
     ).rejects.toBeInstanceOf(TransactionValidationError);
 
-    const stored = await prisma.transaction.findUnique({ where: { id: tx.id } });
+    const stored = await findTransaction(tx.id);
     expect(stored?.type).toBe("saida");
     expect(stored?.amount).toBe(120);
   });
@@ -550,9 +570,7 @@ describe("updateTransaction", () => {
   it("anti-IDOR de tags: rejeita tagIds de outro usuário", async () => {
     const owner = await seedUser();
     const attacker = await seedUser();
-    const foreignTag = await prisma.tag.create({
-      data: { userId: owner.id, name: "Privada", color: "#abc" },
-    });
+    const foreignTag = await seedTag(owner.id, "Privada", "#abc");
     const { transaction: tx } = await createTransaction({
       userId: attacker.id,
       type: "saida",
@@ -568,12 +586,8 @@ describe("updateTransaction", () => {
 
   it("substitui o conjunto de tags (set) quando tagIds é enviado", async () => {
     const user = await seedUser();
-    const tagA = await prisma.tag.create({
-      data: { userId: user.id, name: "A", color: "#a" },
-    });
-    const tagB = await prisma.tag.create({
-      data: { userId: user.id, name: "B", color: "#b" },
-    });
+    const tagA = await seedTag(user.id, "A", "#a");
+    const tagB = await seedTag(user.id, "B", "#b");
     const { transaction: tx } = await createTransaction({
       userId: user.id,
       type: "saida",
@@ -606,8 +620,7 @@ describe("deleteTransaction", () => {
 
     await deleteTransaction(user.id, tx.id);
 
-    const stored = await prisma.transaction.findUnique({ where: { id: tx.id } });
-    expect(stored).toBeNull();
+    expect(await findTransaction(tx.id)).toBeNull();
   });
 
   it("anti-IDOR: não deleta Transaction de outro usuário", async () => {
@@ -625,22 +638,17 @@ describe("deleteTransaction", () => {
       deleteTransaction(attacker.id, tx.id)
     ).rejects.toBeInstanceOf(TransactionValidationError);
 
-    const stored = await prisma.transaction.findUnique({ where: { id: tx.id } });
-    expect(stored).not.toBeNull(); // intacta
+    expect(await findTransaction(tx.id)).not.toBeNull(); // intacta
   });
 });
 
 describe("listTransactions", () => {
   it("filtra por mês, ignorando transações de outros meses", async () => {
     const user = await seedUser();
-    await prisma.transaction.createMany({
-      data: [
-        { userId: user.id, type: "saida", description: "Maio", amount: 10, date: new Date(2026, 4, 20, 12) },
-        { userId: user.id, type: "saida", description: "Junho A", amount: 20, date: new Date(2026, 5, 10, 12) },
-        { userId: user.id, type: "saida", description: "Junho B", amount: 30, date: new Date(2026, 5, 25, 12) },
-        { userId: user.id, type: "saida", description: "Julho", amount: 40, date: new Date(2026, 6, 1, 12) },
-      ],
-    });
+    await seedTransaction({ userId: user.id, type: "saida", description: "Maio", amount: 10, date: new Date(2026, 4, 20, 12) });
+    await seedTransaction({ userId: user.id, type: "saida", description: "Junho A", amount: 20, date: new Date(2026, 5, 10, 12) });
+    await seedTransaction({ userId: user.id, type: "saida", description: "Junho B", amount: 30, date: new Date(2026, 5, 25, 12) });
+    await seedTransaction({ userId: user.id, type: "saida", description: "Julho", amount: 40, date: new Date(2026, 6, 1, 12) });
 
     const result = await listTransactions(user.id, { month: "2026-06" });
 
@@ -649,12 +657,8 @@ describe("listTransactions", () => {
 
   it("filtra por type", async () => {
     const user = await seedUser();
-    await prisma.transaction.createMany({
-      data: [
-        { userId: user.id, type: "saida", description: "Gasto", amount: 20, date: new Date(2026, 5, 10, 12) },
-        { userId: user.id, type: "entrada", description: "Renda", amount: 500, date: new Date(2026, 5, 11, 12) },
-      ],
-    });
+    await seedTransaction({ userId: user.id, type: "saida", description: "Gasto", amount: 20, date: new Date(2026, 5, 10, 12) });
+    await seedTransaction({ userId: user.id, type: "entrada", description: "Renda", amount: 500, date: new Date(2026, 5, 11, 12) });
 
     const result = await listTransactions(user.id, { month: "2026-06", type: "entrada" });
 
@@ -664,24 +668,12 @@ describe("listTransactions", () => {
 
   it("filtra por Tag e inclui as tags na resposta", async () => {
     const user = await seedUser();
-    const tag = await prisma.tag.create({
-      data: { userId: user.id, name: "Transporte", color: "#fff" },
-    });
-    await prisma.transaction.create({
-      data: {
-        userId: user.id,
-        type: "saida",
-        description: "Uber",
-        amount: 30,
-        date: new Date(2026, 5, 10, 12),
-        tags: { connect: { id: tag.id } },
-      },
-    });
-    await prisma.transaction.create({
-      data: { userId: user.id, type: "saida", description: "Sem tag", amount: 15, date: new Date(2026, 5, 11, 12) },
-    });
+    const tagRow = await seedTag(user.id, "Transporte", "#fff");
+    const withTag = await seedTransaction({ userId: user.id, type: "saida", description: "Uber", amount: 30, date: new Date(2026, 5, 10, 12) });
+    await db.insert(tagToTransaction).values({ a: tagRow.id, b: withTag.id });
+    await seedTransaction({ userId: user.id, type: "saida", description: "Sem tag", amount: 15, date: new Date(2026, 5, 11, 12) });
 
-    const result = await listTransactions(user.id, { tagId: tag.id });
+    const result = await listTransactions(user.id, { tagId: tagRow.id });
 
     expect(result).toHaveLength(1);
     expect(result[0].description).toBe("Uber");
@@ -711,15 +703,9 @@ describe("listTransactions", () => {
 
   it("corta no teto MAX_LIST_RESULTS quando há mais registros que o limite", async () => {
     const user = await seedUser();
-    await prisma.transaction.createMany({
-      data: Array.from({ length: MAX_LIST_RESULTS + 5 }, (_, i) => ({
-        userId: user.id,
-        type: "saida",
-        description: `Gasto ${i}`,
-        amount: 1,
-        date: new Date(2026, 5, 10, 12),
-      })),
-    });
+    for (let i = 0; i < MAX_LIST_RESULTS + 5; i++) {
+      await seedTransaction({ userId: user.id, type: "saida", description: `Gasto ${i}`, amount: 1, date: new Date(2026, 5, 10, 12) });
+    }
 
     const result = await listTransactions(user.id, {});
 
@@ -729,9 +715,7 @@ describe("listTransactions", () => {
   it("não vaza transações de outro usuário", async () => {
     const user = await seedUser();
     const other = await seedUser();
-    await prisma.transaction.create({
-      data: { userId: other.id, type: "saida", description: "Alheia", amount: 99, date: new Date(2026, 5, 10, 12) },
-    });
+    await seedTransaction({ userId: other.id, type: "saida", description: "Alheia", amount: 99, date: new Date(2026, 5, 10, 12) });
 
     const result = await listTransactions(user.id, { month: "2026-06" });
 

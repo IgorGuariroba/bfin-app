@@ -2,7 +2,7 @@
 
 Regras do ADR-0013 (`docs/adr/0013-backend-agnostico-no-codigo.md`), impostas por
 ESLint (`eslint.config.mjs`): nada aqui importa `next/*`, `next-auth`, `react`,
-`server-only`, `@prisma/*`, `@/generated/*`, `@/app`, `@/adapters`, `@/lib`,
+`server-only`, `@prisma/*`, `@/app`, `@/adapters`, `@/lib`,
 `@/components` ou `@/hooks`. A dependência aponta sempre para dentro: todo mundo
 pode importar o core; o core não importa ninguém.
 
@@ -21,7 +21,7 @@ Cada agregado é uma pasta com:
 
 Fora do core:
 
-- **`src/adapters/prisma/`** — implementação das portas (e testes de integração
+- **`src/adapters/drizzle/`** — implementação das portas (e testes de integração
   contra o banco real).
 - **`src/adapters/index.ts`** — composition root: instancia os services com os
   repos concretos. Trocar de ORM = trocar os repos aqui, agregado por agregado.

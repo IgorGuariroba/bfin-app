@@ -8,7 +8,7 @@ Autor: @igor.guariroba
 
 bfin é app pessoal de finanças com diferencial conceitual: separação entre **gasto fixo** e **diário** (gasto variável: mercado, uber, delivery), e **previsão** tratada como meta orientativa — não trava rígida. Posicionamento contrasta com Mobills/Organizze/GuiaBolso, que punem usuário com categorização excessiva e metas culposas.
 
-Stack atual: Next.js (App Router), Prisma, integração WhatsApp Cloud API direta (ADR-0001), blog SEO em `/blog/*` com Topic (ADR-0002).
+Stack atual: Next.js (App Router), Drizzle, integração WhatsApp Cloud API direta (ADR-0001), blog SEO em `/blog/*` com Topic (ADR-0002).
 
 ## Perfil público-alvo (ICP)
 
@@ -125,10 +125,10 @@ Stack de referência para construir e validar a estratégia. Não usar tudo — 
 
 | Ferramenta | Por quê |
 |---|---|
-| **PostHog** (recomendado) | Funil, retenção cohort, session replay, feature flag — open source, self-host grátis. Combina bem com Next.js + Prisma. |
+| **PostHog** (recomendado) | Funil, retenção cohort, session replay, feature flag — open source, self-host grátis. Combina bem com Next.js + Drizzle. |
 | Plausible / Umami | Analytics web simples, LGPD-friendly, sem cookie banner |
 | Microsoft Clarity | Heatmap + replay, grátis ilimitado |
-| Metabase | Dashboard SQL direto sobre Postgres (Prisma DB), open source |
+| Metabase | Dashboard SQL direto sobre Postgres, open source |
 | June.so | Analytics produto focado B2C SaaS, free tier |
 
 ### Growth / aquisição de canal

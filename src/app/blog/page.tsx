@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { prisma } from "@/lib/prisma";
+import { desc, eq } from "drizzle-orm";
+import { db } from "@/lib/drizzle";
+import { post, user } from "@/db/schema";
+import { fromDbTimestampOrNull } from "@/adapters/drizzle/timestamp";
 import { LandingHeader } from "@/components/landing/landing-header";
 import { LandingFooter } from "@/components/landing/landing-footer";
 import { POST_CATEGORIES, categorySlug, postExcerpt, readingMinutes } from "@/lib/blog";
@@ -19,21 +22,27 @@ export const metadata: Metadata = {
 const dateFmt = new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "short", year: "numeric" });
 
 export default async function BlogIndexPage() {
-  const posts = await prisma.post.findMany({
-    where: { status: "published" },
-    orderBy: { publishedAt: "desc" },
-    select: {
-      id: true,
-      slug: true,
-      title: true,
-      excerpt: true,
-      content: true,
-      coverImageUrl: true,
-      category: true,
-      publishedAt: true,
-      author: { select: { name: true } },
-    },
-  });
+  const rows = await db
+    .select({
+      id: post.id,
+      slug: post.slug,
+      title: post.title,
+      excerpt: post.excerpt,
+      content: post.content,
+      coverImageUrl: post.coverImageUrl,
+      category: post.category,
+      publishedAt: post.publishedAt,
+      authorName: user.name,
+    })
+    .from(post)
+    .innerJoin(user, eq(post.authorId, user.id))
+    .where(eq(post.status, "published"))
+    .orderBy(desc(post.publishedAt));
+  const posts = rows.map((p) => ({
+    ...p,
+    publishedAt: fromDbTimestampOrNull(p.publishedAt),
+    author: { name: p.authorName },
+  }));
 
   return (
     <div className="min-h-screen bg-canvas text-ink">

@@ -1,5 +1,8 @@
-import { afterAll, afterEach, describe, it, expect, vi } from "vitest";
-import { prisma } from "@/lib/prisma";
+import { afterEach, describe, it, expect, vi } from "vitest";
+import { and, eq, inArray } from "drizzle-orm";
+import { db } from "@/lib/drizzle";
+import { apiKey, previsao, tag, tagToTransaction, transaction, user as userTable } from "@/db/schema";
+import { fromDbTimestamp, toDbTimestamp } from "@/adapters/drizzle/timestamp";
 import { generateApiKey } from "@/lib/api-key";
 import { tagsService } from "@/adapters";
 import { logger } from "@/lib/logger";
@@ -9,19 +12,112 @@ import { POST } from "./route";
 let createdUserIds: string[] = [];
 
 async function seedProKey() {
-  const user = await prisma.user.create({
-    data: {
+  const [user] = await db
+    .insert(userTable)
+    .values({
+      id: crypto.randomUUID(),
       name: "MCP User",
       email: `mcp-${crypto.randomUUID()}@example.com`,
       plan: "pro",
-    },
-  });
+    })
+    .returning();
   createdUserIds.push(user.id);
   const { plain, prefix, hashedKey } = generateApiKey();
-  const apiKey = await prisma.apiKey.create({
-    data: { userId: user.id, name: "Assistente", prefix, hashedKey },
-  });
-  return { user, plain, apiKey };
+  const [key] = await db
+    .insert(apiKey)
+    .values({ id: crypto.randomUUID(), userId: user.id, name: "Assistente", prefix, hashedKey })
+    .returning();
+  return { user, plain, apiKey: key };
+}
+
+async function seedTx(data: {
+  userId: string;
+  type: string;
+  description: string;
+  amount: number;
+  date: Date;
+  source?: string;
+}) {
+  const now = toDbTimestamp(new Date());
+  const [row] = await db
+    .insert(transaction)
+    .values({
+      id: crypto.randomUUID(),
+      userId: data.userId,
+      type: data.type,
+      description: data.description,
+      amount: data.amount,
+      date: toDbTimestamp(data.date),
+      source: data.source ?? "manual",
+      updatedAt: now,
+    })
+    .returning();
+  return { ...row, date: fromDbTimestamp(row.date) };
+}
+
+async function seedTxBatch(
+  rows: Array<{ userId: string; type: string; description: string; amount: number; date: Date }>
+) {
+  const now = toDbTimestamp(new Date());
+  await db.insert(transaction).values(
+    rows.map((r) => ({
+      id: crypto.randomUUID(),
+      userId: r.userId,
+      type: r.type,
+      description: r.description,
+      amount: r.amount,
+      date: toDbTimestamp(r.date),
+      updatedAt: now,
+    }))
+  );
+}
+
+async function findTxsByUser(userId: string) {
+  const rows = await db.select().from(transaction).where(eq(transaction.userId, userId));
+  return rows.map((r) => ({ ...r, date: fromDbTimestamp(r.date) }));
+}
+
+async function countTx(userId: string) {
+  return (await findTxsByUser(userId)).length;
+}
+
+async function findTx(id: string) {
+  const [row] = await db.select().from(transaction).where(eq(transaction.id, id));
+  return row ? { ...row, date: fromDbTimestamp(row.date) } : null;
+}
+
+async function findFirstTx(userId: string) {
+  return (await findTxsByUser(userId))[0] ?? null;
+}
+
+async function tagsOfTx(txId: string) {
+  return db
+    .select({ id: tag.id, name: tag.name, color: tag.color })
+    .from(tagToTransaction)
+    .innerJoin(tag, eq(tag.id, tagToTransaction.a))
+    .where(eq(tagToTransaction.b, txId));
+}
+
+async function seedTag(userId: string, name: string, color: string) {
+  const [row] = await db.insert(tag).values({ id: crypto.randomUUID(), userId, name, color }).returning();
+  return row;
+}
+
+async function findTagsByUser(userId: string) {
+  return db.select().from(tag).where(eq(tag.userId, userId));
+}
+
+async function countTags(userId: string) {
+  return (await findTagsByUser(userId)).length;
+}
+
+async function findFirstTag(userId: string, name: string) {
+  const rows = await db.select().from(tag).where(and(eq(tag.userId, userId), eq(tag.name, name)));
+  return rows[0] ?? null;
+}
+
+async function seedPrevisao(userId: string, name: string, amount: number) {
+  await db.insert(previsao).values({ id: crypto.randomUUID(), userId, name, amount });
 }
 
 function mcpRequest(token: string | null, body: unknown) {
@@ -51,13 +147,9 @@ function parseRpcResult(body: string) {
 afterEach(async () => {
   vi.restoreAllMocks();
   if (createdUserIds.length) {
-    await prisma.user.deleteMany({ where: { id: { in: createdUserIds } } });
+    await db.delete(userTable).where(inArray(userTable.id, createdUserIds));
     createdUserIds = [];
   }
-});
-
-afterAll(async () => {
-  await prisma.$disconnect();
 });
 
 describe("POST /api/mcp", () => {
@@ -117,9 +209,7 @@ describe("POST /api/mcp", () => {
     const body = await res.text();
     expect(body).toContain("Movimentação criada");
 
-    const stored = await prisma.transaction.findMany({
-      where: { userId: user.id },
-    });
+    const stored = await findTxsByUser(user.id);
     expect(stored).toHaveLength(1);
     expect(stored[0].source).toBe("agent");
     expect(stored[0].description).toBe("Café");
@@ -147,21 +237,17 @@ describe("POST /api/mcp", () => {
     );
 
     await res.text();
-    const count = await prisma.transaction.count({ where: { userId: user.id } });
-    expect(count).toBe(0);
+    expect(await countTx(user.id)).toBe(0);
   });
 
   it("T7: com candidata duplicata e sem force, sinaliza 'possível duplicata' e não cria", async () => {
     const { user, plain } = await seedProKey();
-    await prisma.transaction.create({
-      data: {
-        userId: user.id,
-        type: "saida",
-        description: "Café",
-        amount: 9.5,
-        date: new Date(2026, 5, 15, 12, 0, 0),
-        source: "manual",
-      },
+    await seedTx({
+      userId: user.id,
+      type: "saida",
+      description: "Café",
+      amount: 9.5,
+      date: new Date(2026, 5, 15, 12, 0, 0),
     });
 
     const res = await POST(
@@ -180,21 +266,17 @@ describe("POST /api/mcp", () => {
     const body = await res.text();
     expect(body.toLowerCase()).toContain("duplicata");
     expect(body).toContain("force");
-    const c = await prisma.transaction.count({ where: { userId: user.id } });
-    expect(c).toBe(1); // só a pré-existente
+    expect(await countTx(user.id)).toBe(1); // só a pré-existente
   });
 
   it("T8: com force=true, cria mesmo havendo candidata duplicata", async () => {
     const { user, plain } = await seedProKey();
-    await prisma.transaction.create({
-      data: {
-        userId: user.id,
-        type: "saida",
-        description: "Café",
-        amount: 9.5,
-        date: new Date(2026, 5, 15, 12, 0, 0),
-        source: "manual",
-      },
+    await seedTx({
+      userId: user.id,
+      type: "saida",
+      description: "Café",
+      amount: 9.5,
+      date: new Date(2026, 5, 15, 12, 0, 0),
     });
 
     const res = await POST(
@@ -211,8 +293,7 @@ describe("POST /api/mcp", () => {
 
     const body = await res.text();
     expect(body).toContain("Movimentação criada");
-    const c = await prisma.transaction.count({ where: { userId: user.id } });
-    expect(c).toBe(2);
+    expect(await countTx(user.id)).toBe(2);
   });
 
   it("T9: sem type, sugere saida para gasto e cria corretamente", async () => {
@@ -232,7 +313,7 @@ describe("POST /api/mcp", () => {
 
     const body = await res.text();
     expect(body).toContain("Movimentação criada");
-    const stored = await prisma.transaction.findMany({ where: { userId: user.id } });
+    const stored = await findTxsByUser(user.id);
     expect(stored).toHaveLength(1);
     expect(stored[0].type).toBe("saida");
   });
@@ -263,19 +344,14 @@ describe("POST /api/mcp", () => {
     expect(res.status).toBe(200);
     const body = await res.text();
     expect(body).toContain("Movimentação criada");
-    const all = await prisma.transaction.findMany({
-      where: { userId: user.id },
-      orderBy: { date: "asc" },
-    });
+    const all = (await findTxsByUser(user.id)).sort((a, b) => a.date.getTime() - b.date.getTime());
     expect(all).toHaveLength(3);
     expect(all.map((t) => t.date.getMonth())).toEqual([5, 6, 7]); // jun, jul, ago
   });
 
   it("T11: sugere Tag a partir da descrição e associa à transação criada", async () => {
     const { user, plain } = await seedProKey();
-    const tag = await prisma.tag.create({
-      data: { userId: user.id, name: "Transporte", color: "#ff385c" },
-    });
+    const tagRow = await seedTag(user.id, "Transporte", "#ff385c");
 
     const res = await POST(
       mcpRequest(plain, {
@@ -292,22 +368,18 @@ describe("POST /api/mcp", () => {
     expect(res.status).toBe(200);
     const body = await res.text(); // consome o stream — garante que o handler concluiu
     expect(body).toContain("Tag: Transporte");
-    const stored = await prisma.transaction.findMany({
-      where: { userId: user.id },
-      include: { tags: true },
-    });
+    const stored = await findTxsByUser(user.id);
     expect(stored).toHaveLength(1);
-    expect(stored[0].tags.map((t) => t.id)).toEqual([tag.id]);
+    const storedTags = await tagsOfTx(stored[0].id);
+    expect(storedTags.map((t) => t.id)).toEqual([tagRow.id]);
   });
 
   it("get_month_summary responde o resumo do mês em uma chamada", async () => {
     const { user, plain } = await seedProKey();
-    await prisma.transaction.createMany({
-      data: [
-        { userId: user.id, type: "entrada", description: "Salário", amount: 5000, date: new Date(2026, 5, 1, 12) },
-        { userId: user.id, type: "saida", description: "Mercado", amount: 800, date: new Date(2026, 5, 5, 12) },
-      ],
-    });
+    await seedTxBatch([
+      { userId: user.id, type: "entrada", description: "Salário", amount: 5000, date: new Date(2026, 5, 1, 12) },
+      { userId: user.id, type: "saida", description: "Mercado", amount: 800, date: new Date(2026, 5, 5, 12) },
+    ]);
 
     const res = await POST(
       mcpRequest(plain, {
@@ -326,12 +398,10 @@ describe("POST /api/mcp", () => {
 
   it("get_totais responde os totais do mês via MCP", async () => {
     const { user, plain } = await seedProKey();
-    await prisma.transaction.createMany({
-      data: [
-        { userId: user.id, type: "entrada", description: "Salário", amount: 5000, date: new Date(2026, 5, 1, 12) },
-        { userId: user.id, type: "cartao", description: "Fatura", amount: 1200, date: new Date(2026, 5, 5, 12) },
-      ],
-    });
+    await seedTxBatch([
+      { userId: user.id, type: "entrada", description: "Salário", amount: 5000, date: new Date(2026, 5, 1, 12) },
+      { userId: user.id, type: "cartao", description: "Fatura", amount: 1200, date: new Date(2026, 5, 5, 12) },
+    ]);
 
     const res = await POST(
       mcpRequest(plain, {
@@ -350,9 +420,7 @@ describe("POST /api/mcp", () => {
 
   it("get_saldos responde a evolução diária do saldo via MCP", async () => {
     const { user, plain } = await seedProKey();
-    await prisma.transaction.create({
-      data: { userId: user.id, type: "entrada", description: "Renda", amount: 1000, date: new Date(2026, 5, 1, 12) },
-    });
+    await seedTx({ userId: user.id, type: "entrada", description: "Renda", amount: 1000, date: new Date(2026, 5, 1, 12) });
 
     const res = await POST(
       mcpRequest(plain, {
@@ -390,13 +458,11 @@ describe("POST /api/mcp", () => {
 
   it("list_transactions filtra por mês e type via MCP", async () => {
     const { user, plain } = await seedProKey();
-    await prisma.transaction.createMany({
-      data: [
-        { userId: user.id, type: "saida", description: "JunhoGasto", amount: 20, date: new Date(2026, 5, 10, 12) },
-        { userId: user.id, type: "entrada", description: "JunhoRenda", amount: 500, date: new Date(2026, 5, 11, 12) },
-        { userId: user.id, type: "saida", description: "MaioGasto", amount: 99, date: new Date(2026, 4, 10, 12) },
-      ],
-    });
+    await seedTxBatch([
+      { userId: user.id, type: "saida", description: "JunhoGasto", amount: 20, date: new Date(2026, 5, 10, 12) },
+      { userId: user.id, type: "entrada", description: "JunhoRenda", amount: 500, date: new Date(2026, 5, 11, 12) },
+      { userId: user.id, type: "saida", description: "MaioGasto", amount: 99, date: new Date(2026, 4, 10, 12) },
+    ]);
 
     const res = await POST(
       mcpRequest(plain, {
@@ -416,12 +482,10 @@ describe("POST /api/mcp", () => {
 
   it("get_sugestoes retorna insight de saldo negativo via MCP", async () => {
     const { user, plain } = await seedProKey();
-    await prisma.transaction.createMany({
-      data: [
-        { userId: user.id, type: "entrada", description: "Pouco", amount: 100, date: new Date(2026, 5, 1, 12) },
-        { userId: user.id, type: "saida", description: "Muito", amount: 900, date: new Date(2026, 5, 2, 12) },
-      ],
-    });
+    await seedTxBatch([
+      { userId: user.id, type: "entrada", description: "Pouco", amount: 100, date: new Date(2026, 5, 1, 12) },
+      { userId: user.id, type: "saida", description: "Muito", amount: 900, date: new Date(2026, 5, 2, 12) },
+    ]);
 
     const res = await POST(
       mcpRequest(plain, {
@@ -456,25 +520,21 @@ describe("POST /api/mcp", () => {
     expect(res.status).toBe(200);
     const body = await res.text();
     expect(body).toContain("Tag: Moradia");
-    const stored = await prisma.transaction.findMany({
-      where: { userId: user.id },
-      include: { tags: true },
-    });
+    const stored = await findTxsByUser(user.id);
     expect(stored).toHaveLength(1);
-    expect(stored[0].tags.map((t) => t.name)).toEqual(["Moradia"]);
+    const storedTags = await tagsOfTx(stored[0].id);
+    expect(storedTags.map((t) => t.name)).toEqual(["Moradia"]);
   });
 
   it("T13: update_transaction edita uma Transaction existente via MCP", async () => {
     const { user, plain } = await seedProKey();
-    const tx = await prisma.transaction.create({
-      data: {
-        userId: user.id,
-        type: "saida",
-        description: "Mercado",
-        amount: 120,
-        date: new Date(2026, 5, 10, 12),
-        source: "agent",
-      },
+    const tx = await seedTx({
+      userId: user.id,
+      type: "saida",
+      description: "Mercado",
+      amount: 120,
+      date: new Date(2026, 5, 10, 12),
+      source: "agent",
     });
 
     const res = await POST(
@@ -491,22 +551,20 @@ describe("POST /api/mcp", () => {
 
     expect(res.status).toBe(200);
     await res.text();
-    const stored = await prisma.transaction.findUnique({ where: { id: tx.id } });
+    const stored = await findTx(tx.id);
     expect(stored?.description).toBe("Mercado do mês");
     expect(stored?.amount).toBe(150);
   });
 
   it("T14: delete_transaction remove fisicamente a Transaction via MCP", async () => {
     const { user, plain } = await seedProKey();
-    const tx = await prisma.transaction.create({
-      data: {
-        userId: user.id,
-        type: "saida",
-        description: "Erro",
-        amount: 10,
-        date: new Date(2026, 5, 10, 12),
-        source: "agent",
-      },
+    const tx = await seedTx({
+      userId: user.id,
+      type: "saida",
+      description: "Erro",
+      amount: 10,
+      date: new Date(2026, 5, 10, 12),
+      source: "agent",
     });
 
     const res = await POST(
@@ -520,8 +578,7 @@ describe("POST /api/mcp", () => {
 
     expect(res.status).toBe(200);
     await res.text();
-    const stored = await prisma.transaction.findUnique({ where: { id: tx.id } });
-    expect(stored).toBeNull();
+    expect(await findTx(tx.id)).toBeNull();
   });
 
   it("T16: create_tag cria uma Tag do usuário (isSystem=false) via MCP", async () => {
@@ -542,7 +599,7 @@ describe("POST /api/mcp", () => {
     expect(res.status).toBe(200);
     const body = await res.text();
     expect(body).toContain("Viagem");
-    const stored = await prisma.tag.findMany({ where: { userId: user.id } });
+    const stored = await findTagsByUser(user.id);
     expect(stored).toHaveLength(1);
     expect(stored[0].name).toBe("Viagem");
     expect(stored[0].isSystem).toBe(false);
@@ -550,9 +607,7 @@ describe("POST /api/mcp", () => {
 
   it("T17: create_tag com nome duplicado vira tool error e não cria uma segunda", async () => {
     const { user, plain } = await seedProKey();
-    await prisma.tag.create({
-      data: { userId: user.id, name: "Viagem", color: "#4a90e2" },
-    });
+    await seedTag(user.id, "Viagem", "#4a90e2");
 
     const res = await POST(
       mcpRequest(plain, {
@@ -570,8 +625,7 @@ describe("POST /api/mcp", () => {
     const body = await res.text();
     expect(body).toContain('"isError":true');
     expect(body.toLowerCase()).toContain("já existe");
-    const count = await prisma.tag.count({ where: { userId: user.id } });
-    expect(count).toBe(1);
+    expect(await countTags(user.id)).toBe(1);
   });
 
   it("T17b: create_tag rejeita name acima de 50 chars (contrato REST) e não cria", async () => {
@@ -592,8 +646,7 @@ describe("POST /api/mcp", () => {
     expect(res.status).toBe(200);
     const body = await res.text();
     expect(body).toContain('"isError":true');
-    const count = await prisma.tag.count({ where: { userId: user.id } });
-    expect(count).toBe(0);
+    expect(await countTags(user.id)).toBe(0);
   });
 
   it("T17c: create_tag rejeita color inválida (contrato REST) e não cria", async () => {
@@ -614,15 +667,12 @@ describe("POST /api/mcp", () => {
     expect(res.status).toBe(200);
     const body = await res.text();
     expect(body).toContain('"isError":true');
-    const count = await prisma.tag.count({ where: { userId: user.id } });
-    expect(count).toBe(0);
+    expect(await countTags(user.id)).toBe(0);
   });
 
   it("T18: list_tag retorna as Tags do usuário (incl. system tags semeadas) via MCP", async () => {
     const { user, plain } = await seedProKey();
-    await prisma.tag.create({
-      data: { userId: user.id, name: "Viagem", color: "#4a90e2" },
-    });
+    await seedTag(user.id, "Viagem", "#4a90e2");
 
     const res = await POST(
       mcpRequest(plain, {
@@ -641,9 +691,7 @@ describe("POST /api/mcp", () => {
 
   it("T19: get_previsao retorna a Previsão configurada (somente leitura) via MCP", async () => {
     const { user, plain } = await seedProKey();
-    await prisma.previsao.create({
-      data: { userId: user.id, name: "Mercado", amount: 1200 },
-    });
+    await seedPrevisao(user.id, "Mercado", 1200);
 
     const res = await POST(
       mcpRequest(plain, {
@@ -674,7 +722,7 @@ describe("POST /api/mcp", () => {
   });
 
   it("T21: estourar o limite de escrita por ApiKey retorna 429 com retry-after", async () => {
-    const { apiKey, plain } = await seedProKey();
+    const { apiKey: key, plain } = await seedProKey();
 
     const createCall = (day: number) =>
       POST(
@@ -707,7 +755,7 @@ describe("POST /api/mcp", () => {
     expect(blocked.status).toBe(429);
     expect(Number(blocked.headers.get("retry-after"))).toBeGreaterThan(0);
     expect(warnSpy).toHaveBeenCalledWith(
-      { apiKeyId: apiKey.id, kind: "write" },
+      { apiKeyId: key.id, kind: "write" },
       "apikey: rate limited"
     );
   });
@@ -729,7 +777,7 @@ describe("POST /api/mcp", () => {
 
     expect(res.status).toBe(200);
     const result = parseRpcResult(await res.text());
-    const stored = await prisma.transaction.findFirst({ where: { userId: user.id } });
+    const stored = await findFirstTx(user.id);
     expect(result.structuredContent).toMatchObject({
       id: stored!.id,
       duplicated: false,
@@ -768,21 +816,18 @@ describe("POST /api/mcp", () => {
     const updated = parseRpcResult(await updRes.text());
     expect(updated.structuredContent).toMatchObject({ id, type: "saida", amount: 150 });
 
-    const stored = await prisma.transaction.findUnique({ where: { id } });
+    const stored = await findTx(id);
     expect(stored?.amount).toBe(150);
   });
 
   it("T22c: na duplicata, structuredContent devolve duplicated=true e o id da transação existente", async () => {
     const { user, plain } = await seedProKey();
-    const existing = await prisma.transaction.create({
-      data: {
-        userId: user.id,
-        type: "saida",
-        description: "Café",
-        amount: 9.5,
-        date: new Date(2026, 5, 15, 12, 0, 0),
-        source: "manual",
-      },
+    const existing = await seedTx({
+      userId: user.id,
+      type: "saida",
+      description: "Café",
+      amount: 9.5,
+      date: new Date(2026, 5, 15, 12, 0, 0),
     });
 
     const res = await POST(
@@ -804,8 +849,7 @@ describe("POST /api/mcp", () => {
       duplicated: true,
       date: "2026-06-15",
     });
-    const count = await prisma.transaction.count({ where: { userId: user.id } });
-    expect(count).toBe(1); // nada criado
+    expect(await countTx(user.id)).toBe(1); // nada criado
   });
 
   it("T22d: create_tag devolve id/name/color no structuredContent", async () => {
@@ -822,7 +866,7 @@ describe("POST /api/mcp", () => {
 
     expect(res.status).toBe(200);
     const result = parseRpcResult(await res.text());
-    const stored = await prisma.tag.findFirst({ where: { userId: user.id, name: "Viagem" } });
+    const stored = await findFirstTag(user.id, "Viagem");
     expect(result.structuredContent).toMatchObject({
       id: stored!.id,
       name: "Viagem",
@@ -831,7 +875,7 @@ describe("POST /api/mcp", () => {
   });
 
   it("T15: escrita do agente emite log de auditoria (apiKeyId/userId/action/entityId)", async () => {
-    const { user, plain, apiKey } = await seedProKey();
+    const { user, plain, apiKey: key } = await seedProKey();
     const infoSpy = vi.spyOn(logger, "info");
 
     const res = await POST(
@@ -849,10 +893,10 @@ describe("POST /api/mcp", () => {
     expect(res.status).toBe(200);
     await res.text(); // garante que o handler concluiu
 
-    const tx = await prisma.transaction.findFirst({ where: { userId: user.id } });
+    const tx = await findFirstTx(user.id);
     expect(infoSpy).toHaveBeenCalledWith(
       expect.objectContaining({
-        apiKeyId: apiKey.id,
+        apiKeyId: key.id,
         userId: user.id,
         action: "create",
         entityId: tx!.id,

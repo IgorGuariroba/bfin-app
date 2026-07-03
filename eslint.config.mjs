@@ -5,6 +5,26 @@ import nextTs from "eslint-config-next/typescript";
 const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
+  // Prisma foi descomissionado do repo inteiro (#154): só Drizzle a partir
+  // daqui. Vem antes da regra do core para que a regra mais específica do
+  // core (abaixo) prevaleça lá — no flat config, a última regra que casa o
+  // arquivo vence por completo, sem merge.
+  {
+    files: ["**/*.{ts,tsx,mts,mjs}"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: ["@prisma/*", "prisma/config"],
+              message: "Prisma foi removido do repositório (#154) — use Drizzle (@/lib/drizzle, @/db/schema).",
+            },
+          ],
+        },
+      ],
+    },
+  },
   // Fronteira do core (ADR-0013): src/core é agnóstico de framework e ORM.
   // A dependência aponta para dentro — todo mundo importa o core; o core não
   // importa ninguém. É esta regra (e não "server-only") que protege o core de

@@ -4,8 +4,8 @@ import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
 import * as schema from "@/db/schema";
 
-// Pool único por processo (mesmo padrão do lib/prisma.ts): em dev o hot-reload
-// recarrega módulos — sem o cache global, cada reload vazaria conexões.
+// Pool único por processo: em dev o hot-reload recarrega módulos — sem o
+// cache global, cada reload vazaria conexões.
 const globalForDrizzle = globalThis as unknown as { drizzlePool?: Pool };
 
 const pool =

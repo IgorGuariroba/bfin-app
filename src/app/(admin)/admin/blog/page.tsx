@@ -1,6 +1,9 @@
 import Link from "next/link";
 import { Plus } from "lucide-react";
-import { prisma } from "@/lib/prisma";
+import { count, desc, eq } from "drizzle-orm";
+import { db } from "@/lib/drizzle";
+import { post, postComment, user } from "@/db/schema";
+import { fromDbTimestamp } from "@/adapters/drizzle/timestamp";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -21,13 +24,26 @@ const STATUS_VARIANT: Record<string, "default" | "secondary" | "outline"> = {
 };
 
 export default async function AdminBlogPage() {
-  const [posts, pendingComments] = await Promise.all([
-    prisma.post.findMany({
-      orderBy: { updatedAt: "desc" },
-      include: { author: { select: { name: true } } },
-    }),
-    prisma.postComment.count({ where: { status: "pending" } }),
+  const [rows, [{ n: pendingComments }]] = await Promise.all([
+    db
+      .select({
+        id: post.id,
+        title: post.title,
+        category: post.category,
+        status: post.status,
+        updatedAt: post.updatedAt,
+        authorName: user.name,
+      })
+      .from(post)
+      .innerJoin(user, eq(post.authorId, user.id))
+      .orderBy(desc(post.updatedAt)),
+    db.select({ n: count() }).from(postComment).where(eq(postComment.status, "pending")),
   ]);
+  const posts = rows.map((p) => ({
+    ...p,
+    updatedAt: fromDbTimestamp(p.updatedAt),
+    author: { name: p.authorName },
+  }));
 
   return (
     <div className="mx-auto max-w-7xl space-y-6">

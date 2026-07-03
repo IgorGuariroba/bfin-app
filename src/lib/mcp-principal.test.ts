@@ -1,53 +1,56 @@
-import { afterAll, afterEach, describe, it, expect } from "vitest";
-import { prisma } from "@/lib/prisma";
+import { afterEach, describe, it, expect } from "vitest";
+import { eq, inArray } from "drizzle-orm";
+import { db } from "@/lib/drizzle";
+import { apiKey, user as userTable } from "@/db/schema";
+import { toDbTimestamp } from "@/adapters/drizzle/timestamp";
 import { generateApiKey } from "@/lib/api-key";
 import { resolvePrincipal } from "@/lib/mcp-principal";
 
 let createdUserIds: string[] = [];
 
 async function seedPrincipal(plan: "pro" | "free", overrides: { revoked?: boolean } = {}) {
-  const user = await prisma.user.create({
-    data: {
+  const [user] = await db
+    .insert(userTable)
+    .values({
+      id: crypto.randomUUID(),
       name: "Test User",
       email: `test-${crypto.randomUUID()}@example.com`,
       plan,
-    },
-  });
+    })
+    .returning();
   createdUserIds.push(user.id);
 
   const { plain, prefix, hashedKey } = generateApiKey();
-  const apiKey = await prisma.apiKey.create({
-    data: {
+  const [key] = await db
+    .insert(apiKey)
+    .values({
+      id: crypto.randomUUID(),
       userId: user.id,
       name: "Assistente",
       prefix,
       hashedKey,
-      revokedAt: overrides.revoked ? new Date() : null,
-    },
-  });
-  return { user, plain, apiKey };
+      revokedAt: overrides.revoked ? toDbTimestamp(new Date()) : null,
+    })
+    .returning();
+  return { user, plain, apiKey: key };
 }
 
 afterEach(async () => {
   if (createdUserIds.length) {
-    await prisma.user.deleteMany({ where: { id: { in: createdUserIds } } });
+    await db.delete(userTable).where(inArray(userTable.id, createdUserIds));
     createdUserIds = [];
   }
 });
 
-afterAll(async () => {
-  await prisma.$disconnect();
-});
-
 describe("mcp-principal", () => {
   it("resolve token válido de User pro e retorna userId/apiKeyId, atualizando lastUsedAt", async () => {
-    const { user, plain, apiKey } = await seedPrincipal("pro");
+    const { user, plain, apiKey: key } = await seedPrincipal("pro");
 
     const principal = await resolvePrincipal(plain);
 
-    expect(principal).toEqual({ userId: user.id, apiKeyId: apiKey.id });
+    expect(principal).toEqual({ userId: user.id, apiKeyId: key.id });
 
-    const refreshed = await prisma.apiKey.findUnique({ where: { id: apiKey.id } });
+    const [refreshed] = await db.select().from(apiKey).where(eq(apiKey.id, key.id));
     expect(refreshed?.lastUsedAt).not.toBeNull();
   });
 
