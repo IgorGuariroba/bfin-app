@@ -104,7 +104,7 @@ export const transaction = pgTable("Transaction", {
 	source: text().default('manual').notNull(),
 }, (table) => [
 	uniqueIndex("Transaction_externalId_key").using("btree", table.externalId.asc().nullsLast().op("text_ops")),
-	index("Transaction_userId_date_idx").using("btree", table.userId.asc().nullsLast().op("timestamp_ops"), table.date.asc().nullsLast().op("text_ops")),
+	index("Transaction_userId_date_idx").using("btree", table.userId.asc().nullsLast().op("text_ops"), table.date.asc().nullsLast().op("timestamp_ops")),
 	index("Transaction_userId_type_idx").using("btree", table.userId.asc().nullsLast().op("text_ops"), table.type.asc().nullsLast().op("text_ops")),
 	foreignKey({
 			columns: [table.userId],
@@ -221,7 +221,7 @@ export const whatsappConversation = pgTable("WhatsappConversation", {
 	createdAt: timestamp({ precision: 3, mode: 'string' }).default(sql`CURRENT_TIMESTAMP`).notNull(),
 }, (table) => [
 	uniqueIndex("WhatsappConversation_contactId_key").using("btree", table.contactId.asc().nullsLast().op("text_ops")),
-	index("WhatsappConversation_status_lastMessageAt_idx").using("btree", table.status.asc().nullsLast().op("text_ops"), table.lastMessageAt.asc().nullsLast().op("text_ops")),
+	index("WhatsappConversation_status_lastMessageAt_idx").using("btree", table.status.asc().nullsLast().op("text_ops"), table.lastMessageAt.asc().nullsLast().op("timestamp_ops")),
 	foreignKey({
 			columns: [table.contactId],
 			foreignColumns: [whatsappContact.id],
@@ -238,7 +238,7 @@ export const whatsappMessage = pgTable("WhatsappMessage", {
 	wamid: text(),
 	createdAt: timestamp({ precision: 3, mode: 'string' }).default(sql`CURRENT_TIMESTAMP`).notNull(),
 }, (table) => [
-	index("WhatsappMessage_conversationId_createdAt_idx").using("btree", table.conversationId.asc().nullsLast().op("text_ops"), table.createdAt.asc().nullsLast().op("text_ops")),
+	index("WhatsappMessage_conversationId_createdAt_idx").using("btree", table.conversationId.asc().nullsLast().op("text_ops"), table.createdAt.asc().nullsLast().op("timestamp_ops")),
 	uniqueIndex("WhatsappMessage_wamid_key").using("btree", table.wamid.asc().nullsLast().op("text_ops")),
 	foreignKey({
 			columns: [table.conversationId],
@@ -265,7 +265,7 @@ export const post = pgTable("Post", {
 }, (table) => [
 	index("Post_category_status_idx").using("btree", table.category.asc().nullsLast().op("text_ops"), table.status.asc().nullsLast().op("text_ops")),
 	uniqueIndex("Post_slug_key").using("btree", table.slug.asc().nullsLast().op("text_ops")),
-	index("Post_status_publishedAt_idx").using("btree", table.status.asc().nullsLast().op("timestamp_ops"), table.publishedAt.asc().nullsLast().op("text_ops")),
+	index("Post_status_publishedAt_idx").using("btree", table.status.asc().nullsLast().op("text_ops"), table.publishedAt.asc().nullsLast().op("timestamp_ops")),
 	foreignKey({
 			columns: [table.authorId],
 			foreignColumns: [user.id],
@@ -281,8 +281,8 @@ export const postComment = pgTable("PostComment", {
 	status: text().default('pending').notNull(),
 	createdAt: timestamp({ precision: 3, mode: 'string' }).default(sql`CURRENT_TIMESTAMP`).notNull(),
 }, (table) => [
-	index("PostComment_postId_status_createdAt_idx").using("btree", table.postId.asc().nullsLast().op("timestamp_ops"), table.status.asc().nullsLast().op("timestamp_ops"), table.createdAt.asc().nullsLast().op("text_ops")),
-	index("PostComment_status_createdAt_idx").using("btree", table.status.asc().nullsLast().op("text_ops"), table.createdAt.asc().nullsLast().op("text_ops")),
+	index("PostComment_postId_status_createdAt_idx").using("btree", table.postId.asc().nullsLast().op("text_ops"), table.status.asc().nullsLast().op("text_ops"), table.createdAt.asc().nullsLast().op("timestamp_ops")),
+	index("PostComment_status_createdAt_idx").using("btree", table.status.asc().nullsLast().op("text_ops"), table.createdAt.asc().nullsLast().op("timestamp_ops")),
 	foreignKey({
 			columns: [table.postId],
 			foreignColumns: [post.id],

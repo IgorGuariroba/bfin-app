@@ -584,14 +584,14 @@
               "expression": "userId",
               "asc": true,
               "nulls": "last",
-              "opclass": "timestamp_ops",
+              "opclass": "text_ops",
               "isExpression": false
             },
             {
               "expression": "date",
               "asc": true,
               "nulls": "last",
-              "opclass": "text_ops",
+              "opclass": "timestamp_ops",
               "isExpression": false
             }
           ],
@@ -1286,7 +1286,7 @@
               "expression": "lastMessageAt",
               "asc": true,
               "nulls": "last",
-              "opclass": "text_ops",
+              "opclass": "timestamp_ops",
               "isExpression": false
             }
           ],
@@ -1381,7 +1381,7 @@
               "expression": "createdAt",
               "asc": true,
               "nulls": "last",
-              "opclass": "text_ops",
+              "opclass": "timestamp_ops",
               "isExpression": false
             }
           ],
@@ -1567,14 +1567,14 @@
               "expression": "status",
               "asc": true,
               "nulls": "last",
-              "opclass": "timestamp_ops",
+              "opclass": "text_ops",
               "isExpression": false
             },
             {
               "expression": "publishedAt",
               "asc": true,
               "nulls": "last",
-              "opclass": "text_ops",
+              "opclass": "timestamp_ops",
               "isExpression": false
             }
           ],
@@ -1657,21 +1657,21 @@
               "expression": "postId",
               "asc": true,
               "nulls": "last",
-              "opclass": "timestamp_ops",
+              "opclass": "text_ops",
               "isExpression": false
             },
             {
               "expression": "status",
               "asc": true,
               "nulls": "last",
-              "opclass": "timestamp_ops",
+              "opclass": "text_ops",
               "isExpression": false
             },
             {
               "expression": "createdAt",
               "asc": true,
               "nulls": "last",
-              "opclass": "text_ops",
+              "opclass": "timestamp_ops",
               "isExpression": false
             }
           ],
@@ -1694,7 +1694,7 @@
               "expression": "createdAt",
               "asc": true,
               "nulls": "last",
-              "opclass": "text_ops",
+              "opclass": "timestamp_ops",
               "isExpression": false
             }
           ],
