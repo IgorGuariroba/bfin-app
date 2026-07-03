@@ -11,3 +11,7 @@ export function toDbTimestamp(d: Date): string {
 export function fromDbTimestamp(s: string): Date {
   return new Date(`${s.replace(" ", "T")}Z`);
 }
+
+export function fromDbTimestampOrNull(s: string | null): Date | null {
+  return s ? fromDbTimestamp(s) : null;
+}
