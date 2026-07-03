@@ -17,8 +17,8 @@ import {
 import { logger } from "@/lib/logger";
 import { notifyNewSubscriptionOnDiscord } from "./discord-notify";
 import { mercadoPagoGateway } from "./mercadopago-gateway";
-import { prismaBillingRepo } from "./prisma/billing-repo";
 import { drizzleApiKeyRepo } from "./drizzle/apikey-repo";
+import { drizzleBillingRepo } from "./drizzle/billing-repo";
 import { drizzleIdentityRepo } from "./drizzle/identity-repo";
 import { drizzleInsightsRepo } from "./drizzle/insights-repo";
 import { drizzleMembersRepo } from "./drizzle/members-repo";
@@ -36,7 +36,7 @@ export const apiKeysService = makeApiKeysService(drizzleApiKeyRepo, {
   hashKey: hashApiKey,
   logger,
 });
-export const billingService = makeBillingService(prismaBillingRepo, mercadoPagoGateway, {
+export const billingService = makeBillingService(drizzleBillingRepo, mercadoPagoGateway, {
   logger,
   conversions: {
     isConfigured: isGoogleAdsConfigured,
