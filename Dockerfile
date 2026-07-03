@@ -32,9 +32,14 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
 COPY --from=builder --chown=nextjs:nodejs /app/prisma.config.ts ./prisma.config.ts
+COPY --from=builder --chown=nextjs:nodejs /app/scripts ./scripts
+COPY --from=builder --chown=nextjs:nodejs /app/drizzle ./drizzle
 COPY --chown=nextjs:nodejs docker-entrypoint.sh ./docker-entrypoint.sh
 
-RUN npm install prisma@7.8.0 && chmod +x ./docker-entrypoint.sh
+# scripts/db-migrate.mjs roda fora do server.js do Next (fica de fora do output
+# file tracing do standalone) — precisa das próprias deps, mesmo padrão que já
+# resolvia isso para o `prisma` CLI antes do ADR-0014.
+RUN npm install drizzle-orm@0.45.2 pg@8.22.0 dotenv@17.4.2 && chmod +x ./docker-entrypoint.sh
 
 USER nextjs
 EXPOSE 3000
