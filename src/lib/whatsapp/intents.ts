@@ -1,5 +1,5 @@
 import "server-only";
-import { prisma } from "@/lib/prisma";
+import { billingService } from "@/adapters";
 
 export type IntentId =
   | "price"
@@ -47,14 +47,12 @@ export const SITE_URL = "https://bfincont.com.br";
 const brl = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
 
 export async function priceText(): Promise<string> {
-  const config = await prisma.planConfig.upsert({
-    where: { id: "default" },
-    update: {},
-    create: { id: "default", monthlyAmount: 14.9, annualAmount: 119.9 },
-  });
+  // Canal consome o core para dados do domínio financeiro (ADR-0013) — o
+  // PlanConfig é a fonte única de preço.
+  const prices = await billingService.getPlanPrices();
   return (
-    `Temos o plano gratuito + Premium por ${brl.format(config.monthlyAmount)}/mês ` +
-    `ou ${brl.format(config.annualAmount)}/ano.\n\nDetalhes: ${SITE_URL}`
+    `Temos o plano gratuito + Premium por ${brl.format(prices.monthly)}/mês ` +
+    `ou ${brl.format(prices.annual)}/ano.\n\nDetalhes: ${SITE_URL}`
   );
 }
 
