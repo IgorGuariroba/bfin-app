@@ -21,8 +21,8 @@ import { prismaApiKeyRepo } from "./prisma/apikey-repo";
 import { prismaBillingRepo } from "./prisma/billing-repo";
 import { prismaIdentityRepo } from "./prisma/identity-repo";
 import { prismaMembersRepo } from "./prisma/members-repo";
-import { prismaPrevisaoRepo } from "./prisma/previsao-repo";
 import { drizzleInsightsRepo } from "./drizzle/insights-repo";
+import { drizzlePrevisaoRepo } from "./drizzle/previsao-repo";
 import { drizzleTagRepo } from "./drizzle/tag-repo";
 import { drizzleTransactionRepo } from "./drizzle/transaction-repo";
 
@@ -46,6 +46,6 @@ export const billingService = makeBillingService(prismaBillingRepo, mercadoPagoG
   notifyNewSubscription: notifyNewSubscriptionOnDiscord,
 });
 export const insightsService = makeInsightsService(drizzleInsightsRepo);
-export const previsaoService = makePrevisaoService(prismaPrevisaoRepo);
+export const previsaoService = makePrevisaoService(drizzlePrevisaoRepo);
 export const tagsService = makeTagsService(drizzleTagRepo);
 export const transactionsService = makeTransactionsService(drizzleTransactionRepo, { logger });
