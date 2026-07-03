@@ -3,7 +3,6 @@ import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/
 import { z } from "zod";
 import { resolvePrincipal } from "@/lib/mcp-principal";
 import { checkRateLimit, classifyRpc, RATE_LIMITS } from "@/lib/rate-limit";
-import { prisma } from "@/lib/prisma";
 import { insightsService, previsaoService, tagsService, transactionsService } from "@/adapters";
 import { suggestTag, suggestType, TransactionValidationError } from "@/core/transactions";
 import { TagValidationError } from "@/core/tags";
@@ -119,10 +118,7 @@ function buildServer(userId: string, apiKeyId: string): McpServer {
       try {
         const resolvedType = type ?? suggestType(description);
         // Sugere uma Tag existente do usuário a partir da descrição (ADR-0004).
-        const userTags = await prisma.tag.findMany({
-          where: { userId },
-          select: { id: true, name: true },
-        });
+        const userTags = await tagsService.listTags(userId);
         const suggestedTagId = suggestTag(description, userTags);
         const result = await createTransaction({
           userId,

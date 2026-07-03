@@ -1,23 +1,11 @@
 import "server-only";
 
-import { prisma } from "@/lib/prisma";
-import { hashApiKey } from "@/lib/api-key";
-import { getUserPlan } from "@/lib/plan";
+import { apiKeysService } from "@/adapters";
 
-export async function resolvePrincipal(
+// A regra mudou-se para o core (ADR-0013); wrapper mantido para os consumidores
+// existentes até suas fatias migrarem para @/adapters.
+export function resolvePrincipal(
   token: string
 ): Promise<{ userId: string; apiKeyId: string } | null> {
-  const record = await prisma.apiKey.findUnique({
-    where: { hashedKey: hashApiKey(token) },
-  });
-  if (!record || record.revokedAt) return null;
-
-  if ((await getUserPlan(record.userId)) !== "pro") return null;
-
-  await prisma.apiKey.update({
-    where: { id: record.id },
-    data: { lastUsedAt: new Date() },
-  });
-
-  return { userId: record.userId, apiKeyId: record.id };
+  return apiKeysService.resolvePrincipal(token);
 }
