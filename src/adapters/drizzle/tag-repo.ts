@@ -5,6 +5,10 @@ import { db } from "@/lib/drizzle";
 import { tag } from "@/db/schema";
 import type { TagRepo } from "@/core/tags";
 
+// IDs novos nascem como UUID (crypto.randomUUID), não mais cuid (o default do
+// Prisma era gerado client-side, não é um DEFAULT do Postgres — a coluna é
+// `text` sem formato imposto). Tags já existentes continuam em cuid; nenhuma
+// rota/validação depende do formato do id, só da unicidade.
 export const drizzleTagRepo: TagRepo = {
   findById: async (id) => {
     const [row] = await db.select().from(tag).where(eq(tag.id, id));
