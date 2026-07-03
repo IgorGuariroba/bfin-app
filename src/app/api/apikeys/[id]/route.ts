@@ -1,5 +1,6 @@
 import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { apiKeysService } from "@/adapters";
+import { ApiKeyNotFoundError } from "@/core/apikeys";
 
 export async function DELETE(
   _req: Request,
@@ -12,17 +13,14 @@ export async function DELETE(
 
   const { id } = await params;
 
-  const existing = await prisma.apiKey.findFirst({
-    where: { id, userId: session.user.id },
-  });
-  if (!existing) {
-    return Response.json({ error: "Not found" }, { status: 404 });
+  try {
+    await apiKeysService.revokeApiKey(session.user.id, id);
+  } catch (error) {
+    if (error instanceof ApiKeyNotFoundError) {
+      return Response.json({ error: "Not found" }, { status: 404 });
+    }
+    throw error;
   }
-
-  await prisma.apiKey.update({
-    where: { id },
-    data: { revokedAt: existing.revokedAt ?? new Date() },
-  });
 
   return Response.json({ success: true });
 }
