@@ -17,20 +17,20 @@ import {
 import { logger } from "@/lib/logger";
 import { notifyNewSubscriptionOnDiscord } from "./discord-notify";
 import { mercadoPagoGateway } from "./mercadopago-gateway";
-import { prismaApiKeyRepo } from "./prisma/apikey-repo";
 import { prismaBillingRepo } from "./prisma/billing-repo";
-import { prismaIdentityRepo } from "./prisma/identity-repo";
-import { prismaMembersRepo } from "./prisma/members-repo";
+import { drizzleApiKeyRepo } from "./drizzle/apikey-repo";
+import { drizzleIdentityRepo } from "./drizzle/identity-repo";
 import { drizzleInsightsRepo } from "./drizzle/insights-repo";
+import { drizzleMembersRepo } from "./drizzle/members-repo";
 import { drizzlePrevisaoRepo } from "./drizzle/previsao-repo";
 import { drizzleTagRepo } from "./drizzle/tag-repo";
 import { drizzleTransactionRepo } from "./drizzle/transaction-repo";
 
-export const identityService = makeIdentityService(prismaIdentityRepo);
-export const membersService = makeMembersService(prismaMembersRepo, {
+export const identityService = makeIdentityService(drizzleIdentityRepo);
+export const membersService = makeMembersService(drizzleMembersRepo, {
   getUserPlan: identityService.getUserPlan,
 });
-export const apiKeysService = makeApiKeysService(prismaApiKeyRepo, {
+export const apiKeysService = makeApiKeysService(drizzleApiKeyRepo, {
   getUserPlan: identityService.getUserPlan,
   generateKey: generateApiKey,
   hashKey: hashApiKey,
