@@ -3,13 +3,15 @@ import "server-only";
 import { and, asc, count, eq, gte, inArray, lt, lte } from "drizzle-orm";
 import { db } from "@/lib/drizzle";
 import { tag, tagToTransaction, transaction } from "@/db/schema";
-import type {
-  DateRange,
-  Transaction,
-  TransactionRepo,
-  TransactionTag,
-  TransactionWithTags,
+import {
+  TransactionNotFoundError,
+  type DateRange,
+  type Transaction,
+  type TransactionRepo,
+  type TransactionTag,
+  type TransactionWithTags,
 } from "@/core/transactions";
+import { newId } from "./id";
 import { fromDbTimestamp, toDbTimestamp } from "./timestamp";
 
 type TransactionRow = typeof transaction.$inferSelect;
@@ -130,7 +132,7 @@ export const drizzleTransactionRepo: TransactionRepo = {
   },
 
   create: async (data, tagIds) => {
-    const id = crypto.randomUUID();
+    const id = newId();
     const now = toDbTimestamp(new Date());
     // Transação de banco: se o insert das tags falhar, a Transaction não fica
     // órfã sem tags (igual à garantia que o `tags: { connect }` do Prisma dava
@@ -163,7 +165,7 @@ export const drizzleTransactionRepo: TransactionRepo = {
     if (data.length === 0) return;
     const now = toDbTimestamp(new Date());
     const rows = data.map((d) => ({
-      id: crypto.randomUUID(),
+      id: newId(),
       userId: d.userId,
       type: d.type,
       description: d.description,
@@ -203,7 +205,7 @@ export const drizzleTransactionRepo: TransactionRepo = {
       // as duas chamadas). Sem esse guard, connectTags() estouraria FK e
       // attachTags() um TypeError.
       if (!updatedRow) {
-        throw new Error(`Transaction ${id} not found`);
+        throw new TransactionNotFoundError(`Transaction ${id} not found`);
       }
 
       // `undefined` = não mexe nas tags; `[]` = desconecta todas (set vazio) —

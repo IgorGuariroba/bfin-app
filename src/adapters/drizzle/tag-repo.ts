@@ -4,6 +4,7 @@ import { and, asc, desc, eq } from "drizzle-orm";
 import { db } from "@/lib/drizzle";
 import { tag } from "@/db/schema";
 import type { TagRepo } from "@/core/tags";
+import { newId } from "./id";
 
 // IDs novos nascem como UUID (crypto.randomUUID), não mais cuid (o default do
 // Prisma era gerado client-side, não é um DEFAULT do Postgres — a coluna é
@@ -41,7 +42,7 @@ export const drizzleTagRepo: TagRepo = {
   create: async (data) => {
     const [row] = await db
       .insert(tag)
-      .values({ id: crypto.randomUUID(), ...data })
+      .values({ id: newId(), ...data })
       .returning();
     return row;
   },
@@ -52,7 +53,7 @@ export const drizzleTagRepo: TagRepo = {
       .insert(tag)
       .values(
         tags.map((t) => ({
-          id: crypto.randomUUID(),
+          id: newId(),
           userId,
           name: t.name,
           color: t.color,

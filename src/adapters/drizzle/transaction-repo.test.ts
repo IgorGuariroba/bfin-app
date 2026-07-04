@@ -1,5 +1,5 @@
-import { afterEach, describe, it, expect } from "vitest";
-import { and, eq, inArray } from "drizzle-orm";
+import { describe, it, expect } from "vitest";
+import { and, eq } from "drizzle-orm";
 import { db } from "@/lib/drizzle";
 import { tag, tagToTransaction, transaction, user as userTable } from "@/db/schema";
 import { fromDbTimestamp, toDbTimestamp } from "@/adapters/drizzle/timestamp";
@@ -8,15 +8,18 @@ import {
   MAX_LIST_RESULTS,
   suggestTag,
   suggestType,
+  TransactionNotFoundError,
   TransactionValidationError,
 } from "@/core/transactions";
+import { drizzleTransactionRepo } from "./transaction-repo";
+import { trackCreatedUsers } from "./test-helpers";
 
 // A suíte antecede a extração do core (ADR-0013) e chama as operações como
 // funções soltas; o service composto preserva o contrato — só o import mudou.
 const { createTransaction, updateTransaction, deleteTransaction, listTransactions } =
   transactionsService;
 
-let createdUserIds: string[] = [];
+const trackUser = trackCreatedUsers();
 
 async function seedUser() {
   const [row] = await db
@@ -28,7 +31,7 @@ async function seedUser() {
       plan: "pro",
     })
     .returning();
-  createdUserIds.push(row.id);
+  trackUser(row.id);
   return row;
 }
 
@@ -93,13 +96,6 @@ async function transactionsWithTag(userId: string, tagId: string) {
     .innerJoin(tagToTransaction, eq(tagToTransaction.b, transaction.id))
     .where(and(eq(transaction.userId, userId), eq(tagToTransaction.a, tagId)));
 }
-
-afterEach(async () => {
-  if (createdUserIds.length) {
-    await db.delete(userTable).where(inArray(userTable.id, createdUserIds));
-    createdUserIds = [];
-  }
-});
 
 describe("transactions-service create", () => {
   it("cria uma Transaction válida e persiste no banco", async () => {
@@ -604,6 +600,12 @@ describe("updateTransaction", () => {
     });
 
     expect(updated.tags.map((t) => t.id)).toEqual([tagB.id]);
+  });
+
+  it("update no repo direto rejeita com TransactionNotFoundError para id inexistente", async () => {
+    await expect(
+      drizzleTransactionRepo.update(crypto.randomUUID(), { description: "X" })
+    ).rejects.toBeInstanceOf(TransactionNotFoundError);
   });
 });
 

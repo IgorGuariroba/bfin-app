@@ -1,12 +1,14 @@
-import { afterEach, describe, it, expect } from "vitest";
-import { and, asc, eq, inArray } from "drizzle-orm";
+import { describe, it, expect } from "vitest";
+import { and, asc, eq } from "drizzle-orm";
 import { db } from "@/lib/drizzle";
 import { previsao, transaction, user as userTable } from "@/db/schema";
 import { toDbTimestamp } from "@/adapters/drizzle/timestamp";
 import { previsaoService } from "@/adapters";
 import { PrevisaoNotFoundError } from "@/core/previsao";
+import { drizzlePrevisaoRepo } from "./previsao-repo";
+import { trackCreatedUsers } from "./test-helpers";
 
-let createdUserIds: string[] = [];
+const trackUser = trackCreatedUsers();
 
 async function seedUser() {
   const [row] = await db
@@ -18,16 +20,9 @@ async function seedUser() {
       plan: "pro",
     })
     .returning();
-  createdUserIds.push(row.id);
+  trackUser(row.id);
   return row;
 }
-
-afterEach(async () => {
-  if (createdUserIds.length) {
-    await db.delete(userTable).where(inArray(userTable.id, createdUserIds));
-    createdUserIds = [];
-  }
-});
 
 describe("previsao-service CRUD", () => {
   it("cria, lista em ordem de name, atualiza e deleta", async () => {
@@ -66,6 +61,15 @@ describe("previsao-service CRUD", () => {
     await expect(
       previsaoService.updatePrevisao({ userId: invasor.id, id: prev.id, amount: 1 })
     ).rejects.toThrow(PrevisaoNotFoundError);
+  });
+
+  it("update/delete no repo direto rejeitam com PrevisaoNotFoundError para id inexistente", async () => {
+    const id = crypto.randomUUID();
+
+    await expect(drizzlePrevisaoRepo.update(id, { amount: 1 })).rejects.toBeInstanceOf(
+      PrevisaoNotFoundError
+    );
+    await expect(drizzlePrevisaoRepo.delete(id)).rejects.toBeInstanceOf(PrevisaoNotFoundError);
   });
 });
 

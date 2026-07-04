@@ -3,7 +3,8 @@ import "server-only";
 import { and, asc, eq, gt, gte, inArray, isNull, lt, or } from "drizzle-orm";
 import { db } from "@/lib/drizzle";
 import { previsao, transaction, user } from "@/db/schema";
-import type { PrevisaoRepo } from "@/core/previsao";
+import { PrevisaoNotFoundError, type PrevisaoRepo } from "@/core/previsao";
+import { newId } from "./id";
 import { toDbTimestamp } from "./timestamp";
 
 // IDs novos nascem como UUID (crypto.randomUUID), não cuid — mesma convenção
@@ -15,7 +16,7 @@ export const drizzlePrevisaoRepo: PrevisaoRepo = {
   create: async (data) => {
     const [row] = await db
       .insert(previsao)
-      .values({ id: crypto.randomUUID(), ...data })
+      .values({ id: newId(), ...data })
       .returning();
     return row;
   },
@@ -32,17 +33,17 @@ export const drizzlePrevisaoRepo: PrevisaoRepo = {
     // limpo que o service já garante via PrevisaoNotFoundError.
     if (Object.keys(patch).length === 0) {
       const [existing] = await db.select().from(previsao).where(eq(previsao.id, id));
-      if (!existing) throw new Error(`Previsao ${id} not found`);
+      if (!existing) throw new PrevisaoNotFoundError(`Previsao ${id} not found`);
       return existing;
     }
     const [row] = await db.update(previsao).set(patch).where(eq(previsao.id, id)).returning();
-    if (!row) throw new Error(`Previsao ${id} not found`);
+    if (!row) throw new PrevisaoNotFoundError(`Previsao ${id} not found`);
     return row;
   },
 
   delete: async (id) => {
     const deleted = await db.delete(previsao).where(eq(previsao.id, id)).returning({ id: previsao.id });
-    if (deleted.length === 0) throw new Error(`Previsao ${id} not found`);
+    if (deleted.length === 0) throw new PrevisaoNotFoundError(`Previsao ${id} not found`);
   },
 
   deleteManualDiario: async (userId, window) => {
@@ -66,7 +67,7 @@ export const drizzlePrevisaoRepo: PrevisaoRepo = {
     // adapter Prisma.
     await db.insert(transaction).values(
       rows.map((row) => ({
-        id: crypto.randomUUID(),
+        id: newId(),
         userId: row.userId,
         type: "diario",
         description: row.description,
