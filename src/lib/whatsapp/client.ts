@@ -74,10 +74,3 @@ export async function sendListMenu(params: {
   });
 }
 
-export async function markRead(messageId: string): Promise<void> {
-  await post({
-    messaging_product: "whatsapp",
-    status: "read",
-    message_id: messageId,
-  });
-}

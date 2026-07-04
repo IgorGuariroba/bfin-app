@@ -42,7 +42,7 @@ export function isDeleteKeyword(text: string): boolean {
   return text.trim().toLowerCase() === "apagar";
 }
 
-export const SITE_URL = "https://bfincont.com.br";
+const SITE_URL = "https://bfincont.com.br";
 
 const brl = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
 

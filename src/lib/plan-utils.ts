@@ -2,8 +2,6 @@
 // mantido para os consumidores existentes (inclusive client hooks) até suas
 // fatias migrarem.
 export {
-  FREE_HISTORY_MONTHS,
-  FREE_FUTURE_MONTHS,
   type Plan,
   freeOldestMonth,
   freeNewestMonth,
