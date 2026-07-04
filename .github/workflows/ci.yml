@@ -39,6 +39,9 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: Knip (código morto)
+        run: npm run knip
+
       # Rede de segurança do ADR-0013: os testes (unitários do core + integração
       # contra Postgres) precisam ficar verdes a cada fatia da migração.
       # Secrets exigidos pelos testes são stubados neles próprios (vi.stubEnv).

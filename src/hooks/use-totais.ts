@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 
-export type PrevMonthData = {
+type PrevMonthData = {
   saldoAtual: number;
   custoVida: number;
   diarioMedio: number;

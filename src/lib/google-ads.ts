@@ -62,7 +62,7 @@ async function getAccessToken(): Promise<string> {
 }
 
 /** Formata uma Date como "YYYY-MM-DD HH:MM:SS-03:00" (fuso São Paulo). */
-export function formatAdsDateTime(d: Date): string {
+function formatAdsDateTime(d: Date): string {
   const parts = new Intl.DateTimeFormat("en-US", {
     timeZone: "America/Sao_Paulo",
     year: "numeric",
@@ -83,7 +83,7 @@ export function formatAdsDateTime(d: Date): string {
  * privacidade). A API de conversão tem um campo próprio para cada — daí o
  * discriminador `type`, que é exatamente o nome do campo enviado.
  */
-export type ClickIdType = "gclid" | "gbraid" | "wbraid";
+type ClickIdType = "gclid" | "gbraid" | "wbraid";
 
 export interface ClickId {
   type: ClickIdType;

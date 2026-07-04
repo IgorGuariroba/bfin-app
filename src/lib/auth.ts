@@ -11,7 +11,7 @@ import { tagsService } from "@/adapters";
 import { isAdmin } from "@/lib/admin";
 import { resolveClickId, uploadConversion } from "@/lib/google-ads";
 
-export const { handlers, auth, signIn, signOut } = NextAuth({
+export const { handlers, auth, signOut } = NextAuth({
   adapter: buildAuthAdapter(),
   session: { strategy: "jwt" },
   trustHost: true,

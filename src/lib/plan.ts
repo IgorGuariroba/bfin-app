@@ -2,12 +2,8 @@ import "server-only";
 import { identityService } from "@/adapters";
 import type { Plan } from "@/core/identity";
 export {
-  FREE_HISTORY_MONTHS,
-  FREE_FUTURE_MONTHS,
   type Plan,
   freeOldestMonth,
-  freeNewestMonth,
-  currentYearMonth,
   isMonthAllowed,
   isFutureMonthAllowed,
 } from "@/lib/plan-utils";

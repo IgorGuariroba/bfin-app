@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 
-export type TransactionTag = { id: string; name: string; color: string };
+type TransactionTag = { id: string; name: string; color: string };
 
 export type Transaction = {
   id: string;

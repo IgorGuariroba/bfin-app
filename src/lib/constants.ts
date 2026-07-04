@@ -24,7 +24,3 @@ export const TYPE_LABELS_FULL = {
 
 export const CATEGORIES = ["entrada", "saida", "diario", "cartao", "economia"] as const;
 export type Category = (typeof CATEGORIES)[number];
-
-// A taxonomia de tags é domínio e mudou-se para o core (ADR-0013); re-export
-// mantido para os consumidores existentes até suas fatias migrarem.
-export { DEFAULT_SYSTEM_TAGS, CATEGORY_TAGS } from "@/core/tags/taxonomy";
