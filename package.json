@@ -80,6 +80,6 @@
     "@opentelemetry/core": "^2.8.0"
   },
   "lint-staged": {
-    "*.{js,jsx,ts,tsx,mjs,mts}": "eslint --fix"
+    "*.{js,jsx,ts,tsx,mjs,mts}": ["eslint --fix", "vitest related --project unit --run"]
   }
 }
