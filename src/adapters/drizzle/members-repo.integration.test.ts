@@ -1,11 +1,13 @@
-import { afterEach, describe, it, expect } from "vitest";
-import { eq, inArray } from "drizzle-orm";
+import { describe, it, expect } from "vitest";
+import { eq } from "drizzle-orm";
 import { db } from "@/lib/drizzle";
 import { accountMember, user as userTable } from "@/db/schema";
 import { membersService } from "@/adapters";
 import { InviteNotFoundError } from "@/core/identity";
+import { drizzleMembersRepo } from "./members-repo";
+import { trackCreatedUsers } from "./test-helpers";
 
-let createdUserIds: string[] = [];
+const trackUser = trackCreatedUsers();
 
 async function seedUser(plan = "pro") {
   const [row] = await db
@@ -17,16 +19,9 @@ async function seedUser(plan = "pro") {
       plan,
     })
     .returning();
-  createdUserIds.push(row.id);
+  trackUser(row.id);
   return row;
 }
-
-afterEach(async () => {
-  if (createdUserIds.length) {
-    await db.delete(userTable).where(inArray(userTable.id, createdUserIds));
-    createdUserIds = [];
-  }
-});
 
 describe("members-service fluxo completo", () => {
   it("convida, aceita, lista dos dois lados e revoga", async () => {
@@ -72,6 +67,21 @@ describe("members-service fluxo completo", () => {
     });
 
     await expect(membersService.revokeInvite(intruso.id, invite.id)).rejects.toBeInstanceOf(
+      InviteNotFoundError
+    );
+  });
+});
+
+describe("drizzleMembersRepo", () => {
+  it("activate de id inexistente lança InviteNotFoundError (guard de race, não Error genérico)", async () => {
+    const convidado = await seedUser();
+    await expect(
+      drizzleMembersRepo.activate("id-inexistente", convidado.id)
+    ).rejects.toBeInstanceOf(InviteNotFoundError);
+  });
+
+  it("delete de id inexistente lança InviteNotFoundError (guard de race, não Error genérico)", async () => {
+    await expect(drizzleMembersRepo.delete("id-inexistente")).rejects.toBeInstanceOf(
       InviteNotFoundError
     );
   });
