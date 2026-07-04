@@ -1,8 +1,9 @@
 import { afterEach, beforeEach, describe, it, expect, vi } from "vitest";
-import { eq, inArray } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { db } from "@/lib/drizzle";
 import { planConfig, user as userTable } from "@/db/schema";
 import { fromDbTimestampOrNull, toDbTimestamp } from "@/adapters/drizzle/timestamp";
+import { trackCreatedUsers } from "./test-helpers";
 
 const { mockPreApprovalGet, mockPreApprovalCreate, mockPreApprovalUpdate } = vi.hoisted(() => ({
   mockPreApprovalGet: vi.fn(),
@@ -28,7 +29,7 @@ const { billingService } = await import("@/adapters");
 // demais testes deste arquivo.
 const { drizzleBillingRepo } = await import("./billing-repo");
 
-let createdUserIds: string[] = [];
+const trackUser = trackCreatedUsers();
 
 async function seedUser(opts: Partial<{
   plan: string;
@@ -51,7 +52,7 @@ async function seedUser(opts: Partial<{
       conversionReportedAt: conversionReportedAt ? toDbTimestamp(conversionReportedAt) : undefined,
     })
     .returning();
-  createdUserIds.push(user.id);
+  trackUser(user.id);
   return { ...user, planExpiresAt: fromDbTimestampOrNull(user.planExpiresAt) };
 }
 
@@ -63,10 +64,6 @@ afterEach(async () => {
   vi.unstubAllEnvs();
   vi.clearAllMocks();
   await db.delete(planConfig).where(eq(planConfig.id, "default"));
-  if (createdUserIds.length) {
-    await db.delete(userTable).where(inArray(userTable.id, createdUserIds));
-    createdUserIds = [];
-  }
 });
 
 describe("getPlanConfig", () => {

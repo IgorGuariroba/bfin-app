@@ -1,27 +1,22 @@
-import { afterEach, describe, it, expect } from "vitest";
-import { eq, inArray } from "drizzle-orm";
+import { describe, it, expect } from "vitest";
+import { eq } from "drizzle-orm";
 import { db } from "@/lib/drizzle";
 import { user as userTable } from "@/db/schema";
 import { apiKeysService } from "@/adapters";
 import { ApiKeyNotFoundError } from "@/core/apikeys";
+import { drizzleApiKeyRepo } from "./apikey-repo";
+import { trackCreatedUsers } from "./test-helpers";
 
-let createdUserIds: string[] = [];
+const trackUser = trackCreatedUsers();
 
 async function seedUser(plan = "pro") {
   const [row] = await db
     .insert(userTable)
     .values({ id: crypto.randomUUID(), name: "ApiKey User", email: `apikey-${crypto.randomUUID()}@example.com`, plan })
     .returning();
-  createdUserIds.push(row.id);
+  trackUser(row.id);
   return row;
 }
-
-afterEach(async () => {
-  if (createdUserIds.length) {
-    await db.delete(userTable).where(inArray(userTable.id, createdUserIds));
-    createdUserIds = [];
-  }
-});
 
 describe("issueApiKey", () => {
   it("emite uma chave e a lista sem o hash", async () => {
@@ -65,6 +60,20 @@ describe("revokeApiKey", () => {
     const issued = await apiKeysService.issueApiKey(dono.id);
 
     await expect(apiKeysService.revokeApiKey(invasor.id, issued.id)).rejects.toBeInstanceOf(
+      ApiKeyNotFoundError
+    );
+  });
+});
+
+describe("drizzleApiKeyRepo", () => {
+  it("revoke de id inexistente lança ApiKeyNotFoundError (guard de race, não Error genérico)", async () => {
+    await expect(drizzleApiKeyRepo.revoke("id-inexistente", new Date())).rejects.toBeInstanceOf(
+      ApiKeyNotFoundError
+    );
+  });
+
+  it("bumpLastUsed de id inexistente lança ApiKeyNotFoundError (guard de race, não Error genérico)", async () => {
+    await expect(drizzleApiKeyRepo.bumpLastUsed("id-inexistente", new Date())).rejects.toBeInstanceOf(
       ApiKeyNotFoundError
     );
   });

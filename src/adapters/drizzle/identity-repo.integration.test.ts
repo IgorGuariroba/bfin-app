@@ -1,11 +1,12 @@
-import { afterEach, describe, it, expect } from "vitest";
-import { eq, inArray } from "drizzle-orm";
+import { describe, it, expect } from "vitest";
+import { eq } from "drizzle-orm";
 import { db } from "@/lib/drizzle";
 import { accountMember, user as userTable } from "@/db/schema";
 import { toDbTimestamp } from "@/adapters/drizzle/timestamp";
 import { identityService } from "@/adapters";
+import { trackCreatedUsers } from "./test-helpers";
 
-let createdUserIds: string[] = [];
+const trackUser = trackCreatedUsers();
 
 async function seedUser(opts: { plan?: string; planExpiresAt?: Date } = {}) {
   const [user] = await db
@@ -18,17 +19,9 @@ async function seedUser(opts: { plan?: string; planExpiresAt?: Date } = {}) {
       planExpiresAt: opts.planExpiresAt ? toDbTimestamp(opts.planExpiresAt) : undefined,
     })
     .returning();
-  createdUserIds.push(user.id);
+  trackUser(user.id);
   return user;
 }
-
-afterEach(async () => {
-  if (createdUserIds.length) {
-    // AccountMember cai em cascade junto com o User (onDelete: cascade).
-    await db.delete(userTable).where(inArray(userTable.id, createdUserIds));
-    createdUserIds = [];
-  }
-});
 
 describe("getUserPlan", () => {
   it("faz downgrade preguiçoso e persiste quando o pro está vencido", async () => {
@@ -53,6 +46,7 @@ describe("resolveEffectiveUser / getDelegationInfo", () => {
   it("resolve o dono quando há AccountMember ativo", async () => {
     const dono = await seedUser({ plan: "pro" });
     const membro = await seedUser();
+    // Não precisa de cleanup próprio: cai em cascade junto com o User (onDelete: cascade).
     await db.insert(accountMember).values({
       id: crypto.randomUUID(),
       ownerId: dono.id,

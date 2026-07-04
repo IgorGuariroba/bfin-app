@@ -3,7 +3,8 @@ import "server-only";
 import { and, desc, eq, inArray } from "drizzle-orm";
 import { db } from "@/lib/drizzle";
 import { accountMember, user } from "@/db/schema";
-import type { MembersRepo } from "@/core/identity";
+import { InviteNotFoundError, type MembersRepo } from "@/core/identity";
+import { newId } from "./id";
 import { fromDbTimestamp } from "./timestamp";
 
 type AccountMemberRow = typeof accountMember.$inferSelect;
@@ -73,7 +74,7 @@ export const drizzleMembersRepo: MembersRepo = {
   createInvite: async (data) => {
     const [row] = await db
       .insert(accountMember)
-      .values({ id: crypto.randomUUID(), ...data })
+      .values({ id: newId(), ...data })
       .returning();
     return mapRow(row);
   },
@@ -98,7 +99,7 @@ export const drizzleMembersRepo: MembersRepo = {
       .set({ memberId, status: "active" })
       .where(eq(accountMember.id, id))
       .returning();
-    if (!row) throw new Error(`AccountMember ${id} not found`);
+    if (!row) throw new InviteNotFoundError(`AccountMember ${id} not found`);
     return mapRow(row);
   },
 
@@ -112,6 +113,6 @@ export const drizzleMembersRepo: MembersRepo = {
       .delete(accountMember)
       .where(eq(accountMember.id, id))
       .returning({ id: accountMember.id });
-    if (deleted.length === 0) throw new Error(`AccountMember ${id} not found`);
+    if (deleted.length === 0) throw new InviteNotFoundError(`AccountMember ${id} not found`);
   },
 };

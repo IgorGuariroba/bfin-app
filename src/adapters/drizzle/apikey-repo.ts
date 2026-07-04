@@ -3,7 +3,8 @@ import "server-only";
 import { and, desc, eq, isNull } from "drizzle-orm";
 import { db } from "@/lib/drizzle";
 import { apiKey } from "@/db/schema";
-import type { ApiKeyRepo } from "@/core/apikeys";
+import { ApiKeyNotFoundError, type ApiKeyRepo } from "@/core/apikeys";
+import { newId } from "./id";
 import { fromDbTimestamp, fromDbTimestampOrNull, toDbTimestamp } from "./timestamp";
 
 export const drizzleApiKeyRepo: ApiKeyRepo = {
@@ -39,7 +40,7 @@ export const drizzleApiKeyRepo: ApiKeyRepo = {
   create: async (data) => {
     const [row] = await db
       .insert(apiKey)
-      .values({ id: crypto.randomUUID(), ...data })
+      .values({ id: newId(), ...data })
       .returning({ id: apiKey.id, prefix: apiKey.prefix, name: apiKey.name, createdAt: apiKey.createdAt });
     return { ...row, createdAt: fromDbTimestamp(row.createdAt) };
   },
@@ -62,7 +63,7 @@ export const drizzleApiKeyRepo: ApiKeyRepo = {
       .set({ revokedAt: toDbTimestamp(at) })
       .where(eq(apiKey.id, id))
       .returning({ id: apiKey.id });
-    if (updated.length === 0) throw new Error(`ApiKey ${id} not found`);
+    if (updated.length === 0) throw new ApiKeyNotFoundError(`ApiKey ${id} not found`);
   },
 
   findByHashedKey: async (hashedKey) => {
@@ -80,6 +81,6 @@ export const drizzleApiKeyRepo: ApiKeyRepo = {
       .set({ lastUsedAt: toDbTimestamp(at) })
       .where(eq(apiKey.id, id))
       .returning({ id: apiKey.id });
-    if (updated.length === 0) throw new Error(`ApiKey ${id} not found`);
+    if (updated.length === 0) throw new ApiKeyNotFoundError(`ApiKey ${id} not found`);
   },
 };
