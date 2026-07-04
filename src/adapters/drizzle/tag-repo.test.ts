@@ -1,27 +1,21 @@
-import { afterEach, describe, it, expect } from "vitest";
-import { and, count, eq, inArray } from "drizzle-orm";
+import { describe, it, expect } from "vitest";
+import { and, count, eq } from "drizzle-orm";
 import { db } from "@/lib/drizzle";
 import { tag, user as userTable } from "@/db/schema";
 import { tagsService } from "@/adapters";
 import { DEFAULT_SYSTEM_TAGS, CATEGORY_TAGS } from "@/core/tags";
+import { trackCreatedUsers } from "./test-helpers";
 
-let createdUserIds: string[] = [];
+const trackUser = trackCreatedUsers();
 
 async function seedUser() {
   const [row] = await db
     .insert(userTable)
     .values({ id: crypto.randomUUID(), name: "Tag User", email: `tags-${crypto.randomUUID()}@example.com`, plan: "pro" })
     .returning();
-  createdUserIds.push(row.id);
+  trackUser(row.id);
   return row;
 }
-
-afterEach(async () => {
-  if (createdUserIds.length) {
-    await db.delete(userTable).where(inArray(userTable.id, createdUserIds));
-    createdUserIds = [];
-  }
-});
 
 describe("ensureSystemTags", () => {
   it("semeia type-mirrors + categorias canônicas como system tags", async () => {

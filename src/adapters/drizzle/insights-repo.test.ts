@@ -1,13 +1,13 @@
-import { afterEach, describe, it, expect } from "vitest";
-import { inArray } from "drizzle-orm";
+import { describe, it, expect } from "vitest";
 import { db } from "@/lib/drizzle";
 import { previsao, transaction, user as userTable } from "@/db/schema";
 import { toDbTimestamp } from "@/adapters/drizzle/timestamp";
 import { insightsService } from "@/adapters";
+import { trackCreatedUsers } from "./test-helpers";
 
 const { getTotais, getSaldos, getMonthSummary, getSugestoes } = insightsService;
 
-let createdUserIds: string[] = [];
+const trackUser = trackCreatedUsers();
 
 async function seedUser() {
   const [row] = await db
@@ -19,7 +19,7 @@ async function seedUser() {
       plan: "pro",
     })
     .returning();
-  createdUserIds.push(row.id);
+  trackUser(row.id);
   return row;
 }
 
@@ -41,13 +41,6 @@ function tx(
     updatedAt: now,
   });
 }
-
-afterEach(async () => {
-  if (createdUserIds.length) {
-    await db.delete(userTable).where(inArray(userTable.id, createdUserIds));
-    createdUserIds = [];
-  }
-});
 
 describe("getTotais", () => {
   it("soma por tipo no mês e deriva custoVida/performance/saldoAtual", async () => {
