@@ -4,6 +4,9 @@ import type { DelegationInfo, Plan } from "./types";
 /** Lançada quando um usuário não-`pro` tenta ligar uma feature exclusiva. Mapeada a 403 na rota. */
 export class ProRequiredError extends Error {}
 
+/** Lançada quando uma mutação de User não encontra a linha esperada. */
+export class IdentityUserNotFoundError extends Error {}
+
 export function makeIdentityService(repo: IdentityRepo) {
   /**
    * Delegação ADR-0011: membro ativo opera como dono. Resolve o userId efetivo

@@ -13,6 +13,7 @@ export type { IdentityRepo, MembersRepo, NewInvite } from "./ports";
 export {
   makeIdentityService,
   ProRequiredError,
+  IdentityUserNotFoundError,
   type IdentityService,
 } from "./service";
 export {

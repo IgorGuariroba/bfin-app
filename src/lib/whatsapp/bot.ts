@@ -2,6 +2,7 @@ import "server-only";
 import { count, eq, sql } from "drizzle-orm";
 import { db } from "@/lib/drizzle";
 import { whatsappContact, whatsappConversation, whatsappMessage } from "@/db/schema";
+import { newId } from "@/adapters/drizzle/id";
 import { toDbTimestamp } from "@/adapters/drizzle/timestamp";
 import { isUniqueViolation } from "@/lib/db-errors";
 import { sendListMenu, sendText } from "@/lib/whatsapp/client";
@@ -42,7 +43,7 @@ async function upsertContactAndConversation(
 ): Promise<Conversation> {
   const [contact] = await db
     .insert(whatsappContact)
-    .values({ id: crypto.randomUUID(), phone, name: profileName ?? null })
+    .values({ id: newId(), phone, name: profileName ?? null })
     .onConflictDoUpdate({
       target: whatsappContact.phone,
       set: profileName ? { name: profileName } : { id: sql`excluded.id` },
@@ -51,7 +52,7 @@ async function upsertContactAndConversation(
 
   const [conversation] = await db
     .insert(whatsappConversation)
-    .values({ id: crypto.randomUUID(), contactId: contact.id, status: "bot" })
+    .values({ id: newId(), contactId: contact.id, status: "bot" })
     .onConflictDoUpdate({
       target: whatsappConversation.contactId,
       set: { id: sql`excluded.id` },
@@ -92,7 +93,7 @@ async function persistInbound(
 
   try {
     await db.insert(whatsappMessage).values({
-      id: crypto.randomUUID(),
+      id: newId(),
       conversationId,
       direction: "inbound",
       sender: "contact",
@@ -119,7 +120,7 @@ async function persistOutbound(
   wamid: string | undefined,
 ): Promise<void> {
   await db.insert(whatsappMessage).values({
-    id: crypto.randomUUID(),
+    id: newId(),
     conversationId,
     direction: "outbound",
     sender,

@@ -10,6 +10,9 @@ const CYCLE_LABELS: Record<BillingCycle, string> = { monthly: "Mensal", annual: 
 
 export class BillingValidationError extends Error {}
 
+/** Lançada quando uma mutação de billing não encontra o User esperado. */
+export class BillingUserNotFoundError extends Error {}
+
 export interface BillingLogger {
   warn(data: Record<string, unknown>, msg: string): void;
   error(data: Record<string, unknown>, msg: string): void;

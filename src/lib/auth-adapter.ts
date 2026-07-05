@@ -4,6 +4,7 @@ import { and, eq } from "drizzle-orm";
 import type { Adapter, AdapterAccount, AdapterUser } from "next-auth/adapters";
 import { db } from "@/lib/drizzle";
 import { account, user } from "@/db/schema";
+import { newId } from "@/adapters/drizzle/id";
 import { fromDbTimestampOrNull, toDbTimestamp } from "@/adapters/drizzle/timestamp";
 
 /**
@@ -72,7 +73,7 @@ export function buildAuthAdapter(): Adapter {
     },
     async linkAccount(data: AdapterAccount) {
       await db.insert(account).values({
-        id: crypto.randomUUID(),
+        id: newId(),
         userId: data.userId,
         type: data.type,
         provider: data.provider,
