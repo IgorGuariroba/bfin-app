@@ -1,8 +1,8 @@
 import { auth } from "@/lib/auth";
 import { getEffectiveUserId } from "@/lib/effective-user";
 import type { NextRequest } from "next/server";
-import { transactionsService } from "@/adapters";
-import { TransactionNotFoundError, TransactionValidationError } from "@/core/transactions";
+import { transactionsClient } from "@/lib/transactions-client";
+import { BackendError } from "@/lib/backend-client";
 
 export async function PUT(
   request: NextRequest,
@@ -18,9 +18,7 @@ export async function PUT(
   const { type, description, amount, date, tagIds } = body;
 
   try {
-    const updated = await transactionsService.updateTransaction({
-      userId,
-      id,
+    const updated = await transactionsClient.update(userId, id, {
       type,
       description,
       amount,
@@ -29,11 +27,8 @@ export async function PUT(
     });
     return Response.json(updated);
   } catch (error) {
-    if (error instanceof TransactionNotFoundError) {
-      return Response.json({ error: "Not found" }, { status: 404 });
-    }
-    if (error instanceof TransactionValidationError) {
-      return Response.json({ error: error.message }, { status: 400 });
+    if (error instanceof BackendError) {
+      return Response.json({ error: error.message }, { status: error.status });
     }
     throw error;
   }
@@ -50,10 +45,10 @@ export async function DELETE(
 
   const { id } = await params;
   try {
-    await transactionsService.deleteTransaction(userId, id);
+    await transactionsClient.remove(userId, id);
   } catch (error) {
-    if (error instanceof TransactionNotFoundError) {
-      return Response.json({ error: "Not found" }, { status: 404 });
+    if (error instanceof BackendError) {
+      return Response.json({ error: error.message }, { status: error.status });
     }
     throw error;
   }
