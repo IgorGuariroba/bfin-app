@@ -1,7 +1,12 @@
 # Compose usado pelo Dokploy (provider Git) para buildar e rodar a app na VPS.
 # O Dokploy clona este repo, builda a imagem da app a partir do Dockerfile e
-# sobe app + db. As variáveis ${...} vêm da aba Environment do serviço no Dokploy.
-# O volume pgdata é externo (bfin-app_pgdata) para preservar os dados do banco.
+# sobe só o app. As variáveis ${...} vêm da aba Environment do serviço no Dokploy.
+#
+# ADR-0017: o serviço db e o volume pgdata moveram para o repo bfin-backend,
+# que agora é dono do schema/migrations do mesmo Postgres. O hostname `db` em
+# DATABASE_URL continua igual — só passa a ser servido pelo stack do
+# bfin-backend na mesma dokploy-network compartilhada. Esse stack precisa
+# estar no ar (com healthcheck do db OK) antes deste deploy.
 services:
   app:
     build:
@@ -34,34 +39,8 @@ services:
       ADMIN_EMAILS: ${ADMIN_EMAILS}
       PLUGGY_CLIENT_ID: ${PLUGGY_CLIENT_ID}
       PLUGGY_CLIENT_SECRET: ${PLUGGY_CLIENT_SECRET}
-    depends_on:
-      db:
-        condition: service_healthy
     networks:
       - dokploy-network
-      - internal
-    logging:
-      driver: json-file
-      options:
-        max-size: "10m"
-        max-file: "3"
-
-  db:
-    image: postgres:16-alpine
-    restart: unless-stopped
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB}
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - internal
     logging:
       driver: json-file
       options:
@@ -71,9 +50,3 @@ services:
 networks:
   dokploy-network:
     external: true
-  internal:
-
-volumes:
-  pgdata:
-    external: true
-    name: bfin-app_pgdata
