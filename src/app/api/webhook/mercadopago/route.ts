@@ -1,6 +1,6 @@
 import "server-only";
 import { WebhookSignatureValidator } from "mercadopago";
-import { billingService } from "@/adapters";
+import { billingClient } from "@/lib/billing-client";
 
 /** Tolerância do ts da assinatura: além disso é replay de webhook capturado. */
 const SIGNATURE_TOLERANCE_MS = 5 * 60_000;
@@ -61,8 +61,8 @@ export async function POST(request: Request) {
     return Response.json({ error: "Invalid signature" }, { status: 401 });
   }
 
-  // Verificada a origem, o processamento (mudança de plano — domínio) é do core.
-  await billingService.processSubscriptionEvent(data.id);
+  // Verificada a origem, o processamento (mudança de plano — domínio) é do bfin-backend.
+  await billingClient.processSubscriptionEvent(data.id);
 
   return Response.json({ ok: true });
 }

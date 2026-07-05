@@ -1,5 +1,5 @@
-import { billingService } from "@/adapters";
+import { billingClient } from "@/lib/billing-client";
 
 export async function GET() {
-  return Response.json(await billingService.getPlanPrices());
+  return Response.json(await billingClient.getPlanPrices());
 }

@@ -1,41 +1,10 @@
 import { afterEach, beforeEach, describe, it, expect, vi } from "vitest";
 import { createHmac } from "node:crypto";
-import { eq, inArray } from "drizzle-orm";
-import { db } from "@/lib/drizzle";
-import { user as userTable } from "@/db/schema";
-
-const { mockPreApprovalGet } = vi.hoisted(() => ({ mockPreApprovalGet: vi.fn() }));
-
-// Mock parcial: só PreApproval (evita chamada real à API). O
-// WebhookSignatureValidator fica o real — é ele que está sob teste.
-vi.mock("mercadopago", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("mercadopago")>()),
-  PreApproval: class {
-    get = mockPreApprovalGet;
-  },
-}));
-
 import { POST } from "./route";
 
 const SECRET = "test-mp-webhook-secret";
 const DATA_ID = "preapproval-123";
 const REQUEST_ID = "req-abc";
-
-let createdUserIds: string[] = [];
-
-async function makeUser() {
-  const [user] = await db
-    .insert(userTable)
-    .values({
-      id: crypto.randomUUID(),
-      name: "MP User",
-      email: `mp-${crypto.randomUUID()}@example.com`,
-      plan: "free",
-    })
-    .returning();
-  createdUserIds.push(user.id);
-  return user;
-}
 
 function sign(dataId: string, ts: string, secret = SECRET) {
   // Manifesto oficial do MP: id em lowercase e `;` no final.
@@ -62,19 +31,17 @@ function webhookRequest(opts: { ts?: string; v1?: string; type?: string } = {}) 
 
 beforeEach(() => {
   vi.stubEnv("MERCADO_PAGO_WEBHOOK_SECRET", SECRET);
-  // Evita side effects reais caso o .env.local tenha os webhooks configurados.
-  vi.stubEnv("DISCORD_WEBHOOK_URL", "");
 });
 
-afterEach(async () => {
+afterEach(() => {
   vi.unstubAllEnvs();
-  vi.clearAllMocks();
-  if (createdUserIds.length) {
-    await db.delete(userTable).where(inArray(userTable.id, createdUserIds));
-    createdUserIds = [];
-  }
 });
 
+// O efeito de domínio (ativar/desvincular o plano) roda no bfin-backend real
+// via billingClient.processSubscriptionEvent e é coberto lá
+// (routes/billing.integration.test.ts e billing-repo.integration.test.ts,
+// ADR-0017) — aqui só a verificação de assinatura, que continua sendo
+// responsabilidade deste gateway.
 describe("POST /api/webhook/mercadopago — verificação de assinatura", () => {
   it("responde 500 (fail-closed) quando o secret não está configurado", async () => {
     vi.stubEnv("MERCADO_PAGO_WEBHOOK_SECRET", "");
@@ -82,14 +49,12 @@ describe("POST /api/webhook/mercadopago — verificação de assinatura", () => 
     const res = await POST(webhookRequest());
 
     expect(res.status).toBe(500);
-    expect(mockPreApprovalGet).not.toHaveBeenCalled();
   });
 
   it("rejeita assinatura inválida com 401", async () => {
     const res = await POST(webhookRequest({ v1: "deadbeef".repeat(8) }));
 
     expect(res.status).toBe(401);
-    expect(mockPreApprovalGet).not.toHaveBeenCalled();
   });
 
   it("rejeita replay: ts além da tolerância com 401", async () => {
@@ -98,23 +63,6 @@ describe("POST /api/webhook/mercadopago — verificação de assinatura", () => 
     const res = await POST(webhookRequest({ ts: staleTs }));
 
     expect(res.status).toBe(401);
-    expect(mockPreApprovalGet).not.toHaveBeenCalled();
-  });
-
-  it("processa webhook legítimo: assinatura válida e recente ativa o plano", async () => {
-    const user = await makeUser();
-    mockPreApprovalGet.mockResolvedValue({
-      id: "sub-1",
-      status: "authorized",
-      external_reference: `${user.id}:monthly`,
-    });
-
-    const res = await POST(webhookRequest());
-
-    expect(res.status).toBe(200);
-    const [updated] = await db.select().from(userTable).where(eq(userTable.id, user.id));
-    expect(updated.plan).toBe("pro");
-    expect(updated.mpSubscriptionId).toBe("sub-1");
   });
 
   it("ignora eventos de outro tipo sem exigir assinatura", async () => {
@@ -128,6 +76,5 @@ describe("POST /api/webhook/mercadopago — verificação de assinatura", () => 
     const res = await POST(req);
 
     expect(res.status).toBe(200);
-    expect(mockPreApprovalGet).not.toHaveBeenCalled();
   });
 });

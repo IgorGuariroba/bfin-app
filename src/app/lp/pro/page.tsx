@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { Check, ShieldCheck, Zap } from "lucide-react";
-import { billingService } from "@/adapters";
+import { billingClient } from "@/lib/billing-client";
 
 export const dynamic = "force-dynamic";
 
@@ -30,7 +30,7 @@ const currencyFormatter = new Intl.NumberFormat("pt-BR", {
 const fmt = (v: number) => currencyFormatter.format(v);
 
 async function getPrices() {
-  return billingService.getPlanPrices();
+  return billingClient.getPlanPrices();
 }
 
 const PRO_BENEFITS = [
