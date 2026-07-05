@@ -1,5 +1,5 @@
 import "server-only";
-import { billingService } from "@/adapters";
+import { billingClient } from "@/lib/billing-client";
 
 export type IntentId =
   | "price"
@@ -47,9 +47,9 @@ const SITE_URL = "https://bfincont.com.br";
 const brl = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
 
 export async function priceText(): Promise<string> {
-  // Canal consome o core para dados do domínio financeiro (ADR-0013) — o
+  // Canal consome o gateway pro bfin-backend (ADR-0017) — o
   // PlanConfig é a fonte única de preço.
-  const prices = await billingService.getPlanPrices();
+  const prices = await billingClient.getPlanPrices();
   return (
     `Temos o plano gratuito + Premium por ${brl.format(prices.monthly)}/mês ` +
     `ou ${brl.format(prices.annual)}/ano.\n\nDetalhes: ${SITE_URL}`

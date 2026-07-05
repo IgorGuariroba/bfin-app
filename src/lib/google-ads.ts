@@ -31,7 +31,7 @@ function required(key: string): string {
  * Usado como feature flag pelo webhook — se falso, o rastreio fica desligado
  * (nenhuma chamada à API, nenhum erro).
  */
-export function isGoogleAdsConfigured(): boolean {
+function isGoogleAdsConfigured(): boolean {
   return Boolean(
     process.env.GOOGLE_ADS_DEVELOPER_TOKEN &&
       process.env.GOOGLE_ADS_CLIENT_ID &&

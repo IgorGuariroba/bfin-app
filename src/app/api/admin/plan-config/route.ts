@@ -1,8 +1,7 @@
 import "server-only";
 import { auth } from "@/lib/auth";
 import { isAdmin } from "@/lib/admin";
-import { billingService } from "@/adapters";
-import { BillingValidationError } from "@/core/billing";
+import { billingClient, BillingValidationError } from "@/lib/billing-client";
 
 async function requireAdmin() {
   const session = await auth();
@@ -13,7 +12,7 @@ async function requireAdmin() {
 export async function GET() {
   if (!await requireAdmin()) return Response.json({ error: "Forbidden" }, { status: 403 });
 
-  return Response.json(await billingService.getPlanConfig());
+  return Response.json(await billingClient.getPlanConfig());
 }
 
 export async function POST(request: Request) {
@@ -22,7 +21,7 @@ export async function POST(request: Request) {
   const { monthlyAmount, annualAmount } = await request.json();
 
   try {
-    const config = await billingService.updatePlanConfig({ monthlyAmount, annualAmount });
+    const config = await billingClient.updatePlanConfig({ monthlyAmount, annualAmount });
     return Response.json(config);
   } catch (err) {
     if (err instanceof BillingValidationError) {

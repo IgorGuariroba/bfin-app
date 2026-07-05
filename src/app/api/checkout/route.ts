@@ -1,7 +1,6 @@
 import "server-only";
 import { auth } from "@/lib/auth";
-import { billingService } from "@/adapters";
-import { BillingValidationError } from "@/core/billing";
+import { billingClient, BillingValidationError } from "@/lib/billing-client";
 import type { NextRequest } from "next/server";
 
 export async function POST(request: NextRequest) {
@@ -15,7 +14,7 @@ export async function POST(request: NextRequest) {
     request.nextUrl.origin;
 
   try {
-    const { initPoint } = await billingService.checkout({
+    const { initPoint } = await billingClient.checkout({
       userId: session.user.id,
       email: session.user.email,
       cycle: body?.cycle,

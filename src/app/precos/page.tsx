@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Check, ShieldCheck } from "lucide-react";
-import { billingService } from "@/adapters";
+import { billingClient } from "@/lib/billing-client";
 import { LandingFooter } from "@/components/landing/landing-footer";
 import { LandingHeader } from "@/components/landing/landing-header";
 
@@ -27,7 +27,7 @@ const currencyFormatter = new Intl.NumberFormat("pt-BR", {
 const fmt = (v: number) => currencyFormatter.format(v);
 
 async function getPrices() {
-  return billingService.getPlanPrices();
+  return billingClient.getPlanPrices();
 }
 
 const FREE_FEATURES = [
