@@ -1,6 +1,6 @@
 import { auth } from "@/lib/auth";
-import { membersService } from "@/adapters";
-import { InviteNotFoundError } from "@/core/identity";
+import { invitesClient } from "@/lib/invites-client";
+import { BackendError } from "@/lib/backend-client";
 
 export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
@@ -9,9 +9,9 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
   const { id } = await params;
 
   try {
-    await membersService.revokeInvite(session.user.id, id);
+    await invitesClient.revoke(session.user.id, id);
   } catch (error) {
-    if (error instanceof InviteNotFoundError) {
+    if (error instanceof BackendError && error.status === 404) {
       return Response.json({ error: "Not found" }, { status: 404 });
     }
     throw error;

@@ -1,9 +1,8 @@
-import { afterEach, describe, it, expect, vi } from "vitest";
+import { afterEach, describe, it, expect } from "vitest";
 import { eq, inArray } from "drizzle-orm";
 import { db } from "@/lib/drizzle";
 import { apiKey, user as userTable } from "@/db/schema";
-import { generateApiKey } from "@/lib/api-key";
-import { logger } from "@/lib/logger";
+import { apikeysClient } from "@/lib/apikeys-client";
 import { recordAgentWrite } from "@/lib/agent-audit";
 
 let createdUserIds: string[] = [];
@@ -19,16 +18,12 @@ async function seedApiKey() {
     })
     .returning();
   createdUserIds.push(user.id);
-  const { prefix, hashedKey } = generateApiKey();
-  const [key] = await db
-    .insert(apiKey)
-    .values({ id: crypto.randomUUID(), userId: user.id, name: "Assistente", prefix, hashedKey })
-    .returning();
+  const issued = await apikeysClient.issue(user.id);
+  const [key] = await db.select().from(apiKey).where(eq(apiKey.id, issued.id));
   return { user, apiKey: key };
 }
 
 afterEach(async () => {
-  vi.restoreAllMocks();
   if (createdUserIds.length) {
     await db.delete(userTable).where(inArray(userTable.id, createdUserIds));
     createdUserIds = [];
@@ -36,28 +31,8 @@ afterEach(async () => {
 });
 
 describe("recordAgentWrite", () => {
-  it("emite log estruturado com apiKeyId/userId/action/entityId", async () => {
-    const { user, apiKey } = await seedApiKey();
-    const infoSpy = vi.spyOn(logger, "info");
-
-    await recordAgentWrite({
-      apiKeyId: apiKey.id,
-      userId: user.id,
-      action: "delete",
-      entityId: "tx-123",
-    });
-
-    expect(infoSpy).toHaveBeenCalledWith(
-      expect.objectContaining({
-        apiKeyId: apiKey.id,
-        userId: user.id,
-        action: "delete",
-        entityId: "tx-123",
-      }),
-      expect.anything()
-    );
-  });
-
+  // Log estruturado agora é emitido no processo do bfin-backend (destino do
+  // gateway) — coberto lá; aqui só o efeito observável a partir do bfin-app.
   it("atualiza ApiKey.lastUsedAt", async () => {
     const { user, apiKey: key } = await seedApiKey();
     expect(key.lastUsedAt).toBeNull();

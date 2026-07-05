@@ -1,11 +1,11 @@
 import "server-only";
 
-import { apiKeysService } from "@/adapters";
+import { apikeysClient } from "@/lib/apikeys-client";
 
-// A regra mudou-se para o core (ADR-0013); wrapper mantido para os consumidores
-// existentes até suas fatias migrarem para @/adapters.
+// A regra mudou-se pro bfin-backend (ADR-0017); wrapper mantido para os
+// consumidores existentes até suas fatias migrarem para @/lib/apikeys-client.
 export function resolvePrincipal(
   token: string
 ): Promise<{ userId: string; apiKeyId: string } | null> {
-  return apiKeysService.resolvePrincipal(token);
+  return apikeysClient.resolvePrincipal(token);
 }

@@ -1,6 +1,6 @@
 import { auth } from "@/lib/auth";
-import { apiKeysService } from "@/adapters";
-import { ProRequiredError } from "@/core/identity";
+import { apikeysClient } from "@/lib/apikeys-client";
+import { BackendError } from "@/lib/backend-client";
 
 export async function GET() {
   const session = await auth();
@@ -8,7 +8,7 @@ export async function GET() {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const keys = await apiKeysService.listApiKeys(session.user.id);
+  const keys = await apikeysClient.list(session.user.id);
 
   return Response.json(keys);
 }
@@ -21,10 +21,10 @@ export async function POST() {
 
   try {
     // plain é devolvido apenas aqui — nunca mais é recuperável.
-    const issued = await apiKeysService.issueApiKey(session.user.id);
+    const issued = await apikeysClient.issue(session.user.id);
     return Response.json(issued, { status: 201 });
   } catch (error) {
-    if (error instanceof ProRequiredError) {
+    if (error instanceof BackendError && error.status === 403) {
       return Response.json({ error: "plan_required", upgrade: true }, { status: 403 });
     }
     throw error;

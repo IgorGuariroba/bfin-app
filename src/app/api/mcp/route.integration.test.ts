@@ -3,7 +3,7 @@ import { and, eq, inArray } from "drizzle-orm";
 import { db } from "@/lib/drizzle";
 import { apiKey, previsao, tag, tagToTransaction, transaction, user as userTable } from "@/db/schema";
 import { fromDbTimestamp, toDbTimestamp } from "@/adapters/drizzle/timestamp";
-import { generateApiKey } from "@/lib/api-key";
+import { apikeysClient } from "@/lib/apikeys-client";
 import { logger } from "@/lib/logger";
 import { RATE_LIMITS } from "@/lib/rate-limit";
 import { POST } from "./route";
@@ -21,12 +21,9 @@ async function seedProKey() {
     })
     .returning();
   createdUserIds.push(user.id);
-  const { plain, prefix, hashedKey } = generateApiKey();
-  const [key] = await db
-    .insert(apiKey)
-    .values({ id: crypto.randomUUID(), userId: user.id, name: "Assistente", prefix, hashedKey })
-    .returning();
-  return { user, plain, apiKey: key };
+  const issued = await apikeysClient.issue(user.id);
+  const [key] = await db.select().from(apiKey).where(eq(apiKey.id, issued.id));
+  return { user, plain: issued.plain, apiKey: key };
 }
 
 async function seedTx(data: {
@@ -874,9 +871,11 @@ describe("POST /api/mcp", () => {
     });
   });
 
-  it("T15: escrita do agente emite log de auditoria (apiKeyId/userId/action/entityId)", async () => {
+  it("T15: escrita do agente carimba ApiKey.lastUsedAt (auditoria)", async () => {
+    // Log estruturado agora é emitido no processo do bfin-backend (destino do
+    // gateway) — coberto lá; aqui só o efeito observável a partir do bfin-app.
     const { user, plain, apiKey: key } = await seedProKey();
-    const infoSpy = vi.spyOn(logger, "info");
+    expect(key.lastUsedAt).toBeNull();
 
     const res = await POST(
       mcpRequest(plain, {
@@ -893,15 +892,7 @@ describe("POST /api/mcp", () => {
     expect(res.status).toBe(200);
     await res.text(); // garante que o handler concluiu
 
-    const tx = await findFirstTx(user.id);
-    expect(infoSpy).toHaveBeenCalledWith(
-      expect.objectContaining({
-        apiKeyId: key.id,
-        userId: user.id,
-        action: "create",
-        entityId: tx!.id,
-      }),
-      expect.anything()
-    );
+    const [refreshed] = await db.select().from(apiKey).where(eq(apiKey.id, key.id));
+    expect(refreshed?.lastUsedAt).not.toBeNull();
   });
 });

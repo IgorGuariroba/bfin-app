@@ -1,6 +1,6 @@
 import { auth } from "@/lib/auth";
-import { apiKeysService } from "@/adapters";
-import { ApiKeyNotFoundError } from "@/core/apikeys";
+import { apikeysClient } from "@/lib/apikeys-client";
+import { BackendError } from "@/lib/backend-client";
 
 export async function DELETE(
   _req: Request,
@@ -14,9 +14,9 @@ export async function DELETE(
   const { id } = await params;
 
   try {
-    await apiKeysService.revokeApiKey(session.user.id, id);
+    await apikeysClient.revoke(session.user.id, id);
   } catch (error) {
-    if (error instanceof ApiKeyNotFoundError) {
+    if (error instanceof BackendError && error.status === 404) {
       return Response.json({ error: "Not found" }, { status: 404 });
     }
     throw error;
