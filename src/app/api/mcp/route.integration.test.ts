@@ -4,10 +4,46 @@ import { db } from "@/lib/drizzle";
 import { apiKey, previsao, tag, tagToTransaction, transaction, user as userTable } from "@/db/schema";
 import { fromDbTimestamp, toDbTimestamp } from "@/adapters/drizzle/timestamp";
 import { generateApiKey } from "@/lib/api-key";
-import { tagsService } from "@/adapters";
 import { logger } from "@/lib/logger";
 import { RATE_LIMITS } from "@/lib/rate-limit";
 import { POST } from "./route";
+
+// Tags agora vive no bfin-backend (ADR-0017 #182) — este teste é do gateway
+// MCP, não da regra de negócio de Tags (isso já é testado lá). O mock
+// reproduz só o suficiente do contrato HTTP (create/list) para os cenários
+// abaixo, escrevendo/lendo a mesma tabela que as asserções checam direto.
+vi.mock("@/lib/tags-client", async () => {
+  const { db } = await import("@/lib/drizzle");
+  const { tag } = await import("@/db/schema");
+  const { and, eq } = await import("drizzle-orm");
+  const { BackendError } = await import("@/lib/backend-client");
+
+  return {
+    tagsClient: {
+      list: (userId: string) => db.select().from(tag).where(eq(tag.userId, userId)),
+      create: async ({ userId, name, color }: { userId: string; name: string; color?: string }) => {
+        const trimmed = (name ?? "").trim();
+        if (!trimmed) throw new BackendError(400, "Nome da Tag é obrigatório.");
+        if (trimmed.length > 50) throw new BackendError(400, "Nome da Tag muito longo (máx. 50).");
+        const resolvedColor = color ?? "#94a3b8";
+        if (resolvedColor.length < 4 || resolvedColor.length > 30) {
+          throw new BackendError(400, "Cor da Tag inválida.");
+        }
+        const [existing] = await db
+          .select()
+          .from(tag)
+          .where(and(eq(tag.userId, userId), eq(tag.name, trimmed)));
+        if (existing) throw new BackendError(400, `Tag "${trimmed}" já existe.`);
+
+        const [row] = await db
+          .insert(tag)
+          .values({ id: crypto.randomUUID(), userId, name: trimmed, color: resolvedColor, isSystem: false })
+          .returning();
+        return row;
+      },
+    },
+  };
+});
 
 let createdUserIds: string[] = [];
 
@@ -503,7 +539,7 @@ describe("POST /api/mcp", () => {
 
   it("T12: cadeia #93 — categorias semeadas por ensureSystemTags são sugeridas via MCP", async () => {
     const { user, plain } = await seedProKey();
-    await tagsService.ensureSystemTags(user.id); // semeia Transporte/Alimentação/Moradia/... como system tags
+    await seedTag(user.id, "Moradia", "#7b6ef6"); // categoria usada por suggestTag (keyword "aluguel")
 
     const res = await POST(
       mcpRequest(plain, {
@@ -670,9 +706,10 @@ describe("POST /api/mcp", () => {
     expect(await countTags(user.id)).toBe(0);
   });
 
-  it("T18: list_tag retorna as Tags do usuário (incl. system tags semeadas) via MCP", async () => {
+  it("T18: list_tag retorna todas as Tags do usuário via MCP", async () => {
     const { user, plain } = await seedProKey();
     await seedTag(user.id, "Viagem", "#4a90e2");
+    await seedTag(user.id, "Alimentação", "#f5a623");
 
     const res = await POST(
       mcpRequest(plain, {
@@ -686,7 +723,7 @@ describe("POST /api/mcp", () => {
     expect(res.status).toBe(200);
     const body = await res.text();
     expect(body).toContain("Viagem");
-    expect(body).toContain("Alimentação"); // system tag semeada por ensureSystemTags
+    expect(body).toContain("Alimentação");
   });
 
   it("T19: get_previsao retorna a Previsão configurada (somente leitura) via MCP", async () => {

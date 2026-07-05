@@ -39,6 +39,8 @@ services:
       ADMIN_EMAILS: ${ADMIN_EMAILS}
       PLUGGY_CLIENT_ID: ${PLUGGY_CLIENT_ID}
       PLUGGY_CLIENT_SECRET: ${PLUGGY_CLIENT_SECRET}
+      BACKEND_URL: ${BACKEND_URL}
+      INTERNAL_API_SECRET: ${INTERNAL_API_SECRET}
     networks:
       - dokploy-network
     logging:

@@ -6,7 +6,6 @@ import { makeBillingService } from "@/core/billing";
 import { makeIdentityService, makeMembersService } from "@/core/identity";
 import { makeInsightsService } from "@/core/insights";
 import { makePrevisaoService } from "@/core/previsao";
-import { makeTagsService } from "@/core/tags";
 import { makeTransactionsService } from "@/core/transactions";
 import { generateApiKey, hashApiKey } from "@/lib/api-key";
 import {
@@ -23,7 +22,6 @@ import { drizzleIdentityRepo } from "./drizzle/identity-repo";
 import { drizzleInsightsRepo } from "./drizzle/insights-repo";
 import { drizzleMembersRepo } from "./drizzle/members-repo";
 import { drizzlePrevisaoRepo } from "./drizzle/previsao-repo";
-import { drizzleTagRepo } from "./drizzle/tag-repo";
 import { drizzleTransactionRepo } from "./drizzle/transaction-repo";
 
 export const identityService = makeIdentityService(drizzleIdentityRepo);
@@ -47,5 +45,4 @@ export const billingService = makeBillingService(drizzleBillingRepo, mercadoPago
 });
 export const insightsService = makeInsightsService(drizzleInsightsRepo);
 export const previsaoService = makePrevisaoService(drizzlePrevisaoRepo);
-export const tagsService = makeTagsService(drizzleTagRepo);
 export const transactionsService = makeTransactionsService(drizzleTransactionRepo, { logger });
