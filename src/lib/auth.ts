@@ -7,7 +7,7 @@ import { db } from "@/lib/drizzle";
 import { user as userTable } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { authorizeCredentials, clientIp } from "@/lib/credentials-authorize";
-import { tagsService } from "@/adapters";
+import { tagsClient } from "@/lib/tags-client";
 import { isAdmin } from "@/lib/admin";
 import { resolveClickId, uploadConversion } from "@/lib/google-ads";
 
@@ -37,7 +37,7 @@ export const { handlers, auth, signOut } = NextAuth({
   events: {
     async createUser({ user }) {
       if (!user.id) return;
-      await tagsService.ensureSystemTags(user.id);
+      await tagsClient.ensureSystem(user.id);
 
       // Atribuição de marketing (ADR-0010): grava o identificador de clique
       // capturado na entrada (cookies bfin_gclid/gbraid/wbraid, ver

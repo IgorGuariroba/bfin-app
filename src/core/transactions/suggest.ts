@@ -1,4 +1,4 @@
-import { CATEGORY_TAGS } from "../tags/taxonomy";
+import { CATEGORY_TAGS } from "./tag-taxonomy";
 
 // Sinais de receita para suggestType. Lista conservadora: o default é gasto → "saida".
 // "diario" jamais é sugerido (é projeção — ADR-0004).

@@ -1,17 +1,7 @@
-/** Tags padrão do sistema — criadas automaticamente para cada usuário e não editáveis */
-export const DEFAULT_SYSTEM_TAGS = [
-  { name: "Entradas", color: "#2db55d" },
-  { name: "Saídas",   color: "#ff385c" },
-  { name: "Diários",  color: "#92174d" },
-  { name: "Economias", color: "#2db55d" },
-] as const;
-
-/**
- * Taxonomia canônica de categorias de gasto (#93). Semeadas como system tags por
- * `ensureSystemTags` e usadas por `suggestTag` para inferir uma Tag a partir da descrição.
- * `keywords` são casadas por substring numa descrição já normalizada (minúsculas, sem acento),
- * portanto devem ser escritas sem acento. Fonte única: seeding e sugestão leem daqui.
- */
+// Cópia congelada de CATEGORY_TAGS (dono agora é o bfin-backend, ADR-0017 #182).
+// suggestTag precisa dos keywords pra sugerir Tag por categoria; o agregado
+// Transactions ainda não migrou (#183), então esta cópia fica até lá — não
+// editar aqui, mudança de taxonomia é PR no bfin-backend primeiro.
 export const CATEGORY_TAGS = [
   {
     name: "Alimentação",

@@ -4,7 +4,6 @@ import { db } from "@/lib/drizzle";
 import { apiKey, previsao, tag, tagToTransaction, transaction, user as userTable } from "@/db/schema";
 import { fromDbTimestamp, toDbTimestamp } from "@/adapters/drizzle/timestamp";
 import { generateApiKey } from "@/lib/api-key";
-import { tagsService } from "@/adapters";
 import { logger } from "@/lib/logger";
 import { RATE_LIMITS } from "@/lib/rate-limit";
 import { POST } from "./route";
@@ -503,7 +502,7 @@ describe("POST /api/mcp", () => {
 
   it("T12: cadeia #93 — categorias semeadas por ensureSystemTags são sugeridas via MCP", async () => {
     const { user, plain } = await seedProKey();
-    await tagsService.ensureSystemTags(user.id); // semeia Transporte/Alimentação/Moradia/... como system tags
+    await seedTag(user.id, "Moradia", "#7b6ef6"); // categoria usada por suggestTag (keyword "aluguel")
 
     const res = await POST(
       mcpRequest(plain, {

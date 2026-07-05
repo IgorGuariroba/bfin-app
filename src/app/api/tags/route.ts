@@ -2,8 +2,8 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { getEffectiveUserId } from "@/lib/effective-user";
 import { z } from "zod";
-import { tagsService } from "@/adapters";
-import { TagValidationError } from "@/core/tags";
+import { tagsClient } from "@/lib/tags-client";
+import { BackendError } from "@/lib/backend-client";
 
 const tagSchema = z.object({
   name: z.string().min(1, "Nome é obrigatório").max(50, "Nome muito longo"),
@@ -19,10 +19,13 @@ export async function GET() {
 
     const userId = await getEffectiveUserId(session.user.id);
 
-    const tags = await tagsService.listTags(userId);
+    const tags = await tagsClient.list(userId);
 
     return NextResponse.json(tags);
   } catch (error) {
+    if (error instanceof BackendError) {
+      return NextResponse.json({ error: error.message }, { status: error.status });
+    }
     console.error("GET /api/tags error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
@@ -40,12 +43,12 @@ export async function POST(req: Request) {
     const body = await req.json();
     const data = tagSchema.parse(body);
 
-    const tag = await tagsService.createTag({ userId, ...data });
+    const tag = await tagsClient.create({ userId, ...data });
 
     return NextResponse.json(tag, { status: 201 });
   } catch (error) {
-    if (error instanceof TagValidationError) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
+    if (error instanceof BackendError) {
+      return NextResponse.json({ error: error.message }, { status: error.status });
     }
     console.error("POST /api/tags error:", error);
     if (error instanceof z.ZodError) {

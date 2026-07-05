@@ -4,9 +4,10 @@ import { z } from "zod";
 import { resolvePrincipal } from "@/lib/mcp-principal";
 import { checkRateLimit, classifyRpc, RATE_LIMITS } from "@/lib/rate-limit";
 import { logger } from "@/lib/logger";
-import { insightsService, previsaoService, tagsService, transactionsService } from "@/adapters";
+import { insightsService, previsaoService, transactionsService } from "@/adapters";
 import { suggestTag, suggestType, TransactionValidationError } from "@/core/transactions";
-import { TagValidationError } from "@/core/tags";
+import { tagsClient } from "@/lib/tags-client";
+import { BackendError } from "@/lib/backend-client";
 import { InsightsValidationError } from "@/core/insights";
 
 const { createTransaction, updateTransaction, deleteTransaction, listTransactions } =
@@ -119,7 +120,7 @@ function buildServer(userId: string, apiKeyId: string): McpServer {
       try {
         const resolvedType = type ?? suggestType(description);
         // Sugere uma Tag existente do usuário a partir da descrição (ADR-0004).
-        const userTags = await tagsService.listTags(userId);
+        const userTags = await tagsClient.list(userId);
         const suggestedTagId = suggestTag(description, userTags);
         const result = await createTransaction({
           userId,
@@ -367,14 +368,14 @@ function buildServer(userId: string, apiKeyId: string): McpServer {
     },
     async ({ name, color }) => {
       try {
-        const tag = await tagsService.createTag({ userId, name, color });
+        const tag = await tagsClient.create({ userId, name, color });
         await recordAgentWrite({ apiKeyId, userId, action: "create", entityId: tag.id });
         return {
           content: [{ type: "text", text: `Tag criada: ${tag.name}.` }],
           structuredContent: { id: tag.id, name: tag.name, color: tag.color },
         };
       } catch (error) {
-        if (error instanceof TagValidationError) {
+        if (error instanceof BackendError && error.status === 400) {
           return { isError: true, content: [{ type: "text", text: error.message }] };
         }
         throw error;
@@ -389,7 +390,7 @@ function buildServer(userId: string, apiKeyId: string): McpServer {
         "Lista as Tags (categorias) do usuário, para escolher um filtro ou descobrir a taxonomia disponível.",
       inputSchema: {},
     },
-    async () => readContent(() => tagsService.listTags(userId))
+    async () => readContent(() => tagsClient.list(userId))
   );
 
   server.registerTool(
