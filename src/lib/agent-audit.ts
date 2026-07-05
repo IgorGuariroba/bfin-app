@@ -1,12 +1,11 @@
 import "server-only";
 
-import { apiKeysService } from "@/adapters";
-import type { AgentWrite } from "@/core/apikeys";
+import { apikeysClient, type AgentWrite } from "@/lib/apikeys-client";
 
-// A regra mudou-se para o core (ADR-0013); wrapper mantido para os consumidores
-// existentes até suas fatias migrarem para @/adapters.
-export type { AgentWrite } from "@/core/apikeys";
+// A regra mudou-se pro bfin-backend (ADR-0017); wrapper mantido para os
+// consumidores existentes até suas fatias migrarem para @/lib/apikeys-client.
+export type { AgentWrite } from "@/lib/apikeys-client";
 
 export function recordAgentWrite(write: AgentWrite): Promise<void> {
-  return apiKeysService.recordAgentWrite(write);
+  return apikeysClient.recordAgentWrite(write);
 }

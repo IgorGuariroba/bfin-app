@@ -1,9 +1,9 @@
 import "server-only";
 
-// Adapter Next da delegação (ADR-0011/ADR-0013): lê os cookies de conta ativa
-// e delega a regra "membro ativo opera como dono" ao core (identityService).
+// Adapter Next da delegação (ADR-0011/ADR-0017): lê os cookies de conta ativa
+// e delega a regra "membro ativo opera como dono" ao bfin-backend via gateway.
 import { cookies } from "next/headers";
-import { identityService } from "@/adapters";
+import { identityClient, type DelegationInfo } from "@/lib/identity-client";
 
 /** Dono pedido via cookie: `active-account` (sessão) > `preferred-account` (persistente). */
 async function requestedOwnerId(): Promise<string | undefined> {
@@ -12,14 +12,13 @@ async function requestedOwnerId(): Promise<string | undefined> {
 }
 
 export async function getEffectiveUserId(sessionUserId: string): Promise<string> {
-  return identityService.resolveEffectiveUser(sessionUserId, await requestedOwnerId());
+  const { effectiveUserId } = await identityClient.getDelegationInfo(
+    sessionUserId,
+    await requestedOwnerId()
+  );
+  return effectiveUserId;
 }
 
-export async function getDelegationInfo(sessionUserId: string): Promise<{
-  effectiveUserId: string;
-  isDelegated: boolean;
-  ownerName?: string;
-  ownerEmail?: string;
-}> {
-  return identityService.getDelegationInfo(sessionUserId, await requestedOwnerId());
+export async function getDelegationInfo(sessionUserId: string): Promise<DelegationInfo> {
+  return identityClient.getDelegationInfo(sessionUserId, await requestedOwnerId());
 }

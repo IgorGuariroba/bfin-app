@@ -1,8 +1,8 @@
 import { auth } from "@/lib/auth";
 import { cookies } from "next/headers";
 import type { NextRequest } from "next/server";
-import { membersService } from "@/adapters";
-import { InviteValidationError, ProRequiredError } from "@/core/identity";
+import { invitesClient } from "@/lib/invites-client";
+import { BackendError } from "@/lib/backend-client";
 
 export async function GET() {
   const session = await auth();
@@ -12,7 +12,7 @@ export async function GET() {
   const activeOwnerId = cookieStore.get("active-account")?.value ?? null;
   const preferredOwnerId = cookieStore.get("preferred-account")?.value ?? null;
 
-  const { sent, received } = await membersService.listInvites(session.user.id);
+  const { sent, received } = await invitesClient.list(session.user.id);
 
   return Response.json({ sent, received, activeOwnerId, preferredOwnerId });
 }
@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
   const { email } = await request.json();
 
   try {
-    const invite = await membersService.createInvite({
+    const invite = await invitesClient.create({
       ownerId: session.user.id,
       ownerEmail: session.user.email,
       email,
@@ -35,13 +35,13 @@ export async function POST(request: NextRequest) {
 
     return Response.json({ invite, inviteUrl }, { status: 201 });
   } catch (error) {
-    if (error instanceof ProRequiredError) {
+    if (error instanceof BackendError && error.status === 403) {
       return Response.json(
         { error: "Convites disponíveis apenas no plano Pro", upgrade: true },
         { status: 403 }
       );
     }
-    if (error instanceof InviteValidationError) {
+    if (error instanceof BackendError && error.status === 400) {
       return Response.json({ error: error.message }, { status: 400 });
     }
     throw error;

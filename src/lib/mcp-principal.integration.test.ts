@@ -2,8 +2,7 @@ import { afterEach, describe, it, expect } from "vitest";
 import { eq, inArray } from "drizzle-orm";
 import { db } from "@/lib/drizzle";
 import { apiKey, user as userTable } from "@/db/schema";
-import { toDbTimestamp } from "@/adapters/drizzle/timestamp";
-import { generateApiKey } from "@/lib/api-key";
+import { apikeysClient } from "@/lib/apikeys-client";
 import { resolvePrincipal } from "@/lib/mcp-principal";
 
 let createdUserIds: string[] = [];
@@ -15,24 +14,21 @@ async function seedPrincipal(plan: "pro" | "free", overrides: { revoked?: boolea
       id: crypto.randomUUID(),
       name: "Test User",
       email: `test-${crypto.randomUUID()}@example.com`,
-      plan,
+      // A emissão exige pro (gate no core) — emite como pro e faz o downgrade
+      // depois, se o teste pedir free, pra exercitar o resolvePrincipal real.
+      plan: "pro",
     })
     .returning();
   createdUserIds.push(user.id);
 
-  const { plain, prefix, hashedKey } = generateApiKey();
-  const [key] = await db
-    .insert(apiKey)
-    .values({
-      id: crypto.randomUUID(),
-      userId: user.id,
-      name: "Assistente",
-      prefix,
-      hashedKey,
-      revokedAt: overrides.revoked ? toDbTimestamp(new Date()) : null,
-    })
-    .returning();
-  return { user, plain, apiKey: key };
+  const issued = await apikeysClient.issue(user.id);
+  if (overrides.revoked) await apikeysClient.revoke(user.id, issued.id);
+  if (plan === "free") {
+    await db.update(userTable).set({ plan: "free" }).where(eq(userTable.id, user.id));
+  }
+
+  const [key] = await db.select().from(apiKey).where(eq(apiKey.id, issued.id));
+  return { user, plain: issued.plain, apiKey: key };
 }
 
 afterEach(async () => {

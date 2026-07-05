@@ -1,11 +1,11 @@
 import "server-only";
 
-import { identityService } from "@/adapters";
+import { identityClient } from "@/lib/identity-client";
 
-// A regra mudou-se para o core (ADR-0013); wrapper mantido para os consumidores
-// existentes até suas fatias migrarem para @/adapters.
-export { ProRequiredError } from "@/core/identity";
+// A regra mudou-se pro bfin-backend (ADR-0017); wrapper mantido para os
+// consumidores existentes até suas fatias migrarem para @/lib/identity-client.
+export { ProRequiredError } from "@/lib/identity-client";
 
 export function setAutoBaixaDiario(userId: string, enabled: boolean): Promise<void> {
-  return identityService.setAutoBaixaDiario(userId, enabled);
+  return identityClient.setAutoBaixaDiario(userId, enabled);
 }

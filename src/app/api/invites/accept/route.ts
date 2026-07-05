@@ -1,11 +1,7 @@
 import { auth } from "@/lib/auth";
 import type { NextRequest } from "next/server";
-import { membersService } from "@/adapters";
-import {
-  InviteForbiddenError,
-  InviteNotFoundError,
-  InviteValidationError,
-} from "@/core/identity";
+import { invitesClient } from "@/lib/invites-client";
+import { BackendError } from "@/lib/backend-client";
 
 export async function POST(request: NextRequest) {
   const session = await auth();
@@ -14,7 +10,7 @@ export async function POST(request: NextRequest) {
   const { token } = await request.json();
 
   try {
-    const { invite, owner } = await membersService.acceptInvite({
+    const { invite, owner } = await invitesClient.accept({
       userId: session.user.id,
       userEmail: session.user.email,
       token,
@@ -22,14 +18,8 @@ export async function POST(request: NextRequest) {
 
     return Response.json({ success: true, invite, owner });
   } catch (error) {
-    if (error instanceof InviteNotFoundError) {
-      return Response.json({ error: error.message }, { status: 404 });
-    }
-    if (error instanceof InviteForbiddenError) {
-      return Response.json({ error: error.message }, { status: 403 });
-    }
-    if (error instanceof InviteValidationError) {
-      return Response.json({ error: error.message }, { status: 400 });
+    if (error instanceof BackendError) {
+      return Response.json({ error: error.message }, { status: error.status });
     }
     throw error;
   }

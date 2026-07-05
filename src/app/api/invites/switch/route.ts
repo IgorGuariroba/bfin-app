@@ -1,7 +1,7 @@
 import { auth } from "@/lib/auth";
 import { cookies } from "next/headers";
 import type { NextRequest } from "next/server";
-import { identityService } from "@/adapters";
+import { identityClient } from "@/lib/identity-client";
 
 export async function POST(request: NextRequest) {
   const session = await auth();
@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
   // Mesma regra da resolução por cookie (ADR-0011): só troca para dono com
   // vínculo AccountMember ativo — trocar "para si mesmo" também é negado,
   // pois voltar à própria conta é o ramo sem ownerId acima.
-  const { isDelegated } = await identityService.getDelegationInfo(session.user.id, ownerId);
+  const { isDelegated } = await identityClient.getDelegationInfo(session.user.id, ownerId);
   if (!isDelegated) {
     return Response.json({ error: "Sem permissão para acessar esta conta" }, { status: 403 });
   }
