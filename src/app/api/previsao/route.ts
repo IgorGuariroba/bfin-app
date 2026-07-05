@@ -1,7 +1,7 @@
 import { auth } from "@/lib/auth";
 import { getEffectiveUserId } from "@/lib/effective-user";
-import { previsaoService } from "@/adapters";
-import { PrevisaoValidationError } from "@/core/previsao";
+import { previsaoClient } from "@/lib/previsao-client";
+import { BackendError } from "@/lib/backend-client";
 import type { NextRequest } from "next/server";
 
 export async function GET() {
@@ -10,7 +10,7 @@ export async function GET() {
 
   const userId = await getEffectiveUserId(session.user.id);
 
-  const previsoes = await previsaoService.listPrevisoes(userId);
+  const previsoes = await previsaoClient.list(userId);
 
   return Response.json(previsoes);
 }
@@ -24,12 +24,12 @@ export async function POST(request: NextRequest) {
   try {
     const { name, amount } = await request.json();
 
-    const previsao = await previsaoService.createPrevisao({ userId, name, amount });
+    const previsao = await previsaoClient.create({ userId, name, amount });
 
     return Response.json(previsao, { status: 201 });
   } catch (error) {
-    if (error instanceof PrevisaoValidationError) {
-      return Response.json({ error: "Invalid data" }, { status: 400 });
+    if (error instanceof BackendError) {
+      return Response.json({ error: error.message }, { status: error.status });
     }
     const message = error instanceof Error ? error.message : "Erro";
     return Response.json({ error: message }, { status: 400 });

@@ -1,5 +1,5 @@
 import { timingSafeEqual } from "node:crypto";
-import { previsaoService } from "@/adapters";
+import { previsaoClient } from "@/lib/previsao-client";
 import { logger } from "@/lib/logger";
 
 /** Compara em tempo constante; length-mismatch → false (timingSafeEqual exige buffers do mesmo tamanho). */
@@ -21,7 +21,7 @@ export async function POST(request: Request) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { count } = await previsaoService.baixaDiaria();
+  const { count } = await previsaoClient.baixaDiaria();
 
   logger.info({ action: "baixa_diaria", count }, "baixa automática do gasto diário");
 

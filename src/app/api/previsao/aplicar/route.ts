@@ -1,7 +1,7 @@
 import { auth } from "@/lib/auth";
 import { getEffectiveUserId } from "@/lib/effective-user";
-import { previsaoService } from "@/adapters";
-import { PrevisaoValidationError } from "@/core/previsao";
+import { previsaoClient } from "@/lib/previsao-client";
+import { BackendError } from "@/lib/backend-client";
 import type { NextRequest } from "next/server";
 
 export async function POST(request: NextRequest) {
@@ -14,12 +14,12 @@ export async function POST(request: NextRequest) {
   const { amount } = await request.json();
 
   try {
-    const { count } = await previsaoService.applyPrevisao({ userId, amount });
+    const { count } = await previsaoClient.aplicar(userId, amount);
 
     return Response.json({ count });
   } catch (error) {
-    if (error instanceof PrevisaoValidationError) {
-      return Response.json({ error: "Invalid parameters" }, { status: 400 });
+    if (error instanceof BackendError) {
+      return Response.json({ error: error.message }, { status: error.status });
     }
     throw error;
   }

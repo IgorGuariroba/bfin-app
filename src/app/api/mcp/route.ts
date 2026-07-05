@@ -4,9 +4,10 @@ import { z } from "zod";
 import { resolvePrincipal } from "@/lib/mcp-principal";
 import { checkRateLimit, classifyRpc, RATE_LIMITS } from "@/lib/rate-limit";
 import { logger } from "@/lib/logger";
-import { insightsService, previsaoService } from "@/adapters";
+import { insightsService } from "@/adapters";
 import { tagsClient } from "@/lib/tags-client";
 import { transactionsClient } from "@/lib/transactions-client";
+import { previsaoClient } from "@/lib/previsao-client";
 import { BackendError } from "@/lib/backend-client";
 import { InsightsValidationError } from "@/core/insights";
 
@@ -396,7 +397,7 @@ function buildServer(userId: string, apiKeyId: string): McpServer {
         "Não aplica nem altera nada.",
       inputSchema: {},
     },
-    async () => readContent(() => previsaoService.listPrevisoes(userId))
+    async () => readContent(() => previsaoClient.list(userId))
   );
 
   return server;
