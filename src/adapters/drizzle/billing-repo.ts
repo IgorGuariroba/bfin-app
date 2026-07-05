@@ -3,7 +3,7 @@ import "server-only";
 import { and, eq, isNull, sql } from "drizzle-orm";
 import { db } from "@/lib/drizzle";
 import { planConfig, user } from "@/db/schema";
-import type { BillingRepo } from "@/core/billing";
+import { BillingUserNotFoundError, type BillingRepo } from "@/core/billing";
 import { fromDbTimestamp, fromDbTimestampOrNull, toDbTimestamp } from "./timestamp";
 
 const DEFAULT_CONFIG = { id: "default", monthlyAmount: 14.9, annualAmount: 119.9 };
@@ -50,7 +50,7 @@ export const drizzleBillingRepo: BillingRepo = {
       .set({ mpSubscriptionId: null })
       .where(eq(user.id, userId))
       .returning({ id: user.id });
-    if (updated.length === 0) throw new Error(`User ${userId} not found`);
+    if (updated.length === 0) throw new BillingUserNotFoundError(`User ${userId} not found`);
   },
 
   activatePro: async (userId, planExpiresAt, mpSubscriptionId) => {
@@ -59,7 +59,7 @@ export const drizzleBillingRepo: BillingRepo = {
       .set({ plan: "pro", planExpiresAt: toDbTimestamp(planExpiresAt), mpSubscriptionId })
       .where(eq(user.id, userId))
       .returning({ email: user.email, gclid: user.gclid, gbraid: user.gbraid, wbraid: user.wbraid });
-    if (updated.length === 0) throw new Error(`User ${userId} not found`);
+    if (updated.length === 0) throw new BillingUserNotFoundError(`User ${userId} not found`);
     return updated[0];
   },
 
@@ -86,6 +86,6 @@ export const drizzleBillingRepo: BillingRepo = {
       .set({ conversionReportedAt: toDbTimestamp(new Date()) })
       .where(eq(user.id, userId))
       .returning({ id: user.id });
-    if (updated.length === 0) throw new Error(`User ${userId} not found`);
+    if (updated.length === 0) throw new BillingUserNotFoundError(`User ${userId} not found`);
   },
 };

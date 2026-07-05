@@ -9,6 +9,7 @@ export type { BillingRepo, PaymentGateway } from "./ports";
 export {
   makeBillingService,
   BillingValidationError,
+  BillingUserNotFoundError,
   type BillingService,
   type BillingDeps,
   type BillingLogger,

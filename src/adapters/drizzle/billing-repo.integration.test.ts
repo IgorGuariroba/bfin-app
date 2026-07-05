@@ -23,6 +23,7 @@ vi.mock("mercadopago", async (importOriginal) => ({
 }));
 
 const { billingService } = await import("@/adapters");
+const { BillingUserNotFoundError } = await import("@/core/billing");
 // markConversionReported só é alcançado por billingService via o dep opcional
 // `conversions` (Google Ads), não configurado no ambiente de teste — testado
 // direto contra o repo em vez de via serviço composto, exceção ao padrão dos
@@ -150,6 +151,26 @@ describe("checkout", () => {
   });
 });
 
+describe("Billing repo not found", () => {
+  it("clearSubscription rejeita userId inexistente com erro tipado", async () => {
+    await expect(drizzleBillingRepo.clearSubscription(crypto.randomUUID())).rejects.toBeInstanceOf(
+      BillingUserNotFoundError
+    );
+  });
+
+  it("activatePro rejeita userId inexistente com erro tipado", async () => {
+    await expect(
+      drizzleBillingRepo.activatePro(crypto.randomUUID(), new Date(), "sub-missing")
+    ).rejects.toBeInstanceOf(BillingUserNotFoundError);
+  });
+
+  it("markConversionReported rejeita userId inexistente com erro tipado", async () => {
+    await expect(
+      drizzleBillingRepo.markConversionReported(crypto.randomUUID())
+    ).rejects.toBeInstanceOf(BillingUserNotFoundError);
+  });
+});
+
 describe("cancelSubscription", () => {
   it("desvincula mpSubscriptionId sem mudar o plan", async () => {
     const user = await seedUser({ plan: "pro", mpSubscriptionId: "sub-1" });
@@ -216,8 +237,8 @@ describe("markConversionReported", () => {
   });
 
   it("rejeita para userId inexistente (fail-closed, mesmo comportamento do P2025 do Prisma)", async () => {
-    await expect(drizzleBillingRepo.markConversionReported(crypto.randomUUID())).rejects.toThrow(
-      "not found"
-    );
+    await expect(
+      drizzleBillingRepo.markConversionReported(crypto.randomUUID())
+    ).rejects.toBeInstanceOf(BillingUserNotFoundError);
   });
 });

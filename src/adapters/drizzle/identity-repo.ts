@@ -3,7 +3,7 @@ import "server-only";
 import { and, eq } from "drizzle-orm";
 import { db } from "@/lib/drizzle";
 import { accountMember, user } from "@/db/schema";
-import type { IdentityRepo } from "@/core/identity";
+import { IdentityUserNotFoundError, type IdentityRepo } from "@/core/identity";
 import { fromDbTimestampOrNull } from "./timestamp";
 
 export const drizzleIdentityRepo: IdentityRepo = {
@@ -25,7 +25,7 @@ export const drizzleIdentityRepo: IdentityRepo = {
       .set({ plan: "free" })
       .where(eq(user.id, userId))
       .returning({ id: user.id });
-    if (updated.length === 0) throw new Error(`User ${userId} not found`);
+    if (updated.length === 0) throw new IdentityUserNotFoundError(`User ${userId} not found`);
   },
 
   setAutoBaixaDiario: async (userId, enabled) => {
@@ -34,7 +34,7 @@ export const drizzleIdentityRepo: IdentityRepo = {
       .set({ autoBaixaDiario: enabled })
       .where(eq(user.id, userId))
       .returning({ id: user.id });
-    if (updated.length === 0) throw new Error(`User ${userId} not found`);
+    if (updated.length === 0) throw new IdentityUserNotFoundError(`User ${userId} not found`);
   },
 
   findActiveMembershipOwner: async (ownerId, memberId) => {

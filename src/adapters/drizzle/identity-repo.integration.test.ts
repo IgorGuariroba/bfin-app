@@ -4,6 +4,8 @@ import { db } from "@/lib/drizzle";
 import { accountMember, user as userTable } from "@/db/schema";
 import { toDbTimestamp } from "@/adapters/drizzle/timestamp";
 import { identityService } from "@/adapters";
+import { IdentityUserNotFoundError } from "@/core/identity";
+import { drizzleIdentityRepo } from "./identity-repo";
 import { trackCreatedUsers } from "./test-helpers";
 
 const trackUser = trackCreatedUsers();
@@ -22,6 +24,20 @@ async function seedUser(opts: { plan?: string; planExpiresAt?: Date } = {}) {
   trackUser(user.id);
   return user;
 }
+
+describe("Identity repo not found", () => {
+  it("setPlanFree rejeita userId inexistente com erro tipado", async () => {
+    await expect(drizzleIdentityRepo.setPlanFree(crypto.randomUUID())).rejects.toBeInstanceOf(
+      IdentityUserNotFoundError
+    );
+  });
+
+  it("setAutoBaixaDiario rejeita userId inexistente com erro tipado", async () => {
+    await expect(
+      drizzleIdentityRepo.setAutoBaixaDiario(crypto.randomUUID(), true)
+    ).rejects.toBeInstanceOf(IdentityUserNotFoundError);
+  });
+});
 
 describe("getUserPlan", () => {
   it("faz downgrade preguiçoso e persiste quando o pro está vencido", async () => {
