@@ -4,14 +4,12 @@ import { z } from "zod";
 import { resolvePrincipal } from "@/lib/mcp-principal";
 import { checkRateLimit, classifyRpc, RATE_LIMITS } from "@/lib/rate-limit";
 import { logger } from "@/lib/logger";
-import { insightsService, previsaoService, transactionsService } from "@/adapters";
-import { suggestTag, suggestType, TransactionValidationError } from "@/core/transactions";
+import { insightsService, previsaoService } from "@/adapters";
 import { tagsClient } from "@/lib/tags-client";
+import { transactionsClient } from "@/lib/transactions-client";
 import { BackendError } from "@/lib/backend-client";
 import { InsightsValidationError } from "@/core/insights";
 
-const { createTransaction, updateTransaction, deleteTransaction, listTransactions } =
-  transactionsService;
 const { getMonthSummary, getSaldos, getSugestoes, getTotais } = insightsService;
 import { recordAgentWrite } from "@/lib/agent-audit";
 import { fmt } from "@/lib/utils";
@@ -41,7 +39,7 @@ async function readContent(produce: () => Promise<unknown>) {
   } catch (error) {
     if (
       error instanceof InsightsValidationError ||
-      error instanceof TransactionValidationError
+      (error instanceof BackendError && error.status === 400)
     ) {
       return { isError: true, content: [{ type: "text" as const, text: error.message }] };
     }
@@ -118,13 +116,12 @@ function buildServer(userId: string, apiKeyId: string): McpServer {
     },
     async ({ description, amount, date, type, force, repeat, repeatEnd, repeatCount }) => {
       try {
-        const resolvedType = type ?? suggestType(description);
-        // Sugere uma Tag existente do usuário a partir da descrição (ADR-0004).
-        const userTags = await tagsClient.list(userId);
-        const suggestedTagId = suggestTag(description, userTags);
-        const result = await createTransaction({
+        // Resolve type e Tag sugerida a partir da descrição (ADR-0004) — feito
+        // no backend, em processo, já que Tags e Transactions vivem lá juntos.
+        const suggestion = await transactionsClient.suggest(userId, description, type);
+        const result = await transactionsClient.create({
           userId,
-          type: resolvedType,
+          type: suggestion.type,
           description,
           amount,
           date,
@@ -133,7 +130,7 @@ function buildServer(userId: string, apiKeyId: string): McpServer {
           repeat,
           repeatEnd,
           repeatCount,
-          tagIds: suggestedTagId ? [suggestedTagId] : undefined,
+          tagIds: suggestion.tagId ? [suggestion.tagId] : undefined,
         });
         if (result.duplicated) {
           const dup = result.transaction;
@@ -149,7 +146,7 @@ function buildServer(userId: string, apiKeyId: string): McpServer {
               duplicated: true,
               type: dup.type,
               amount: dup.amount,
-              date: ymd(dup.date),
+              date: ymd(new Date(dup.date)),
               tagId: dup.tags[0]?.id ?? null,
             },
           };
@@ -176,12 +173,12 @@ function buildServer(userId: string, apiKeyId: string): McpServer {
             duplicated: false,
             type: tx.type,
             amount: tx.amount,
-            date: ymd(tx.date),
+            date: ymd(new Date(tx.date)),
             tagId: tx.tags[0]?.id ?? null,
           },
         };
       } catch (error) {
-        if (error instanceof TransactionValidationError) {
+        if (error instanceof BackendError && error.status === 400) {
           return {
             isError: true,
             content: [{ type: "text", text: error.message }],
@@ -249,7 +246,7 @@ function buildServer(userId: string, apiKeyId: string): McpServer {
       },
     },
     async ({ month, type, tagId }) =>
-      readContent(() => listTransactions(userId, { month, type, tagId }))
+      readContent(() => transactionsClient.list(userId, { month, type, tagId }))
   );
 
   server.registerTool(
@@ -285,9 +282,7 @@ function buildServer(userId: string, apiKeyId: string): McpServer {
     },
     async ({ id, description, amount, date, type, tagIds }) => {
       try {
-        const tx = await updateTransaction({
-          userId,
-          id,
+        const tx = await transactionsClient.update(userId, id, {
           description,
           amount,
           date,
@@ -306,12 +301,12 @@ function buildServer(userId: string, apiKeyId: string): McpServer {
             id: tx.id,
             type: tx.type,
             amount: tx.amount,
-            date: ymd(tx.date),
+            date: ymd(new Date(tx.date)),
             tagIds: tx.tags.map((t) => t.id),
           },
         };
       } catch (error) {
-        if (error instanceof TransactionValidationError) {
+        if (error instanceof BackendError && (error.status === 400 || error.status === 404)) {
           return { isError: true, content: [{ type: "text", text: error.message }] };
         }
         throw error;
@@ -331,13 +326,13 @@ function buildServer(userId: string, apiKeyId: string): McpServer {
     },
     async ({ id }) => {
       try {
-        await deleteTransaction(userId, id);
+        await transactionsClient.remove(userId, id);
         await recordAgentWrite({ apiKeyId, userId, action: "delete", entityId: id });
         return {
           content: [{ type: "text", text: `Movimentação ${id} removida.` }],
         };
       } catch (error) {
-        if (error instanceof TransactionValidationError) {
+        if (error instanceof BackendError && (error.status === 400 || error.status === 404)) {
           return { isError: true, content: [{ type: "text", text: error.message }] };
         }
         throw error;

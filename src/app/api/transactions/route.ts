@@ -2,10 +2,8 @@ import { auth } from "@/lib/auth";
 import { getEffectiveUserId } from "@/lib/effective-user";
 import type { NextRequest } from "next/server";
 import { freeOldestMonth, getUserPlan, isMonthAllowed } from "@/lib/plan";
-import { transactionsService } from "@/adapters";
-import { TransactionValidationError } from "@/core/transactions";
-
-const { createTransaction, listTransactions } = transactionsService;
+import { transactionsClient } from "@/lib/transactions-client";
+import { BackendError } from "@/lib/backend-client";
 
 export async function GET(request: NextRequest) {
   const session = await auth();
@@ -42,7 +40,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const transactions = await listTransactions(userId, {
+    const transactions = await transactionsClient.list(userId, {
       month: month ?? undefined,
       type: searchParams.get("type") ?? undefined,
       tagId: searchParams.get("tagId") ?? undefined,
@@ -51,8 +49,8 @@ export async function GET(request: NextRequest) {
     });
     return Response.json(transactions);
   } catch (error) {
-    if (error instanceof TransactionValidationError) {
-      return Response.json({ error: error.message }, { status: 400 });
+    if (error instanceof BackendError) {
+      return Response.json({ error: error.message }, { status: error.status });
     }
     throw error;
   }
@@ -68,7 +66,7 @@ export async function POST(request: NextRequest) {
   const { type, description, amount, date, repeat, repeatEnd, repeatCount, tagIds } = body;
 
   try {
-    const result = await createTransaction({
+    const result = await transactionsClient.create({
       userId,
       type,
       description,
@@ -82,8 +80,8 @@ export async function POST(request: NextRequest) {
     });
     return Response.json(result.transaction, { status: 201 });
   } catch (error) {
-    if (error instanceof TransactionValidationError) {
-      return Response.json({ error: error.message }, { status: 400 });
+    if (error instanceof BackendError) {
+      return Response.json({ error: error.message }, { status: error.status });
     }
     throw error;
   }
