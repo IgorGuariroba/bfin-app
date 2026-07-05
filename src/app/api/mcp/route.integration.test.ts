@@ -8,43 +8,6 @@ import { logger } from "@/lib/logger";
 import { RATE_LIMITS } from "@/lib/rate-limit";
 import { POST } from "./route";
 
-// Tags agora vive no bfin-backend (ADR-0017 #182) — este teste é do gateway
-// MCP, não da regra de negócio de Tags (isso já é testado lá). O mock
-// reproduz só o suficiente do contrato HTTP (create/list) para os cenários
-// abaixo, escrevendo/lendo a mesma tabela que as asserções checam direto.
-vi.mock("@/lib/tags-client", async () => {
-  const { db } = await import("@/lib/drizzle");
-  const { tag } = await import("@/db/schema");
-  const { and, eq } = await import("drizzle-orm");
-  const { BackendError } = await import("@/lib/backend-client");
-
-  return {
-    tagsClient: {
-      list: (userId: string) => db.select().from(tag).where(eq(tag.userId, userId)),
-      create: async ({ userId, name, color }: { userId: string; name: string; color?: string }) => {
-        const trimmed = (name ?? "").trim();
-        if (!trimmed) throw new BackendError(400, "Nome da Tag é obrigatório.");
-        if (trimmed.length > 50) throw new BackendError(400, "Nome da Tag muito longo (máx. 50).");
-        const resolvedColor = color ?? "#94a3b8";
-        if (resolvedColor.length < 4 || resolvedColor.length > 30) {
-          throw new BackendError(400, "Cor da Tag inválida.");
-        }
-        const [existing] = await db
-          .select()
-          .from(tag)
-          .where(and(eq(tag.userId, userId), eq(tag.name, trimmed)));
-        if (existing) throw new BackendError(400, `Tag "${trimmed}" já existe.`);
-
-        const [row] = await db
-          .insert(tag)
-          .values({ id: crypto.randomUUID(), userId, name: trimmed, color: resolvedColor, isSystem: false })
-          .returning();
-        return row;
-      },
-    },
-  };
-});
-
 let createdUserIds: string[] = [];
 
 async function seedProKey() {
