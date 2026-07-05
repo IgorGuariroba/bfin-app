@@ -1,8 +1,8 @@
 import { auth } from "@/lib/auth";
 import { getEffectiveUserId } from "@/lib/effective-user";
 import { getUserPlan, isFutureMonthAllowed } from "@/lib/plan";
-import { insightsService } from "@/adapters";
-import { InsightsValidationError } from "@/core/insights";
+import { insightsClient } from "@/lib/insights-client";
+import { BackendError } from "@/lib/backend-client";
 import type { NextRequest } from "next/server";
 
 export async function GET(request: NextRequest) {
@@ -26,10 +26,10 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    return Response.json(await insightsService.getTotais(userId, month));
+    return Response.json(await insightsClient.getTotais(userId, month));
   } catch (error) {
-    if (error instanceof InsightsValidationError) {
-      return Response.json({ error: error.message }, { status: 400 });
+    if (error instanceof BackendError) {
+      return Response.json({ error: error.message }, { status: error.status });
     }
     throw error;
   }

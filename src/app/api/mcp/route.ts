@@ -4,14 +4,13 @@ import { z } from "zod";
 import { resolvePrincipal } from "@/lib/mcp-principal";
 import { checkRateLimit, classifyRpc, RATE_LIMITS } from "@/lib/rate-limit";
 import { logger } from "@/lib/logger";
-import { insightsService } from "@/adapters";
+import { insightsClient } from "@/lib/insights-client";
 import { tagsClient } from "@/lib/tags-client";
 import { transactionsClient } from "@/lib/transactions-client";
 import { previsaoClient } from "@/lib/previsao-client";
 import { BackendError } from "@/lib/backend-client";
-import { InsightsValidationError } from "@/core/insights";
 
-const { getMonthSummary, getSaldos, getSugestoes, getTotais } = insightsService;
+const { getMonthSummary, getSaldos, getSugestoes, getTotais } = insightsClient;
 import { recordAgentWrite } from "@/lib/agent-audit";
 import { fmt } from "@/lib/utils";
 
@@ -38,10 +37,7 @@ async function readContent(produce: () => Promise<unknown>) {
   try {
     return jsonContent(await produce());
   } catch (error) {
-    if (
-      error instanceof InsightsValidationError ||
-      (error instanceof BackendError && error.status === 400)
-    ) {
+    if (error instanceof BackendError && error.status === 400) {
       return { isError: true, content: [{ type: "text" as const, text: error.message }] };
     }
     throw error;
