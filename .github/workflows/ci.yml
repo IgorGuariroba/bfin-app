@@ -57,6 +57,27 @@ jobs:
       - name: jscpd (duplicação)
         run: npm run jscpd
 
+      # ADR-0017: os testes de integração do MCP chamam o bfin-backend de
+      # verdade via HTTP (gateway), não mock — sobe o backend real contra o
+      # mesmo Postgres de teste antes de rodar a suíte.
+      - name: Checkout bfin-backend
+        uses: actions/checkout@v4
+        with:
+          repository: IgorGuariroba/bfin-backend
+          path: bfin-backend-ci
+
+      - name: Build e sobe o bfin-backend
+        working-directory: bfin-backend-ci
+        run: |
+          npm ci
+          npm run db:migrate
+          npm run build
+          node dist/server.js &
+          npx wait-on http://localhost:3001/health
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/bfin_test
+          INTERNAL_API_SECRET: ci-secret
+
       # Rede de segurança do ADR-0013: os testes (unitários do core + integração
       # contra Postgres) precisam ficar verdes a cada fatia da migração.
       # Secrets exigidos pelos testes são stubados neles próprios (vi.stubEnv).
@@ -66,6 +87,8 @@ jobs:
           npm test
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/bfin_test
+          BACKEND_URL: http://localhost:3001
+          INTERNAL_API_SECRET: ci-secret
 
       # next build sai com exit 0 mesmo logando erros de prerender (ex.: ReferenceError
       # 'window is not defined' ao renderizar no servidor). Capturamos o log e
