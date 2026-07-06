@@ -75,7 +75,10 @@
     "vitest": "^4.1.9"
   },
   "overrides": {
-    "@opentelemetry/core": "^2.8.0"
+    "@opentelemetry/core": "^2.8.0",
+    "@esbuild-kit/core-utils": {
+      "esbuild": "^0.25.0"
+    }
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx,mjs,mts}": [
