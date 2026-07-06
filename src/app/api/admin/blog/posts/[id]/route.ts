@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm";
 import { db } from "@/lib/drizzle";
 import { post } from "@/db/schema";
-import { fromDbTimestamp, fromDbTimestampOrNull, toDbTimestamp } from "@/adapters/drizzle/timestamp";
+import { fromDbTimestamp, fromDbTimestampOrNull, toDbTimestamp } from "@/db/timestamp";
 import { attachTopics, setPostTopics } from "@/lib/blog-db";
 import { requireBlogAdmin } from "@/lib/blog-admin";
 import { POST_CATEGORIES, POST_STATUSES, type PostCategory, type PostStatus } from "@/lib/blog";

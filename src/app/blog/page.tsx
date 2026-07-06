@@ -3,7 +3,7 @@ import Link from "next/link";
 import { desc, eq } from "drizzle-orm";
 import { db } from "@/lib/drizzle";
 import { post, user } from "@/db/schema";
-import { fromDbTimestampOrNull } from "@/adapters/drizzle/timestamp";
+import { fromDbTimestampOrNull } from "@/db/timestamp";
 import { LandingHeader } from "@/components/landing/landing-header";
 import { LandingFooter } from "@/components/landing/landing-footer";
 import { POST_CATEGORIES, categorySlug, postExcerpt, readingMinutes } from "@/lib/blog";

@@ -3,7 +3,7 @@ import { NextRequest } from "next/server";
 import { eq, inArray } from "drizzle-orm";
 import { db } from "@/lib/drizzle";
 import { transaction, user as userTable } from "@/db/schema";
-import { toDbTimestamp } from "@/adapters/drizzle/timestamp";
+import { toDbTimestamp } from "@/db/timestamp";
 
 const { mockAuth, mockCookieGet } = vi.hoisted(() => ({
   mockAuth: vi.fn(),

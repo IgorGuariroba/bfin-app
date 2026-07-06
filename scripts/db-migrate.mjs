@@ -1,9 +1,8 @@
 // Migrações do banco — drizzle-kit era o dono desde a introdução (ADR-0014);
 // a partir da ADR-0017 o dono passou a ser o bfin-backend, que tem sua própria
 // cópia deste script. Este aqui continua rodando (idempotente) só pra manter o
-// banco de dev/prod compatível com os adapters de src/core enquanto os
-// agregados não migram (issues #182–#191) — não é mais onde novas migrations
-// nascem.
+// banco de dev/prod compatível com a fatia local (auth NextAuth + blog) — não
+// é mais onde novas migrations nascem.
 // Roda em todo start (entrypoint/CI/predev); é idempotente.
 //
 // Baseline: bancos provisionados na era Prisma (dev e prod — o volume

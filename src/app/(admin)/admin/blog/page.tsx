@@ -3,7 +3,7 @@ import { Plus } from "lucide-react";
 import { count, desc, eq } from "drizzle-orm";
 import { db } from "@/lib/drizzle";
 import { post, postComment, user } from "@/db/schema";
-import { fromDbTimestamp } from "@/adapters/drizzle/timestamp";
+import { fromDbTimestamp } from "@/db/timestamp";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";

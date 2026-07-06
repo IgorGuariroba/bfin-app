@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm";
 import { db } from "@/lib/drizzle";
 import { postComment } from "@/db/schema";
-import { fromDbTimestamp } from "@/adapters/drizzle/timestamp";
+import { fromDbTimestamp } from "@/db/timestamp";
 import { requireBlogAdmin } from "@/lib/blog-admin";
 import { COMMENT_STATUSES, type CommentStatus } from "@/lib/blog";
 

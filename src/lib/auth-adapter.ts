@@ -4,8 +4,8 @@ import { and, eq } from "drizzle-orm";
 import type { Adapter, AdapterAccount, AdapterUser } from "next-auth/adapters";
 import { db } from "@/lib/drizzle";
 import { account, user } from "@/db/schema";
-import { newId } from "@/adapters/drizzle/id";
-import { fromDbTimestampOrNull, toDbTimestamp } from "@/adapters/drizzle/timestamp";
+import { newId } from "@/db/id";
+import { fromDbTimestampOrNull, toDbTimestamp } from "@/db/timestamp";
 
 /**
  * Adapter do NextAuth escrito à mão (não @auth/drizzle-adapter): a lib

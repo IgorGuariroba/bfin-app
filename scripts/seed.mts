@@ -4,7 +4,7 @@ import { drizzle } from "drizzle-orm/node-postgres";
 import { eq, sql } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import * as schema from "../src/db/schema";
-import { toDbTimestamp } from "../src/adapters/drizzle/timestamp";
+import { toDbTimestamp } from "../src/db/timestamp";
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 const db = drizzle(pool, { schema });
