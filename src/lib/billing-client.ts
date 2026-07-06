@@ -70,10 +70,4 @@ export const billingClient = {
         body: JSON.stringify(input),
       })
     ),
-
-  processSubscriptionEvent: (subscriptionId: string) =>
-    callBackend<{ ok: true }>("/billing/process-subscription-event", {
-      method: "POST",
-      body: JSON.stringify({ subscriptionId }),
-    }),
 };
