@@ -20,18 +20,6 @@ interface Bucket {
 }
 
 /**
- * Limites in-memory por ApiKey, separados por tipo de operação (ADR-0004).
- * Escrita é mais arriscada (um LLM em loop corrompe o livro financeiro) → cota
- * menor que leitura. Janela fixa de 60s.
- */
-export const RATE_LIMITS = {
-  read: { limit: 120, windowMs: 60_000 },
-  write: { limit: 30, windowMs: 60_000 },
-} as const;
-
-export type RateLimitKind = keyof typeof RATE_LIMITS;
-
-/**
  * Login por credentials: cota por IP+email contra brute-force de senha.
  * Conta toda tentativa (válida ou não); estourar devolve o mesmo erro
  * genérico de credenciais inválidas.
@@ -43,39 +31,6 @@ export const LOGIN_RATE_LIMIT: RateLimitConfig = { limit: 5, windowMs: 15 * 60_0
  * (`status: pending`) cuida do conteúdo, esta cota cuida do ritmo.
  */
 export const COMMENT_RATE_LIMIT: RateLimitConfig = { limit: 5, windowMs: 10 * 60_000 };
-
-/** Tools que alteram dados — contam contra a cota de escrita. As demais são leitura. */
-const WRITE_TOOLS = new Set([
-  "create_transaction",
-  "update_transaction",
-  "delete_transaction",
-  "create_tag",
-]);
-
-/**
- * Classifica uma chamada JSON-RPC do MCP como `write` ou `read` para escolher a
- * cota. Só `tools/call` de uma WRITE_TOOLS é escrita; `tools/list`, `initialize`
- * e leituras (`get_*`/`list_*`) são leitura. Body inválido cai em `read` (o
- * transport lida com o erro de protocolo depois).
- *
- * Trata batch JSON-RPC (array): se qualquer chamada do lote for escrita, o lote
- * inteiro conta como escrita — caso contrário um lote com `tools/call` de write
- * burlaria a cota mais restrita usando a de leitura.
- */
-export function classifyRpc(rawBody: string): RateLimitKind {
-  try {
-    const msg = JSON.parse(rawBody);
-    const calls = Array.isArray(msg) ? msg : [msg];
-    for (const call of calls) {
-      if (call?.method === "tools/call" && WRITE_TOOLS.has(call?.params?.name)) {
-        return "write";
-      }
-    }
-  } catch {
-    // body não-JSON: trata como leitura (não onera a cota de escrita).
-  }
-  return "read";
-}
 
 const buckets = new Map<string, Bucket>();
 

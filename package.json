@@ -19,7 +19,6 @@
   "dependencies": {
     "@grafana/faro-web-sdk": "^2.5.0",
     "@grafana/faro-web-tracing": "^2.5.0",
-    "@modelcontextprotocol/sdk": "^1.29.0",
     "@next/env": "^16.2.10",
     "@opentelemetry/api": "^1.9.1",
     "@opentelemetry/api-logs": "^0.220.0",
@@ -80,6 +79,9 @@
     "@opentelemetry/core": "^2.8.0"
   },
   "lint-staged": {
-    "*.{js,jsx,ts,tsx,mjs,mts}": ["eslint --fix", "vitest related --project unit --run"]
+    "*.{js,jsx,ts,tsx,mjs,mts}": [
+      "eslint --fix",
+      "vitest related --project unit --run"
+    ]
   }
 }
