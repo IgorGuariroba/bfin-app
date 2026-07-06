@@ -1,22 +1,17 @@
 import "server-only";
-import { auth } from "@/lib/auth";
-import { isAdmin } from "@/lib/admin";
+import { requireAdminOr403 } from "@/lib/admin-route";
 import { billingClient, BillingValidationError } from "@/lib/billing-client";
 
-async function requireAdmin() {
-  const session = await auth();
-  if (!isAdmin(session?.user?.email)) return null;
-  return session;
-}
-
 export async function GET() {
-  if (!await requireAdmin()) return Response.json({ error: "Forbidden" }, { status: 403 });
+  const forbidden = await requireAdminOr403();
+  if (forbidden) return forbidden;
 
   return Response.json(await billingClient.getPlanConfig());
 }
 
 export async function POST(request: Request) {
-  if (!await requireAdmin()) return Response.json({ error: "Forbidden" }, { status: 403 });
+  const forbidden = await requireAdminOr403();
+  if (forbidden) return forbidden;
 
   const { monthlyAmount, annualAmount } = await request.json();
 
