@@ -79,13 +79,6 @@ export default function PrivacidadePage() {
                 manualmente. O bfin não acessa contas bancárias.
               </li>
               <li>
-                <strong className="text-ink">
-                  Atendimento via WhatsApp:
-                </strong>{" "}
-                caso você inicie conversa, armazenamos seu número em formato
-                E.164 e o conteúdo das mensagens trocadas.
-              </li>
-              <li>
                 <strong className="text-ink">Dados técnicos:</strong> cookies
                 essenciais de sessão para manter o login ativo. Não usamos
                 cookies de rastreamento publicitário.
@@ -101,7 +94,7 @@ export default function PrivacidadePage() {
                 Prestar o serviço de organização financeira (lançamentos,
                 projeções, relatórios).
               </li>
-              <li>Responder dúvidas de suporte por e-mail ou WhatsApp.</li>
+              <li>Responder dúvidas de suporte por e-mail.</li>
               <li>Cumprir obrigações legais e regulatórias.</li>
             </ul>
 
@@ -131,11 +124,6 @@ export default function PrivacidadePage() {
               <li>
                 <strong className="text-ink">Google</strong> — autenticação
                 OAuth, caso você opte por entrar com Google.
-              </li>
-              <li>
-                <strong className="text-ink">Meta / WhatsApp</strong> — envio e
-                recebimento de mensagens via WhatsApp Cloud API, quando você
-                usa esse canal.
               </li>
               <li>
                 <strong className="text-ink">Provedor de hospedagem</strong> —

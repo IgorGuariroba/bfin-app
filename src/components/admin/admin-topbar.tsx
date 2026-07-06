@@ -13,7 +13,6 @@ const LABELS: Record<string, string> = {
   admin: "Dashboard",
   precos: "Preços",
   blog: "Blog",
-  whatsapp: "WhatsApp",
   topicos: "Tópicos",
   comentarios: "Comentários",
   novo: "Novo post",
