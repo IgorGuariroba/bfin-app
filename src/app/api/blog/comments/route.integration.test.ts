@@ -2,7 +2,7 @@ import { afterEach, describe, it, expect, vi } from "vitest";
 import { inArray } from "drizzle-orm";
 import { db } from "@/lib/drizzle";
 import { post, user as userTable } from "@/db/schema";
-import { toDbTimestamp } from "@/adapters/drizzle/timestamp";
+import { toDbTimestamp } from "@/db/timestamp";
 import { COMMENT_RATE_LIMIT } from "@/lib/rate-limit";
 
 const { mockAuth } = vi.hoisted(() => ({ mockAuth: vi.fn() }));

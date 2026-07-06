@@ -1,7 +1,7 @@
 import { desc, eq, inArray } from "drizzle-orm";
 import { db } from "@/lib/drizzle";
 import { post, postTopic, user } from "@/db/schema";
-import { fromDbTimestamp, fromDbTimestampOrNull, toDbTimestamp } from "@/adapters/drizzle/timestamp";
+import { fromDbTimestamp, fromDbTimestampOrNull, toDbTimestamp } from "@/db/timestamp";
 import { attachTopics, setPostTopics } from "@/lib/blog-db";
 import { isUniqueViolation } from "@/lib/db-errors";
 import { requireBlogAdmin } from "@/lib/blog-admin";

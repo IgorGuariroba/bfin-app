@@ -3,7 +3,7 @@ import { FileText, Users, DollarSign, MessagesSquare } from "lucide-react";
 import { count, desc, eq } from "drizzle-orm";
 import { db } from "@/lib/drizzle";
 import { planConfig, post, postComment, user } from "@/db/schema";
-import { fromDbTimestamp } from "@/adapters/drizzle/timestamp";
+import { fromDbTimestamp } from "@/db/timestamp";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";

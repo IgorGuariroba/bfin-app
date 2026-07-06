@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { and, asc, eq, inArray } from "drizzle-orm";
 import { db } from "@/lib/drizzle";
 import { post, postComment, user } from "@/db/schema";
-import { fromDbTimestamp, fromDbTimestampOrNull } from "@/adapters/drizzle/timestamp";
+import { fromDbTimestamp, fromDbTimestampOrNull } from "@/db/timestamp";
 import { attachTopics } from "@/lib/blog-db";
 import { LandingHeader } from "@/components/landing/landing-header";
 import { LandingFooter } from "@/components/landing/landing-footer";

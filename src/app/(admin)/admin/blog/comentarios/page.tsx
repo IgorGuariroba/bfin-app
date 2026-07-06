@@ -2,7 +2,7 @@ import Link from "next/link";
 import { count, desc, eq } from "drizzle-orm";
 import { db } from "@/lib/drizzle";
 import { post, postComment, user } from "@/db/schema";
-import { fromDbTimestamp } from "@/adapters/drizzle/timestamp";
+import { fromDbTimestamp } from "@/db/timestamp";
 import { CommentsModeration } from "@/components/blog/comments-moderation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";

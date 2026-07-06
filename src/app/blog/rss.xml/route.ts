@@ -1,7 +1,7 @@
 import { desc, eq } from "drizzle-orm";
 import { db } from "@/lib/drizzle";
 import { post, user } from "@/db/schema";
-import { fromDbTimestampOrNull } from "@/adapters/drizzle/timestamp";
+import { fromDbTimestampOrNull } from "@/db/timestamp";
 import { SITE_URL } from "@/lib/site-url";
 import { postExcerpt } from "@/lib/blog";
 

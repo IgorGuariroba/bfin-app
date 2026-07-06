@@ -3,7 +3,7 @@ import { eq } from "drizzle-orm";
 import { SITE_URL } from "@/lib/site-url";
 import { db } from "@/lib/drizzle";
 import { post } from "@/db/schema";
-import { fromDbTimestamp } from "@/adapters/drizzle/timestamp";
+import { fromDbTimestamp } from "@/db/timestamp";
 import { POST_CATEGORIES, categorySlug } from "@/lib/blog";
 
 export const dynamic = "force-dynamic";
