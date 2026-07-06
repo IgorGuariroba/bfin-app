@@ -1,7 +1,7 @@
 # 13. Backend agnóstico de framework no código, não na infra
 
 Data: 2026-07-02
-Status: Aceito
+Status: Substituída pela ADR-0017 (a migração de código descrita aqui foi concluída; a decisão de manter só um deploy foi revisitada por motivo de cadência de deploy)
 
 ## Contexto
 
