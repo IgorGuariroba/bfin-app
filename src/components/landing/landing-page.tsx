@@ -2,7 +2,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { LandingFooter } from "@/components/landing/landing-footer";
 import { LandingHeader } from "@/components/landing/landing-header";
-import { WhatsAppFloatingButton } from "@/components/landing/whatsapp-floating-button";
 import {
   Wallet,
   PieChart,
@@ -319,8 +318,6 @@ export function LandingPage() {
           Criar conta grátis
         </Link>
       </div>
-
-      <WhatsAppFloatingButton />
     </div>
   );
 }

@@ -2,14 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, DollarSign, FileText, MessageCircle, ArrowLeft } from "lucide-react";
+import { LayoutDashboard, DollarSign, FileText, ArrowLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const NAV = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { href: "/admin/precos", label: "Preços", icon: DollarSign },
   { href: "/admin/blog", label: "Blog", icon: FileText },
-  { href: "/admin/whatsapp", label: "WhatsApp", icon: MessageCircle },
 ];
 
 export function AdminSidebar({ onNavigate }: { onNavigate?: () => void }) {

@@ -1,5 +1,5 @@
 import { relations } from "drizzle-orm/relations";
-import { user, session, previsao, tag, account, transaction, pluggyItem, accountMember, apiKey, whatsappContact, whatsappConversation, whatsappMessage, post, postComment, tagToTransaction, postTopics, postTopic } from "./schema";
+import { user, session, previsao, tag, account, transaction, pluggyItem, accountMember, apiKey, post, postComment, tagToTransaction, postTopics, postTopic } from "./schema";
 
 export const sessionRelations = relations(session, ({one}) => ({
 	user: one(user, {
@@ -96,25 +96,6 @@ export const apiKeyRelations = relations(apiKey, ({one}) => ({
 	user: one(user, {
 		fields: [apiKey.userId],
 		references: [user.id]
-	}),
-}));
-
-export const whatsappConversationRelations = relations(whatsappConversation, ({one, many}) => ({
-	whatsappContact: one(whatsappContact, {
-		fields: [whatsappConversation.contactId],
-		references: [whatsappContact.id]
-	}),
-	whatsappMessages: many(whatsappMessage),
-}));
-
-export const whatsappContactRelations = relations(whatsappContact, ({many}) => ({
-	whatsappConversations: many(whatsappConversation),
-}));
-
-export const whatsappMessageRelations = relations(whatsappMessage, ({one}) => ({
-	whatsappConversation: one(whatsappConversation, {
-		fields: [whatsappMessage.conversationId],
-		references: [whatsappConversation.id]
 	}),
 }));
 
