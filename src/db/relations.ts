@@ -1,15 +1,7 @@
 import { relations } from "drizzle-orm/relations";
-import { user, session, previsao, tag, account, transaction, pluggyItem, accountMember, apiKey, post, postComment, tagToTransaction, postTopics, postTopic } from "./schema";
-
-export const sessionRelations = relations(session, ({one}) => ({
-	user: one(user, {
-		fields: [session.userId],
-		references: [user.id]
-	}),
-}));
+import { user, previsao, tag, account, transaction, pluggyItem, accountMember, post, postComment, tagToTransaction, postTopics, postTopic } from "./schema";
 
 export const userRelations = relations(user, ({many}) => ({
-	sessions: many(session),
 	previsaos: many(previsao),
 	tags: many(tag),
 	accounts: many(account),
@@ -26,7 +18,6 @@ export const userRelations = relations(user, ({many}) => ({
 	accountMembers_memberId: many(accountMember, {
 		relationName: "accountMember_memberId_user_id"
 	}),
-	apiKeys: many(apiKey),
 	posts: many(post),
 	postComments: many(postComment),
 }));
@@ -89,13 +80,6 @@ export const accountMemberRelations = relations(accountMember, ({one}) => ({
 		fields: [accountMember.memberId],
 		references: [user.id],
 		relationName: "accountMember_memberId_user_id"
-	}),
-}));
-
-export const apiKeyRelations = relations(apiKey, ({one}) => ({
-	user: one(user, {
-		fields: [apiKey.userId],
-		references: [user.id]
 	}),
 }));
 
