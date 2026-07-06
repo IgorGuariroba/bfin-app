@@ -3,29 +3,6 @@ import { sql } from "drizzle-orm"
 
 
 
-export const session = pgTable("Session", {
-	id: text().primaryKey().notNull(),
-	sessionToken: text().notNull(),
-	userId: text().notNull(),
-	expires: timestamp({ precision: 3, mode: 'string' }).notNull(),
-}, (table) => [
-	uniqueIndex("Session_sessionToken_key").using("btree", table.sessionToken.asc().nullsLast().op("text_ops")),
-	foreignKey({
-			columns: [table.userId],
-			foreignColumns: [user.id],
-			name: "Session_userId_fkey"
-		}).onUpdate("cascade").onDelete("cascade"),
-]);
-
-export const verificationToken = pgTable("VerificationToken", {
-	identifier: text().notNull(),
-	token: text().notNull(),
-	expires: timestamp({ precision: 3, mode: 'string' }).notNull(),
-}, (table) => [
-	uniqueIndex("VerificationToken_identifier_token_key").using("btree", table.identifier.asc().nullsLast().op("text_ops"), table.token.asc().nullsLast().op("text_ops")),
-	uniqueIndex("VerificationToken_token_key").using("btree", table.token.asc().nullsLast().op("text_ops")),
-]);
-
 export const previsao = pgTable("Previsao", {
 	id: text().primaryKey().notNull(),
 	userId: text().notNull(),
@@ -155,25 +132,6 @@ export const accountMember = pgTable("AccountMember", {
 			columns: [table.memberId],
 			foreignColumns: [user.id],
 			name: "AccountMember_memberId_fkey"
-		}).onUpdate("cascade").onDelete("cascade"),
-]);
-
-export const apiKey = pgTable("ApiKey", {
-	id: text().primaryKey().notNull(),
-	userId: text().notNull(),
-	name: text().notNull(),
-	hashedKey: text().notNull(),
-	prefix: text().notNull(),
-	lastUsedAt: timestamp({ precision: 3, mode: 'string' }),
-	createdAt: timestamp({ precision: 3, mode: 'string' }).default(sql`CURRENT_TIMESTAMP`).notNull(),
-	revokedAt: timestamp({ precision: 3, mode: 'string' }),
-}, (table) => [
-	uniqueIndex("ApiKey_hashedKey_key").using("btree", table.hashedKey.asc().nullsLast().op("text_ops")),
-	index("ApiKey_userId_idx").using("btree", table.userId.asc().nullsLast().op("text_ops")),
-	foreignKey({
-			columns: [table.userId],
-			foreignColumns: [user.id],
-			name: "ApiKey_userId_fkey"
 		}).onUpdate("cascade").onDelete("cascade"),
 ]);
 
