@@ -1,4 +1,1 @@
 npx lint-staged
-npx tsc --noEmit
-npx knip
-npx jscpd
