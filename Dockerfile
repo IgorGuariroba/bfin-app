@@ -16,6 +16,18 @@ ENV NEXT_PUBLIC_FARO_URL=$NEXT_PUBLIC_FARO_URL
 # Montado como secret BuildKit: exposto à env do RUN, sem persistir em layer nem na imagem final.
 RUN --mount=type=secret,id=faro_api_key,env=FARO_API_KEY \
     npm run build -- --webpack
+# ADR-0018 (#230): SHA do commit buildado, exposto pelo /api/health para o
+# workflow pós-merge saber quando a versão nova está servida. Resolvido dos
+# metadados do git no contexto (HEAD pode ser ref simbólica ou detached;
+# a ref pode estar solta em refs/ ou em packed-refs).
+RUN HEAD=$(cat .git/HEAD 2>/dev/null || true); \
+    case "$HEAD" in \
+      ref:*) REF=$(echo "$HEAD" | cut -d' ' -f2); \
+             SHA=$(cat ".git/$REF" 2>/dev/null || \
+                   grep " $REF" .git/packed-refs 2>/dev/null | cut -d' ' -f1);; \
+      *)     SHA=$HEAD;; \
+    esac; \
+    echo "${SHA:-unknown}" > BUILD_SHA && cat BUILD_SHA
 
 FROM node:22-alpine AS runner
 WORKDIR /app
@@ -30,6 +42,7 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=builder --chown=nextjs:nodejs /app/scripts ./scripts
 COPY --from=builder --chown=nextjs:nodejs /app/drizzle ./drizzle
+COPY --from=builder --chown=nextjs:nodejs /app/BUILD_SHA ./BUILD_SHA
 COPY --chown=nextjs:nodejs docker-entrypoint.sh ./docker-entrypoint.sh
 
 # scripts/db-migrate.mjs roda fora do server.js do Next (fica de fora do output
