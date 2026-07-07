@@ -15,10 +15,10 @@ const publicRoutes = [
   "/termos",
 ];
 const publicExact = ["/"];
-const SESSION_COOKIE =
-  process.env.NODE_ENV === "production"
-    ? "__Secure-authjs.session-token"
-    : "authjs.session-token";
+// O NextAuth escolhe o prefixo __Secure- pelo protocolo (https), não por
+// NODE_ENV — um build de produção servido por http (smoke do CI, ADR-0018)
+// emite o cookie sem prefixo, então aceitamos os dois nomes.
+const SESSION_COOKIES = ["__Secure-authjs.session-token", "authjs.session-token"];
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -27,7 +27,7 @@ export function proxy(request: NextRequest) {
     publicExact.includes(pathname) ||
     publicRoutes.some((route) => pathname.startsWith(route));
   const isAuthRedirectRoute = pathname.startsWith("/login");
-  const hasSession = request.cookies.has(SESSION_COOKIE);
+  const hasSession = SESSION_COOKIES.some((name) => request.cookies.has(name));
 
   // Não logado + rota protegida → login
   if (!isPublic && !hasSession) {

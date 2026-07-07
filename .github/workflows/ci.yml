@@ -77,6 +77,9 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/bfin_test
           INTERNAL_API_SECRET: ci-secret
+          # Dummy: faz o guard do webhook responder 401 (não 500 fail-closed)
+          # ao probe não assinado do smoke (ADR-0018, #228).
+          MERCADO_PAGO_WEBHOOK_SECRET: ci-mp-secret
 
       # Rede de segurança do ADR-0013: os testes (unitários do core + integração
       # contra Postgres) precisam ficar verdes a cada fatia da migração.
@@ -103,3 +106,25 @@ jobs:
           fi
         env:
           NEXT_TELEMETRY_DISABLED: "1"
+
+      # ADR-0018 (#228): o CI valida o app SERVIDO, não só buildado — sobe o
+      # next start (build de produção) com o bfin-backend real já de pé e roda
+      # o smoke (seam único, o mesmo script que o pós-merge roda contra prod).
+      # O usuário sintético nasce do seed (demo@bfin.app).
+      - name: Smoke (app servido)
+        run: |
+          npx tsx scripts/seed.mts
+          npx next start -p 3000 &
+          npx wait-on -t 60000 http://localhost:3000/api/health
+          npm run smoke
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/bfin_test
+          BACKEND_URL: http://localhost:3001
+          INTERNAL_API_SECRET: ci-secret
+          AUTH_SECRET: ci-auth-secret-so-para-o-smoke!!
+          AUTH_TRUST_HOST: "true"
+          BASE_URL: http://localhost:3000
+          SMOKE_EMAIL: demo@bfin.app
+          SMOKE_PASSWORD: demo123
+          # Sem Traefik no CI, o path público do webhook é servido direto pelo backend.
+          SMOKE_WEBHOOK_URL: http://localhost:3001/api/webhook/mercadopago
