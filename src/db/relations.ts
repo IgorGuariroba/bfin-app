@@ -1,17 +1,11 @@
 import { relations } from "drizzle-orm/relations";
-import { user, previsao, tag, account, transaction, pluggyItem, accountMember, post, postComment, tagToTransaction, postTopics, postTopic } from "./schema";
+import { user, previsao, tag, account, transaction, accountMember, post, postComment, tagToTransaction, postTopics, postTopic } from "./schema";
 
 export const userRelations = relations(user, ({many}) => ({
 	previsaos: many(previsao),
 	tags: many(tag),
 	accounts: many(account),
 	transactions: many(transaction),
-	pluggyItems_userId: many(pluggyItem, {
-		relationName: "pluggyItem_userId_user_id"
-	}),
-	pluggyItems_connectedByUserId: many(pluggyItem, {
-		relationName: "pluggyItem_connectedByUserId_user_id"
-	}),
 	accountMembers_ownerId: many(accountMember, {
 		relationName: "accountMember_ownerId_user_id"
 	}),
@@ -49,25 +43,7 @@ export const transactionRelations = relations(transaction, ({one, many}) => ({
 		fields: [transaction.userId],
 		references: [user.id]
 	}),
-	pluggyItem: one(pluggyItem, {
-		fields: [transaction.pluggyItemId],
-		references: [pluggyItem.id]
-	}),
 	tagToTransactions: many(tagToTransaction),
-}));
-
-export const pluggyItemRelations = relations(pluggyItem, ({one, many}) => ({
-	transactions: many(transaction),
-	user_userId: one(user, {
-		fields: [pluggyItem.userId],
-		references: [user.id],
-		relationName: "pluggyItem_userId_user_id"
-	}),
-	user_connectedByUserId: one(user, {
-		fields: [pluggyItem.connectedByUserId],
-		references: [user.id],
-		relationName: "pluggyItem_connectedByUserId_user_id"
-	}),
 }));
 
 export const accountMemberRelations = relations(accountMember, ({one}) => ({

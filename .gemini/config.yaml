@@ -11,7 +11,6 @@ ignore_patterns:
   - "prisma/migrations/**"
   - "src/generated/**"
   - "public/**"
-  - "bfin.html"
   - "**/*.lock"
   - "**/*.lockb"
   - "package-lock.json"

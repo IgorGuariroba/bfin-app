@@ -77,37 +77,6 @@ export const transaction = pgTable("Transaction", {
 			foreignColumns: [user.id],
 			name: "Transaction_userId_fkey"
 		}).onUpdate("cascade").onDelete("cascade"),
-	foreignKey({
-			columns: [table.pluggyItemId],
-			foreignColumns: [pluggyItem.id],
-			name: "Transaction_pluggyItemId_fkey"
-		}).onUpdate("cascade").onDelete("set null"),
-]);
-
-export const pluggyItem = pgTable("PluggyItem", {
-	id: text().primaryKey().notNull(),
-	userId: text().notNull(),
-	itemId: text().notNull(),
-	connector: text().notNull(),
-	status: text().notNull(),
-	lastSyncedAt: timestamp({ precision: 3, mode: 'string' }),
-	createdAt: timestamp({ precision: 3, mode: 'string' }).default(sql`CURRENT_TIMESTAMP`).notNull(),
-	updatedAt: timestamp({ precision: 3, mode: 'string' }).notNull(),
-	connectedByUserId: text().notNull(),
-}, (table) => [
-	index("PluggyItem_connectedByUserId_idx").using("btree", table.connectedByUserId.asc().nullsLast().op("text_ops")),
-	uniqueIndex("PluggyItem_itemId_key").using("btree", table.itemId.asc().nullsLast().op("text_ops")),
-	index("PluggyItem_userId_idx").using("btree", table.userId.asc().nullsLast().op("text_ops")),
-	foreignKey({
-			columns: [table.userId],
-			foreignColumns: [user.id],
-			name: "PluggyItem_userId_fkey"
-		}).onUpdate("cascade").onDelete("cascade"),
-	foreignKey({
-			columns: [table.connectedByUserId],
-			foreignColumns: [user.id],
-			name: "PluggyItem_connectedByUserId_fkey"
-		}).onUpdate("cascade").onDelete("cascade"),
 ]);
 
 export const accountMember = pgTable("AccountMember", {
