@@ -3,6 +3,11 @@ name: CI
 on:
   pull_request:
     branches: [master]
+  # ADR-0018 (#229): lado receptor do CI reverso — o bfin-backend dispara este
+  # evento ao mergear em master, exercitando a suíte daqui (que testa contra
+  # bfin-backend@master) no momento e no lado que pode ter quebrado o contrato.
+  repository_dispatch:
+    types: [backend-merged]
 
 jobs:
   semgrep:
@@ -128,3 +133,16 @@ jobs:
           SMOKE_PASSWORD: demo123
           # Sem Traefik no CI, o path público do webhook é servido direto pelo backend.
           SMOKE_WEBHOOK_URL: http://localhost:3001/api/webhook/mercadopago
+
+      # Run de PR falhando aparece no próprio PR; run disparado pelo backend
+      # (repository_dispatch) não tem PR para aparecer — sem isto morreria
+      # silencioso na aba Actions (ADR-0018, #229).
+      - name: Alerta no Discord (quebra de contrato vinda do backend)
+        if: failure() && github.event_name == 'repository_dispatch'
+        env:
+          BACKEND_SHA: ${{ github.event.client_payload.sha }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          jq -n --arg content "🚨 **CI reverso FALHOU**: merge no bfin-backend (\`${BACKEND_SHA:-sha não informado}\`) quebrou a suíte do bfin-app contra bfin-backend@master. Log: $RUN_URL" \
+            '{content: $content}' \
+            | curl -sf -X POST "${{ secrets.DISCORD_WEBHOOK_URL }}" -H 'content-type: application/json' -d @-
