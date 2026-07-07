@@ -1,0 +1,112 @@
+# ADR-0018 (#230): merge em master significa produção verificada.
+# O push em master é o mesmo evento que faz o Dokploy deployar; este workflow
+# espera a versão nova estar SERVIDA (polling do SHA no /api/health, não sleep)
+# e roda o smoke (seam único, scripts/smoke.mjs) contra produção.
+# Falha = Alerta (Página) no Discord + Detecção (Issue) com chave estável.
+name: Smoke pós-deploy
+
+on:
+  push:
+    branches: [master]
+
+# Push novo supersede o anterior: a versão que interessa verificar é a mais nova.
+concurrency:
+  group: smoke-pos-deploy
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  issues: write
+
+env:
+  BASE_URL: https://bfincont.com.br
+  DETECTION_KEY: smoke-pos-deploy
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # smoke.mjs só precisa do dotenv — não paga npm ci inteiro.
+      - name: Instala dependência do smoke
+        run: npm install --no-save dotenv
+
+      - name: Espera o deploy do Dokploy servir o SHA novo
+        run: |
+          echo "Aguardando $BASE_URL servir sha=$GITHUB_SHA..."
+          deadline=$(( $(date +%s) + 900 ))
+          while true; do
+            sha=$(curl -sf -m 10 "$BASE_URL/api/health" | jq -r '.sha // "sem-campo-sha"' || echo "health-inacessivel")
+            if [ "$sha" = "$GITHUB_SHA" ]; then
+              echo "Versão nova no ar (sha=$sha)."
+              break
+            fi
+            if [ "$(date +%s)" -gt "$deadline" ]; then
+              echo "::error::Timeout (15min): produção ainda serve sha=$sha (esperado $GITHUB_SHA). Deploy do Dokploy não concluiu, falhou, ou o health não expõe o SHA." | tee smoke.log
+              exit 1
+            fi
+            echo "produção serve sha=$sha — aguardando 15s..."
+            sleep 15
+          done
+
+      - name: Smoke contra produção
+        run: |
+          set -o pipefail
+          npm run smoke 2>&1 | tee smoke.log
+        env:
+          SMOKE_EMAIL: ${{ secrets.SMOKE_PROD_EMAIL }}
+          SMOKE_PASSWORD: ${{ secrets.SMOKE_PROD_PASSWORD }}
+
+      # Falha em produção é Alerta (Página): exige ação em minutos (ADR-0008).
+      - name: Alerta no Discord (#bfin-health)
+        if: failure()
+        run: |
+          jq -n --arg content "🚨 **Smoke pós-deploy FALHOU em produção** — commit \`${GITHUB_SHA:0:7}\` pode ter quebrado a espinha dorsal (health/login/totais/webhook billing). Log: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+            '{content: $content}' \
+            | curl -sf -X POST "${{ secrets.DISCORD_WEBHOOK_URL }}" -H 'content-type: application/json' -d @-
+
+      # A mesma falha vira Detecção (Issue) com chave estável: dedup por título,
+      # labels e template do detection-playbook — a routine horária sabe operar.
+      - name: Abre/atualiza issue de detecção
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          log=$(tail -c 3000 smoke.log 2>/dev/null || echo "sem log capturado")
+          body="**Detecção automática** (smoke pós-deploy, ADR-0018) — chave \`detection:$DETECTION_KEY\`
+
+          **O que foi observado:** o smoke contra produção falhou após o deploy do commit \`$GITHUB_SHA\`.
+          **Por que importa:** merge em master significa produção verificada — a espinha dorsal (health, login, leitura financeira, guard do webhook de billing) pode estar quebrada para usuários agora.
+          **Provável causa / onde olhar:** diff do commit \`${GITHUB_SHA:0:7}\`, [log do run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}), painel do Dokploy.
+          **Log do passo que falhou:**
+          \`\`\`
+          $log
+          \`\`\`
+
+          _Gerado automaticamente pelo workflow smoke-pos-deploy. Se for ruído, feche e ajuste o workflow._"
+          existing=$(gh issue list --state open --search "[detection:$DETECTION_KEY] in:title" --json number --jq '.[0].number // empty')
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --body "$body"
+          else
+            gh issue create \
+              --title "[detection:$DETECTION_KEY] smoke pós-deploy falhou em produção" \
+              --label detection --label "detection:state" \
+              --body "$body"
+          fi
+
+      # detection:state fecha quando a condição limpa — e smoke verde É a
+      # condição limpando; não precisa esperar a varredura horária.
+      - name: Fecha issue de detecção se a condição limpou
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          existing=$(gh issue list --state open --search "[detection:$DETECTION_KEY] in:title" --json number --jq '.[0].number // empty')
+          if [ -n "$existing" ]; then
+            gh issue close "$existing" --comment "Resolvido: smoke pós-deploy verde no commit \`$GITHUB_SHA\` ($(date -u +%Y-%m-%dT%H:%M:%SZ))."
+          fi

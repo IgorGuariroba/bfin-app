@@ -1,4 +1,9 @@
 .git
+# ADR-0018 (#230): o build lê o SHA do commit direto dos metadados do git
+# (sem depender do Dokploy passar build arg) — só o mínimo entra no contexto.
+!.git/HEAD
+!.git/refs
+!.git/packed-refs
 .github
 .next
 node_modules
