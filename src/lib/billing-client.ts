@@ -1,9 +1,7 @@
 import "server-only";
-import { callBackend, BackendError } from "./backend-client";
+import { callBackend } from "./backend-client";
 
 export type BillingCycle = "monthly" | "annual";
-
-export class BillingValidationError extends Error {}
 
 export interface PlanConfigRecord {
   id: string;
@@ -24,38 +22,25 @@ export interface ClickAttribution {
   wbraid?: string;
 }
 
-function toBackendError<T>(promise: Promise<T>): Promise<T> {
-  return promise.catch((error) => {
-    if (error instanceof BackendError && error.status === 400) {
-      throw new BillingValidationError(error.message);
-    }
-    throw error;
-  });
-}
-
 export const billingClient = {
   getPlanPrices: () => callBackend<{ monthly: number; annual: number }>("/billing/plan-prices"),
 
   getPlanConfig: () => callBackend<PlanConfigRecord>("/billing/plan-config"),
 
   updatePlanConfig: (input: { monthlyAmount: number; annualAmount: number }) =>
-    toBackendError(
-      callBackend<PlanConfigRecord>("/billing/plan-config", {
-        method: "PUT",
-        body: JSON.stringify(input),
-      })
-    ),
+    callBackend<PlanConfigRecord>("/billing/plan-config", {
+      method: "PUT",
+      body: JSON.stringify(input),
+    }),
 
   getSubscription: (userId: string) =>
     callBackend<SubscriptionInfo>(`/billing/subscription?userId=${encodeURIComponent(userId)}`),
 
   cancelSubscription: (userId: string) =>
-    toBackendError(
-      callBackend<{ ok: true }>("/billing/subscription", {
-        method: "DELETE",
-        body: JSON.stringify({ userId }),
-      })
-    ),
+    callBackend<{ ok: true }>("/billing/subscription", {
+      method: "DELETE",
+      body: JSON.stringify({ userId }),
+    }),
 
   checkout: (input: {
     userId: string;
@@ -64,10 +49,8 @@ export const billingClient = {
     origin: string;
     click?: ClickAttribution;
   }) =>
-    toBackendError(
-      callBackend<{ initPoint: string | undefined }>("/billing/checkout", {
-        method: "POST",
-        body: JSON.stringify(input),
-      })
-    ),
+    callBackend<{ initPoint: string | undefined }>("/billing/checkout", {
+      method: "POST",
+      body: JSON.stringify(input),
+    }),
 };

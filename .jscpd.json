@@ -1,6 +1,6 @@
 {
   "path": ["src"],
-  "ignore": ["src/components/ui/**", "public/sw.js", "src/lib/faro.ts", "src/db/relations.ts"],
+  "ignore": ["src/components/ui/**", "public/sw.js", "src/lib/faro.ts"],
   "threshold": 6,
   "reporters": ["console"]
 }
