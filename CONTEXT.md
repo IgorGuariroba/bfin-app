@@ -86,6 +86,14 @@ _Avoid_: notificação, aviso, alerta genérico.
 Achado de observabilidade que **merece tratamento mas não é urgente** — degradação, anomalia ou oportunidade de melhoria. Materializado como **GitHub Issue** (trabalho rastreável, pego pelo dev/agente, fechado por PR), nunca como notificação que se lê e esquece.
 _Avoid_: alerta (reservado p/ [[Alerta (Página)]]), warning, aviso.
 
+**Smoke pós-deploy**:
+Verificação automática que roda contra produção logo após cada deploy (merge em master → Dokploy), provando que a espinha dorsal funciona: health, login de usuário sintético, leitura financeira autenticada e o guard do webhook de billing (401 para POST não assinado). Falha vira [[Alerta (Página)]] no Discord **e** [[Detecção (Issue)]]. Definido na ADR-0018.
+_Avoid_: teste e2e (não roda em CI nem em staging — roda em prod), health check (o health é só o 1º passo).
+
+**CI reverso**:
+Disparo do CI do bfin-app pelo bfin-backend (`repository_dispatch`) a cada merge no backend, para que quebra de contrato entre os repos apareça no momento e no lado que a causou — e não dias depois, no próximo PR do frontend. Definido na ADR-0018.
+_Avoid_: CI cruzado bidirecional (só existe um sentido: backend dispara o CI do frontend; o CI do frontend já consome backend@master).
+
 ### Aquisição (marketing pago)
 
 **Landing de campanha (LP)**:
