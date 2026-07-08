@@ -31,11 +31,10 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     if (error instanceof BackendError) {
       return NextResponse.json({ error: error.message }, { status: error.status });
     }
-    console.error("PUT /api/tags/[id] error:", error);
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: error.issues[0].message }, { status: 400 });
     }
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    throw error;
   }
 }
 
@@ -57,7 +56,6 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
     if (error instanceof BackendError) {
       return NextResponse.json({ error: error.message }, { status: error.status });
     }
-    console.error("DELETE /api/tags/[id] error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    throw error;
   }
 }

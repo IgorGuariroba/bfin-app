@@ -26,8 +26,7 @@ export async function GET() {
     if (error instanceof BackendError) {
       return NextResponse.json({ error: error.message }, { status: error.status });
     }
-    console.error("GET /api/tags error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    throw error;
   }
 }
 
@@ -50,10 +49,9 @@ export async function POST(req: Request) {
     if (error instanceof BackendError) {
       return NextResponse.json({ error: error.message }, { status: error.status });
     }
-    console.error("POST /api/tags error:", error);
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: error.issues[0].message }, { status: 400 });
     }
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    throw error;
   }
 }

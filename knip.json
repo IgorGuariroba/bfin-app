@@ -1,6 +1,6 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
-  "ignore": ["src/components/ui/**", "public/sw.js", "src/lib/faro.ts", "src/db/relations.ts"],
+  "ignore": ["src/components/ui/**", "public/sw.js", "src/lib/faro.ts"],
   "ignoreDependencies": ["pino-pretty", "pino-opentelemetry-transport"],
   "ignoreBinaries": ["pkill"]
 }

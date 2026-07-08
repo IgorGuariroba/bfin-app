@@ -31,7 +31,6 @@ export async function POST(request: NextRequest) {
     if (error instanceof BackendError) {
       return Response.json({ error: error.message }, { status: error.status });
     }
-    const message = error instanceof Error ? error.message : "Erro";
-    return Response.json({ error: message }, { status: 400 });
+    throw error;
   }
 }

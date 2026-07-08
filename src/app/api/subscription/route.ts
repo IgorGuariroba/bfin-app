@@ -1,6 +1,7 @@
 import "server-only";
 import { auth } from "@/lib/auth";
-import { billingClient, BillingValidationError } from "@/lib/billing-client";
+import { billingClient } from "@/lib/billing-client";
+import { BackendError } from "@/lib/backend-client";
 
 export async function GET() {
   const session = await auth();
@@ -16,8 +17,8 @@ export async function DELETE() {
   try {
     await billingClient.cancelSubscription(session.user.id);
   } catch (err) {
-    if (err instanceof BillingValidationError) {
-      return Response.json({ error: err.message }, { status: 400 });
+    if (err instanceof BackendError) {
+      return Response.json({ error: err.message }, { status: err.status });
     }
     throw err;
   }

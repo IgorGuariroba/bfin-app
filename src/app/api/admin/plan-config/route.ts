@@ -1,6 +1,7 @@
 import "server-only";
 import { requireAdminOr403 } from "@/lib/admin-route";
-import { billingClient, BillingValidationError } from "@/lib/billing-client";
+import { billingClient } from "@/lib/billing-client";
+import { BackendError } from "@/lib/backend-client";
 
 export async function GET() {
   const forbidden = await requireAdminOr403();
@@ -19,8 +20,8 @@ export async function POST(request: Request) {
     const config = await billingClient.updatePlanConfig({ monthlyAmount, annualAmount });
     return Response.json(config);
   } catch (err) {
-    if (err instanceof BillingValidationError) {
-      return Response.json({ error: err.message }, { status: 400 });
+    if (err instanceof BackendError) {
+      return Response.json({ error: err.message }, { status: err.status });
     }
     throw err;
   }
