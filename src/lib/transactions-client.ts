@@ -92,10 +92,4 @@ export const transactionsClient = {
       method: "DELETE",
       body: JSON.stringify({ userId }),
     }),
-
-  suggest: (userId: string, description: string, type?: string) =>
-    callBackend<{ type: string; tagId: string | null }>("/transactions/suggest", {
-      method: "POST",
-      body: JSON.stringify({ userId, description, type }),
-    }),
 };
