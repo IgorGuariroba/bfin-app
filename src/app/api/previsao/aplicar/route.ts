@@ -10,10 +10,10 @@ export async function POST(request: NextRequest) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const userId = await getEffectiveUserId(session.user.id);
-  const { amount } = await request.json();
-
   try {
+    const userId = await getEffectiveUserId(session.user.id);
+    const { amount } = await request.json();
+
     const { count } = await previsaoClient.aplicar(userId, amount);
 
     return Response.json({ count });

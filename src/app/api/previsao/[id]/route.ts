@@ -11,10 +11,10 @@ export async function PUT(
   const session = await auth();
   if (!session?.user?.id) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
-  const userId = await getEffectiveUserId(session.user.id);
-  const { id } = await params;
-
   try {
+    const userId = await getEffectiveUserId(session.user.id);
+    const { id } = await params;
+
     const { name, amount } = await request.json();
 
     const updated = await previsaoClient.update(userId, id, { name, amount });
@@ -32,10 +32,10 @@ export async function DELETE(
   const session = await auth();
   if (!session?.user?.id) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
-  const userId = await getEffectiveUserId(session.user.id);
-  const { id } = await params;
-
   try {
+    const userId = await getEffectiveUserId(session.user.id);
+    const { id } = await params;
+
     const result = await previsaoClient.remove(userId, id);
 
     return Response.json(result);
