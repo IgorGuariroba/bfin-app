@@ -1,6 +1,6 @@
 import { auth } from "@/lib/auth";
 import { apikeysClient } from "@/lib/apikeys-client";
-import { BackendError } from "@/lib/backend-client";
+import { BackendError, backendErrorResponseOrRethrow } from "@/lib/backend-client";
 
 export async function GET() {
   const session = await auth();
@@ -8,9 +8,12 @@ export async function GET() {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const keys = await apikeysClient.list(session.user.id);
-
-  return Response.json(keys);
+  try {
+    const keys = await apikeysClient.list(session.user.id);
+    return Response.json(keys);
+  } catch (error) {
+    return backendErrorResponseOrRethrow(error);
+  }
 }
 
 export async function POST() {
@@ -27,6 +30,6 @@ export async function POST() {
     if (error instanceof BackendError && error.status === 403) {
       return Response.json({ error: "plan_required", upgrade: true }, { status: 403 });
     }
-    throw error;
+    return backendErrorResponseOrRethrow(error);
   }
 }

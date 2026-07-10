@@ -1,7 +1,7 @@
 import { auth } from "@/lib/auth";
 import { getEffectiveUserId } from "@/lib/effective-user";
 import { previsaoClient } from "@/lib/previsao-client";
-import { BackendError } from "@/lib/backend-client";
+import { backendErrorResponseOrRethrow } from "@/lib/backend-client";
 import type { NextRequest } from "next/server";
 
 export async function POST(request: NextRequest) {
@@ -18,9 +18,6 @@ export async function POST(request: NextRequest) {
 
     return Response.json({ count });
   } catch (error) {
-    if (error instanceof BackendError) {
-      return Response.json({ error: error.message }, { status: error.status });
-    }
-    throw error;
+    return backendErrorResponseOrRethrow(error);
   }
 }

@@ -2,7 +2,7 @@ import { auth } from "@/lib/auth";
 import { cookies } from "next/headers";
 import type { NextRequest } from "next/server";
 import { invitesClient } from "@/lib/invites-client";
-import { BackendError } from "@/lib/backend-client";
+import { BackendError, backendErrorResponseOrRethrow } from "@/lib/backend-client";
 
 export async function GET() {
   const session = await auth();
@@ -12,9 +12,12 @@ export async function GET() {
   const activeOwnerId = cookieStore.get("active-account")?.value ?? null;
   const preferredOwnerId = cookieStore.get("preferred-account")?.value ?? null;
 
-  const { sent, received } = await invitesClient.list(session.user.id);
-
-  return Response.json({ sent, received, activeOwnerId, preferredOwnerId });
+  try {
+    const { sent, received } = await invitesClient.list(session.user.id);
+    return Response.json({ sent, received, activeOwnerId, preferredOwnerId });
+  } catch (error) {
+    return backendErrorResponseOrRethrow(error);
+  }
 }
 
 export async function POST(request: NextRequest) {
@@ -41,9 +44,6 @@ export async function POST(request: NextRequest) {
         { status: 403 }
       );
     }
-    if (error instanceof BackendError && error.status === 400) {
-      return Response.json({ error: error.message }, { status: 400 });
-    }
-    throw error;
+    return backendErrorResponseOrRethrow(error);
   }
 }

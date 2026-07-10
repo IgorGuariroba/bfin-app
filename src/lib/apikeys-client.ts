@@ -18,20 +18,6 @@ export interface IssuedApiKey {
   plain: string;
 }
 
-export interface AgentPrincipal {
-  userId: string;
-  apiKeyId: string;
-}
-
-type AgentAction = "create" | "update" | "delete";
-
-export interface AgentWrite {
-  apiKeyId: string;
-  userId: string;
-  action: AgentAction;
-  entityId: string;
-}
-
 export const apikeysClient = {
   list: (userId: string) =>
     callBackend<ApiKeySummary[]>(`/apikeys?userId=${encodeURIComponent(userId)}`),
@@ -43,17 +29,5 @@ export const apikeysClient = {
     callBackend<{ success: true }>(`/apikeys/${id}`, {
       method: "DELETE",
       body: JSON.stringify({ userId }),
-    }),
-
-  resolvePrincipal: (token: string) =>
-    callBackend<AgentPrincipal | null>("/apikeys/resolve-principal", {
-      method: "POST",
-      body: JSON.stringify({ token }),
-    }),
-
-  recordAgentWrite: (write: AgentWrite) =>
-    callBackend<void>("/apikeys/record-write", {
-      method: "POST",
-      body: JSON.stringify(write),
     }),
 };

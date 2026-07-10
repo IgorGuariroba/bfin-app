@@ -1,21 +1,6 @@
 import "server-only";
 import { callBackend } from "./backend-client";
 
-export interface MonthSummary {
-  month: string;
-  entradas: number;
-  saidas: number;
-  cartao: number;
-  diarios: number;
-  economia: number;
-  custoVida: number;
-  sobrouNoMes: number;
-  saldoAnterior: number;
-  saldoAtual: number;
-  diarioMedio: number;
-  diarioPrev: number;
-}
-
 interface SaldoDia {
   day: number;
   date: string;
@@ -69,9 +54,6 @@ export const insightsClient = {
 
   getSaldos: (userId: string, month: string) =>
     callBackend<SaldosResult>(`/insights/saldos?${query(userId, month)}`),
-
-  getMonthSummary: (userId: string, month: string) =>
-    callBackend<MonthSummary>(`/insights/month-summary?${query(userId, month)}`),
 
   getSugestoes: (userId: string, month: string) =>
     callBackend<Sugestao[]>(`/insights/sugestoes?${query(userId, month)}`),
