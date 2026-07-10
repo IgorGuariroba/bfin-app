@@ -39,7 +39,7 @@ jobs:
       - name: Espera o deploy do Dokploy servir o SHA novo
         run: |
           echo "Aguardando $BASE_URL servir sha=$GITHUB_SHA..."
-          deadline=$(( $(date +%s) + 900 ))
+          deadline=$(( $(date +%s) + 1200 ))
           while true; do
             sha=$(curl -sf -m 10 "$BASE_URL/api/health" | jq -r '.sha // "sem-campo-sha"' || echo "health-inacessivel")
             if [ "$sha" = "$GITHUB_SHA" ]; then
@@ -47,7 +47,7 @@ jobs:
               break
             fi
             if [ "$(date +%s)" -gt "$deadline" ]; then
-              echo "::error::Timeout (15min): produção ainda serve sha=$sha (esperado $GITHUB_SHA). Deploy do Dokploy não concluiu, falhou, ou o health não expõe o SHA." | tee smoke.log
+              echo "::error::Timeout (20min): produção ainda serve sha=$sha (esperado $GITHUB_SHA). Deploy do Dokploy não concluiu, falhou, ou o health não expõe o SHA." | tee smoke.log
               exit 1
             fi
             echo "produção serve sha=$sha — aguardando 15s..."
