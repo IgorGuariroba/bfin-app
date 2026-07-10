@@ -9,37 +9,37 @@ export async function GET(request: NextRequest) {
   const session = await auth();
   if (!session?.user?.id) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
-  const userId = await getEffectiveUserId(session.user.id);
-
-  const { searchParams } = request.nextUrl;
-  const month = searchParams.get("month"); // YYYY-MM
-  let from = searchParams.get("from") ?? undefined; // YYYY-MM-DD
-
-  const upgradeResponse = () =>
-    Response.json(
-      { error: "Histórico além de 3 meses disponível apenas no plano Pro", upgrade: true },
-      { status: 403 }
-    );
-
-  // Gate de histórico do free: vale para qualquer forma de filtro temporal —
-  // month, from/to ou ausência de filtro (senão from/to furaria o paywall).
-  // Avalia o plano da conta efetiva (dono, em delegação) — ADR-0011.
-  const plan = await getUserPlan(userId);
-  if (plan === "free") {
-    const oldestMonth = freeOldestMonth();
-    if (month) {
-      if (!isMonthAllowed(month, plan)) return upgradeResponse();
-    } else if (from && /^\d{4}-\d{2}/.test(from) && from.slice(0, 7) < oldestMonth) {
-      // from malformado passa direto: listTransactions valida e responde 400.
-      return upgradeResponse();
-    } else if (!from) {
-      // Sem limite inferior (só `to` ou nenhum filtro): clampa à janela do
-      // free em vez de 403 — não quebra chamadas sem filtro da UI/agente.
-      from = `${oldestMonth}-01`;
-    }
-  }
-
   try {
+    const userId = await getEffectiveUserId(session.user.id);
+
+    const { searchParams } = request.nextUrl;
+    const month = searchParams.get("month"); // YYYY-MM
+    let from = searchParams.get("from") ?? undefined; // YYYY-MM-DD
+
+    const upgradeResponse = () =>
+      Response.json(
+        { error: "Histórico além de 3 meses disponível apenas no plano Pro", upgrade: true },
+        { status: 403 }
+      );
+
+    // Gate de histórico do free: vale para qualquer forma de filtro temporal —
+    // month, from/to ou ausência de filtro (senão from/to furaria o paywall).
+    // Avalia o plano da conta efetiva (dono, em delegação) — ADR-0011.
+    const plan = await getUserPlan(userId);
+    if (plan === "free") {
+      const oldestMonth = freeOldestMonth();
+      if (month) {
+        if (!isMonthAllowed(month, plan)) return upgradeResponse();
+      } else if (from && /^\d{4}-\d{2}/.test(from) && from.slice(0, 7) < oldestMonth) {
+        // from malformado passa direto: listTransactions valida e responde 400.
+        return upgradeResponse();
+      } else if (!from) {
+        // Sem limite inferior (só `to` ou nenhum filtro): clampa à janela do
+        // free em vez de 403 — não quebra chamadas sem filtro da UI/agente.
+        from = `${oldestMonth}-01`;
+      }
+    }
+
     const transactions = await transactionsClient.list(userId, {
       month: month ?? undefined,
       type: searchParams.get("type") ?? undefined,
@@ -57,12 +57,12 @@ export async function POST(request: NextRequest) {
   const session = await auth();
   if (!session?.user?.id) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
-  const userId = await getEffectiveUserId(session.user.id);
-
-  const body = await request.json();
-  const { type, description, amount, date, repeat, repeatEnd, repeatCount, tagIds } = body;
-
   try {
+    const userId = await getEffectiveUserId(session.user.id);
+
+    const body = await request.json();
+    const { type, description, amount, date, repeat, repeatEnd, repeatCount, tagIds } = body;
+
     const result = await transactionsClient.create({
       userId,
       type,

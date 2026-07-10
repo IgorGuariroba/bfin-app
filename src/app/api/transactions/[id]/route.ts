@@ -11,13 +11,13 @@ export async function PUT(
   const session = await auth();
   if (!session?.user?.id) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
-  const userId = await getEffectiveUserId(session.user.id);
-
-  const { id } = await params;
-  const body = await request.json();
-  const { type, description, amount, date, tagIds } = body;
-
   try {
+    const userId = await getEffectiveUserId(session.user.id);
+
+    const { id } = await params;
+    const body = await request.json();
+    const { type, description, amount, date, tagIds } = body;
+
     const updated = await transactionsClient.update(userId, id, {
       type,
       description,
@@ -38,10 +38,10 @@ export async function DELETE(
   const session = await auth();
   if (!session?.user?.id) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
-  const userId = await getEffectiveUserId(session.user.id);
-
-  const { id } = await params;
   try {
+    const userId = await getEffectiveUserId(session.user.id);
+
+    const { id } = await params;
     await transactionsClient.remove(userId, id);
   } catch (error) {
     return backendErrorResponseOrRethrow(error);

@@ -13,14 +13,6 @@ export interface SaldosResult {
   prevByType: Record<string, number>;
 }
 
-type SugestaoTipo = "saldo_negativo" | "diario_acima" | "economia_baixa" | "custo_subiu";
-
-export interface Sugestao {
-  tipo: SugestaoTipo;
-  severidade: "alerta" | "info";
-  texto: string;
-}
-
 export interface TotaisResult {
   entradas: number;
   saidas: number;
@@ -54,7 +46,4 @@ export const insightsClient = {
 
   getSaldos: (userId: string, month: string) =>
     callBackend<SaldosResult>(`/insights/saldos?${query(userId, month)}`),
-
-  getSugestoes: (userId: string, month: string) =>
-    callBackend<Sugestao[]>(`/insights/sugestoes?${query(userId, month)}`),
 };

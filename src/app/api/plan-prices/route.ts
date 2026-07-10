@@ -1,5 +1,10 @@
 import { billingClient } from "@/lib/billing-client";
+import { backendErrorResponseOrRethrow } from "@/lib/backend-client";
 
 export async function GET() {
-  return Response.json(await billingClient.getPlanPrices());
+  try {
+    return Response.json(await billingClient.getPlanPrices());
+  } catch (error) {
+    return backendErrorResponseOrRethrow(error);
+  }
 }

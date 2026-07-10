@@ -8,9 +8,9 @@ export async function GET() {
   const session = await auth();
   if (!session?.user?.id) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
-  const userId = await getEffectiveUserId(session.user.id);
-
   try {
+    const userId = await getEffectiveUserId(session.user.id);
+
     const previsoes = await previsaoClient.list(userId);
     return Response.json(previsoes);
   } catch (error) {
@@ -22,9 +22,9 @@ export async function POST(request: NextRequest) {
   const session = await auth();
   if (!session?.user?.id) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
-  const userId = await getEffectiveUserId(session.user.id);
-
   try {
+    const userId = await getEffectiveUserId(session.user.id);
+
     const { name, amount } = await request.json();
 
     const previsao = await previsaoClient.create({ userId, name, amount });
