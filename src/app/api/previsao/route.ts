@@ -1,7 +1,7 @@
 import { auth } from "@/lib/auth";
 import { getEffectiveUserId } from "@/lib/effective-user";
 import { previsaoClient } from "@/lib/previsao-client";
-import { BackendError } from "@/lib/backend-client";
+import { backendErrorResponse } from "@/lib/backend-client";
 import type { NextRequest } from "next/server";
 
 export async function GET() {
@@ -10,9 +10,12 @@ export async function GET() {
 
   const userId = await getEffectiveUserId(session.user.id);
 
-  const previsoes = await previsaoClient.list(userId);
-
-  return Response.json(previsoes);
+  try {
+    const previsoes = await previsaoClient.list(userId);
+    return Response.json(previsoes);
+  } catch (error) {
+    return backendErrorResponse(error);
+  }
 }
 
 export async function POST(request: NextRequest) {
@@ -28,9 +31,6 @@ export async function POST(request: NextRequest) {
 
     return Response.json(previsao, { status: 201 });
   } catch (error) {
-    if (error instanceof BackendError) {
-      return Response.json({ error: error.message }, { status: error.status });
-    }
-    throw error;
+    return backendErrorResponse(error);
   }
 }

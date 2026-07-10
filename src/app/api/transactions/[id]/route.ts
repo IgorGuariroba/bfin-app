@@ -2,7 +2,7 @@ import { auth } from "@/lib/auth";
 import { getEffectiveUserId } from "@/lib/effective-user";
 import type { NextRequest } from "next/server";
 import { transactionsClient } from "@/lib/transactions-client";
-import { BackendError } from "@/lib/backend-client";
+import { backendErrorResponse } from "@/lib/backend-client";
 
 export async function PUT(
   request: NextRequest,
@@ -27,10 +27,7 @@ export async function PUT(
     });
     return Response.json(updated);
   } catch (error) {
-    if (error instanceof BackendError) {
-      return Response.json({ error: error.message }, { status: error.status });
-    }
-    throw error;
+    return backendErrorResponse(error);
   }
 }
 
@@ -47,10 +44,7 @@ export async function DELETE(
   try {
     await transactionsClient.remove(userId, id);
   } catch (error) {
-    if (error instanceof BackendError) {
-      return Response.json({ error: error.message }, { status: error.status });
-    }
-    throw error;
+    return backendErrorResponse(error);
   }
   return new Response(null, { status: 204 });
 }

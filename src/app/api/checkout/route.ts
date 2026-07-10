@@ -1,7 +1,7 @@
 import "server-only";
 import { auth } from "@/lib/auth";
 import { billingClient } from "@/lib/billing-client";
-import { BackendError } from "@/lib/backend-client";
+import { backendErrorResponse } from "@/lib/backend-client";
 import type { NextRequest } from "next/server";
 
 export async function POST(request: NextRequest) {
@@ -30,9 +30,6 @@ export async function POST(request: NextRequest) {
     });
     return Response.json({ init_point: initPoint });
   } catch (err) {
-    if (err instanceof BackendError) {
-      return Response.json({ error: err.message }, { status: err.status });
-    }
-    throw err;
+    return backendErrorResponse(err);
   }
 }

@@ -1,6 +1,6 @@
 import { auth } from "@/lib/auth";
 import { apikeysClient } from "@/lib/apikeys-client";
-import { BackendError } from "@/lib/backend-client";
+import { BackendError, backendErrorResponse } from "@/lib/backend-client";
 
 export async function DELETE(
   _req: Request,
@@ -19,7 +19,7 @@ export async function DELETE(
     if (error instanceof BackendError && error.status === 404) {
       return Response.json({ error: "Not found" }, { status: 404 });
     }
-    throw error;
+    return backendErrorResponse(error);
   }
 
   return Response.json({ success: true });

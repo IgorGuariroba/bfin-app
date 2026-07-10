@@ -12,6 +12,15 @@ export class BackendError extends Error {
   }
 }
 
+// Handler comum pro catch dos route handlers: BackendError já carrega o
+// status/mensagem que o backend quis devolver; qualquer outro erro sobe.
+export function backendErrorResponse(error: unknown): Response {
+  if (error instanceof BackendError) {
+    return Response.json({ error: error.message }, { status: error.status });
+  }
+  throw error;
+}
+
 export async function callBackend<T>(path: string, init?: RequestInit): Promise<T> {
   const baseUrl = process.env.BACKEND_URL;
   const secret = process.env.INTERNAL_API_SECRET;

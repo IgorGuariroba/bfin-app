@@ -3,7 +3,7 @@ import { auth } from "@/lib/auth";
 import { getEffectiveUserId } from "@/lib/effective-user";
 import { z } from "zod";
 import { tagsClient } from "@/lib/tags-client";
-import { BackendError } from "@/lib/backend-client";
+import { backendErrorResponse } from "@/lib/backend-client";
 
 const tagSchema = z.object({
   name: z.string().min(1, "Nome é obrigatório").max(50, "Nome muito longo"),
@@ -23,10 +23,7 @@ export async function GET() {
 
     return NextResponse.json(tags);
   } catch (error) {
-    if (error instanceof BackendError) {
-      return NextResponse.json({ error: error.message }, { status: error.status });
-    }
-    throw error;
+    return backendErrorResponse(error);
   }
 }
 
@@ -46,12 +43,9 @@ export async function POST(req: Request) {
 
     return NextResponse.json(tag, { status: 201 });
   } catch (error) {
-    if (error instanceof BackendError) {
-      return NextResponse.json({ error: error.message }, { status: error.status });
-    }
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: error.issues[0].message }, { status: 400 });
     }
-    throw error;
+    return backendErrorResponse(error);
   }
 }
