@@ -1,7 +1,7 @@
 import { auth } from "@/lib/auth";
 import { getEffectiveUserId } from "@/lib/effective-user";
 import { previsaoClient } from "@/lib/previsao-client";
-import { backendErrorResponse } from "@/lib/backend-client";
+import { backendErrorResponseOrRethrow } from "@/lib/backend-client";
 import type { NextRequest } from "next/server";
 
 export async function PUT(
@@ -21,7 +21,7 @@ export async function PUT(
 
     return Response.json(updated);
   } catch (error) {
-    return backendErrorResponse(error);
+    return backendErrorResponseOrRethrow(error);
   }
 }
 
@@ -40,6 +40,6 @@ export async function DELETE(
 
     return Response.json(result);
   } catch (error) {
-    return backendErrorResponse(error);
+    return backendErrorResponseOrRethrow(error);
   }
 }

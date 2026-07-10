@@ -2,7 +2,7 @@ import { auth } from "@/lib/auth";
 import { cookies } from "next/headers";
 import type { NextRequest } from "next/server";
 import { invitesClient } from "@/lib/invites-client";
-import { BackendError, backendErrorResponse } from "@/lib/backend-client";
+import { BackendError, backendErrorResponseOrRethrow } from "@/lib/backend-client";
 
 export async function GET() {
   const session = await auth();
@@ -16,7 +16,7 @@ export async function GET() {
     const { sent, received } = await invitesClient.list(session.user.id);
     return Response.json({ sent, received, activeOwnerId, preferredOwnerId });
   } catch (error) {
-    return backendErrorResponse(error);
+    return backendErrorResponseOrRethrow(error);
   }
 }
 
@@ -44,6 +44,6 @@ export async function POST(request: NextRequest) {
         { status: 403 }
       );
     }
-    return backendErrorResponse(error);
+    return backendErrorResponseOrRethrow(error);
   }
 }

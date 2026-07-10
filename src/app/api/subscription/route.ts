@@ -1,7 +1,7 @@
 import "server-only";
 import { auth } from "@/lib/auth";
 import { billingClient } from "@/lib/billing-client";
-import { backendErrorResponse } from "@/lib/backend-client";
+import { backendErrorResponseOrRethrow } from "@/lib/backend-client";
 
 export async function GET() {
   const session = await auth();
@@ -10,7 +10,7 @@ export async function GET() {
   try {
     return Response.json(await billingClient.getSubscription(session.user.id));
   } catch (err) {
-    return backendErrorResponse(err);
+    return backendErrorResponseOrRethrow(err);
   }
 }
 
@@ -21,7 +21,7 @@ export async function DELETE() {
   try {
     await billingClient.cancelSubscription(session.user.id);
   } catch (err) {
-    return backendErrorResponse(err);
+    return backendErrorResponseOrRethrow(err);
   }
 
   return Response.json({ ok: true });

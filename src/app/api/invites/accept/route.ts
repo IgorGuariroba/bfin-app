@@ -1,7 +1,7 @@
 import { auth } from "@/lib/auth";
 import type { NextRequest } from "next/server";
 import { invitesClient } from "@/lib/invites-client";
-import { backendErrorResponse } from "@/lib/backend-client";
+import { backendErrorResponseOrRethrow } from "@/lib/backend-client";
 
 export async function POST(request: NextRequest) {
   const session = await auth();
@@ -18,6 +18,6 @@ export async function POST(request: NextRequest) {
 
     return Response.json({ success: true, invite, owner });
   } catch (error) {
-    return backendErrorResponse(error);
+    return backendErrorResponseOrRethrow(error);
   }
 }

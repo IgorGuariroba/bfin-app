@@ -1,7 +1,7 @@
 import "server-only";
 import { auth } from "@/lib/auth";
 import { billingClient } from "@/lib/billing-client";
-import { backendErrorResponse } from "@/lib/backend-client";
+import { backendErrorResponseOrRethrow } from "@/lib/backend-client";
 import type { NextRequest } from "next/server";
 
 export async function POST(request: NextRequest) {
@@ -30,6 +30,6 @@ export async function POST(request: NextRequest) {
     });
     return Response.json({ init_point: initPoint });
   } catch (err) {
-    return backendErrorResponse(err);
+    return backendErrorResponseOrRethrow(err);
   }
 }

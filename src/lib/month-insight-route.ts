@@ -2,7 +2,7 @@ import "server-only";
 import { auth } from "@/lib/auth";
 import { getEffectiveUserId } from "@/lib/effective-user";
 import { getUserPlan, isFutureMonthAllowed } from "@/lib/plan";
-import { BackendError } from "@/lib/backend-client";
+import { backendErrorResponseOrRethrow } from "@/lib/backend-client";
 import type { NextRequest } from "next/server";
 
 export function createMonthInsightRoute<T>(fetchInsight: (userId: string, month: string) => Promise<T>) {
@@ -29,10 +29,7 @@ export function createMonthInsightRoute<T>(fetchInsight: (userId: string, month:
     try {
       return Response.json(await fetchInsight(userId, month));
     } catch (error) {
-      if (error instanceof BackendError) {
-        return Response.json({ error: error.message }, { status: error.status });
-      }
-      throw error;
+      return backendErrorResponseOrRethrow(error);
     }
   };
 }

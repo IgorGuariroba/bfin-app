@@ -3,7 +3,7 @@ import { getEffectiveUserId } from "@/lib/effective-user";
 import type { NextRequest } from "next/server";
 import { freeOldestMonth, getUserPlan, isMonthAllowed } from "@/lib/plan";
 import { transactionsClient } from "@/lib/transactions-client";
-import { backendErrorResponse } from "@/lib/backend-client";
+import { backendErrorResponseOrRethrow } from "@/lib/backend-client";
 
 export async function GET(request: NextRequest) {
   const session = await auth();
@@ -49,7 +49,7 @@ export async function GET(request: NextRequest) {
     });
     return Response.json(transactions);
   } catch (error) {
-    return backendErrorResponse(error);
+    return backendErrorResponseOrRethrow(error);
   }
 }
 
@@ -77,6 +77,6 @@ export async function POST(request: NextRequest) {
     });
     return Response.json(result.transaction, { status: 201 });
   } catch (error) {
-    return backendErrorResponse(error);
+    return backendErrorResponseOrRethrow(error);
   }
 }

@@ -14,7 +14,7 @@ export class BackendError extends Error {
 
 // Handler comum pro catch dos route handlers: BackendError já carrega o
 // status/mensagem que o backend quis devolver; qualquer outro erro sobe.
-export function backendErrorResponse(error: unknown): Response {
+export function backendErrorResponseOrRethrow(error: unknown): Response {
   if (error instanceof BackendError) {
     return Response.json({ error: error.message }, { status: error.status });
   }
