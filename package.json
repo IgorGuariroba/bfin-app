@@ -54,7 +54,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
-    "@grafana/faro-webpack-plugin": "^0.12.0",
+    "@grafana/faro-webpack-plugin": "^0.12.1",
     "@tailwindcss/postcss": "^4",
     "@tailwindcss/typography": "^0.5.19",
     "@types/node": "^26",
