@@ -29,6 +29,18 @@ RUN HEAD=$(cat .git/HEAD 2>/dev/null || true); \
     esac; \
     echo "${SHA:-unknown}" > BUILD_SHA && cat BUILD_SHA
 
+# scripts/db-migrate.mjs roda fora do server.js do Next (fica de fora do output
+# file tracing do standalone) — precisa das próprias deps, mesmo padrão que já
+# resolvia isso para o `prisma` CLI antes do ADR-0014. Instaladas num estágio
+# isolado: rodar `npm install` sobre o node_modules parcial do output standalone
+# (sem lockfile) quebra o arborist do npm em `#loadPeerSet` — "Cannot read
+# properties of null (reading 'edgesOut')" (npm/cli#9787).
+FROM node:22-alpine AS migrate-deps
+WORKDIR /deps
+RUN npm init -y >/dev/null 2>&1 && \
+    npm install --no-audit --no-fund --omit=dev \
+      drizzle-orm@0.45.2 pg@8.22.0 dotenv@17.4.2
+
 FROM node:22-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
@@ -45,10 +57,10 @@ COPY --from=builder --chown=nextjs:nodejs /app/drizzle ./drizzle
 COPY --from=builder --chown=nextjs:nodejs /app/BUILD_SHA ./BUILD_SHA
 COPY --chown=nextjs:nodejs docker-entrypoint.sh ./docker-entrypoint.sh
 
-# scripts/db-migrate.mjs roda fora do server.js do Next (fica de fora do output
-# file tracing do standalone) — precisa das próprias deps, mesmo padrão que já
-# resolvia isso para o `prisma` CLI antes do ADR-0014.
-RUN npm install drizzle-orm@0.45.2 pg@8.22.0 dotenv@17.4.2 && chmod +x ./docker-entrypoint.sh
+# Merge das deps de migração (ver estágio migrate-deps) sobre o node_modules do
+# standalone — só adiciona drizzle-orm/pg/dotenv e suas transitivas.
+COPY --from=migrate-deps --chown=nextjs:nodejs /deps/node_modules ./node_modules
+RUN chmod +x ./docker-entrypoint.sh
 
 USER nextjs
 EXPOSE 3000
