@@ -29,17 +29,26 @@ RUN HEAD=$(cat .git/HEAD 2>/dev/null || true); \
     esac; \
     echo "${SHA:-unknown}" > BUILD_SHA && cat BUILD_SHA
 
-# scripts/db-migrate.mjs roda fora do server.js do Next (fica de fora do output
-# file tracing do standalone) — precisa das próprias deps, mesmo padrão que já
-# resolvia isso para o `prisma` CLI antes do ADR-0014. Instaladas num estágio
-# isolado: rodar `npm install` sobre o node_modules parcial do output standalone
-# (sem lockfile) quebra o arborist do npm em `#loadPeerSet` — "Cannot read
-# properties of null (reading 'edgesOut')" (npm/cli#9787).
-FROM node:22-alpine AS migrate-deps
+# Deps que o file tracing do Next não enxerga e que o servidor precisa em runtime:
+#
+#  - scripts/db-migrate.mjs roda fora do server.js do Next (fica de fora do output
+#    file tracing do standalone) — precisa das próprias deps, mesmo padrão que já
+#    resolvia isso para o `prisma` CLI antes do ADR-0014.
+#  - `pino-opentelemetry-transport`: o pino resolve o transport por string num
+#    worker em runtime, então o tracing também não o inclui (nem às deps dele).
+#    Sem o pacote o app sobe e toda rota que importa o logger estoura com
+#    "unable to determine transport target".
+#
+# Instaladas num estágio isolado: rodar `npm install` sobre o node_modules parcial
+# do output standalone (sem lockfile) quebra o arborist do npm em `#loadPeerSet` —
+# "Cannot read properties of null (reading 'edgesOut')" (npm/cli#9787).
+# `--legacy-peer-deps` evita reinstalar o `pino` (peer) e sobrescrever o do standalone.
+FROM node:22-alpine AS runtime-deps
 WORKDIR /deps
 RUN npm init -y >/dev/null 2>&1 && \
-    npm install --no-audit --no-fund --omit=dev \
-      drizzle-orm@0.45.2 pg@8.22.0 dotenv@17.4.2
+    npm install --no-audit --no-fund --omit=dev --legacy-peer-deps \
+      drizzle-orm@0.45.2 pg@8.22.0 dotenv@17.4.2 \
+      pino-opentelemetry-transport@3.0.0
 
 FROM node:22-alpine AS runner
 WORKDIR /app
@@ -57,9 +66,9 @@ COPY --from=builder --chown=nextjs:nodejs /app/drizzle ./drizzle
 COPY --from=builder --chown=nextjs:nodejs /app/BUILD_SHA ./BUILD_SHA
 COPY --chown=nextjs:nodejs docker-entrypoint.sh ./docker-entrypoint.sh
 
-# Merge das deps de migração (ver estágio migrate-deps) sobre o node_modules do
-# standalone — só adiciona drizzle-orm/pg/dotenv e suas transitivas.
-COPY --from=migrate-deps --chown=nextjs:nodejs /deps/node_modules ./node_modules
+# Merge das deps de runtime (ver estágio runtime-deps) sobre o node_modules do
+# standalone — só adiciona os pacotes que o tracing deixou de fora e as transitivas.
+COPY --from=runtime-deps --chown=nextjs:nodejs /deps/node_modules ./node_modules
 RUN chmod +x ./docker-entrypoint.sh
 
 USER nextjs
