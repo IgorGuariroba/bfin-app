@@ -146,3 +146,15 @@ jobs:
           jq -n --arg content "🚨 **CI reverso FALHOU**: merge no bfin-backend (\`${BACKEND_SHA:-sha não informado}\`) quebrou a suíte do bfin-app contra bfin-backend@master. Log: $RUN_URL" \
             '{content: $content}' \
             | curl -sf -X POST "${{ secrets.DISCORD_WEBHOOK_URL }}" -H 'content-type: application/json' -d @-
+
+  # O artefato que o Dokploy builda e roda é a imagem Docker (dokploy-compose.yml),
+  # não o `next build` do job validate. Sem este job uma quebra que só aparece no
+  # Dockerfile (ex.: `npm install` sobre o output standalone) fica verde no CI e
+  # quebra só no deploy — foi o que aconteceu com o bfin-app entre set/out 2026.
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build da imagem de produção
+        run: docker build -t bfin-app:ci .
