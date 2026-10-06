@@ -7,7 +7,10 @@ import { authorizeCredentials, clientIp } from "@/lib/credentials-authorize";
 import { LOGIN_RATE_LIMIT } from "@/lib/rate-limit";
 import { logger } from "@/lib/logger";
 
-const PASSWORD = "senha-correta-123";
+// gitleaks:allow — fixture de teste (usuário descartável, email aleatório por
+// caso), não credencial. Sem a anotação a regra generic-api-key reincide e a
+// detecção [detection:security-secret-scan-*] reabre a cada varredura.
+const PASSWORD = "senha-correta-123"; // gitleaks:allow
 
 let createdUserIds: string[] = [];
 
