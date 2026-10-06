@@ -52,6 +52,35 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          # Push que não muda artefato não dispara deploy — e então produção nunca
+          # vai servir esse SHA. Sem esta porta, o smoke trava os 20 min e pagina
+          # falso. Já aconteceu em 08/07/2026 (aa857b6, só docs) e aconteceria com
+          # qualquer merge restrito a `.github/**` (inclusive o do próprio fix que
+          # introduziu esta checagem).
+          #
+          # Conservador de propósito: só os caminhos inequivocamente fora do
+          # artefato dispensam a espera. Qualquer caminho desconhecido mantém o
+          # comportamento antigo (esperar), para nunca pular a verificação de um
+          # deploy que de fato vai acontecer.
+          arquivos=$(curl -sS -m 20 \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${{ github.repository }}/commits/$GITHUB_SHA" \
+            | jq -r '.files[]?.filename // empty')
+          deploya=1
+          if [ -n "$arquivos" ]; then
+            deploya=0
+            while IFS= read -r f; do
+              case "$f" in
+                docs/*|.github/*|.pi/*|*.md) ;;
+                *) deploya=1; break ;;
+              esac
+            done <<< "$arquivos"
+          fi
+          if [ "$deploya" = "0" ]; then
+            echo "Push não toca artefato (só docs/CI/markdown): nenhum deploy a esperar. Indo direto ao smoke."
+            exit 0
+          fi
           echo "Aguardando $BASE_URL servir sha=$GITHUB_SHA (ou algo mais novo que o inclua)..."
           deadline=$(( $(date +%s) + 1200 ))
           while true; do
