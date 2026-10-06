@@ -11,11 +11,11 @@ on:
 
 jobs:
   semgrep:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     container:
       image: semgrep/semgrep
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Semgrep (SAST)
         run: semgrep ci
@@ -23,7 +23,7 @@ jobs:
           SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
 
   validate:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     services:
       # Banco para a suíte de testes (integração real, como no dev local).
       # Mesma major do docker-compose.yml.
@@ -41,9 +41,9 @@ jobs:
           --health-timeout 5s
           --health-retries 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
@@ -66,7 +66,7 @@ jobs:
       # verdade via HTTP (gateway), não mock — sobe o backend real contra o
       # mesmo Postgres de teste antes de rodar a suíte.
       - name: Checkout bfin-backend
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: IgorGuariroba/bfin-backend
           path: bfin-backend-ci
@@ -152,9 +152,9 @@ jobs:
   # Dockerfile (ex.: `npm install` sobre o output standalone) fica verde no CI e
   # quebra só no deploy — foi o que aconteceu com o bfin-app entre set/out 2026.
   docker:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Build da imagem de produção
         run: docker build -t bfin-app:ci .
