@@ -36,21 +36,56 @@ jobs:
       - name: Instala dependência do smoke
         run: npm install --no-save dotenv
 
+      # Merge em rajada quebra a igualdade de SHA: o Dokploy clona o repositório
+      # quando o deploy RODA, não quando o webhook chega. Com dois pushes em
+      # sequência, o deploy do primeiro já builda o segundo — então produção NUNCA
+      # vai servir o SHA do primeiro, e exigir igualdade transforma isso em alarme
+      # falso de produção quebrada. Foi o que aconteceu em 06/10/2026: 9 merges do
+      # Dependabot em 7 minutos, alarme no Discord e issue de detecção aberta com a
+      # produção saudável (`/api/health` respondendo ok e servindo o commit mais novo).
+      #
+      # O invariante que interessa não é "produção serve exatamente o meu commit", é
+      # "produção serve o meu commit ou algo mais novo que o inclui". Daí o compare
+      # da API em vez da igualdade: `ahead` e `identical` passam, `behind` e
+      # `diverged` continuam esperando (e estourando o prazo como falha real).
       - name: Espera o deploy do Dokploy servir o SHA novo
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          echo "Aguardando $BASE_URL servir sha=$GITHUB_SHA..."
+          echo "Aguardando $BASE_URL servir sha=$GITHUB_SHA (ou algo mais novo que o inclua)..."
           deadline=$(( $(date +%s) + 1200 ))
           while true; do
             sha=$(curl -sf -m 10 "$BASE_URL/api/health" | jq -r '.sha // "sem-campo-sha"' || echo "health-inacessivel")
             if [ "$sha" = "$GITHUB_SHA" ]; then
-              echo "Versão nova no ar (sha=$sha)."
+              echo "Versão exata no ar (sha=$sha)."
               break
             fi
+            if [ "$sha" != "sem-campo-sha" ] && [ "$sha" != "health-inacessivel" ]; then
+              # curl em vez de `gh api`: em 404 o `gh` imprime o corpo do erro no
+              # stdout e sujaria a variável. `.status // "indeterminado"` é determinístico.
+              relacao=$(curl -sS -m 15 \
+                -H "Authorization: Bearer $GH_TOKEN" \
+                -H "Accept: application/vnd.github+json" \
+                "https://api.github.com/repos/${{ github.repository }}/compare/$GITHUB_SHA...$sha" \
+                | jq -r '.status // "indeterminado"')
+              # O corpo de erro 404 da API também traz uma chave `status` (valor "404"),
+              # então o `//` acima não basta: só os quatro status do compare valem.
+              case "$relacao" in
+                ahead|behind|identical|diverged) ;;
+                *) relacao="indeterminado" ;;
+              esac
+              if [ "$relacao" = "ahead" ] || [ "$relacao" = "identical" ]; then
+                echo "Produção serve $sha, que já inclui $GITHUB_SHA (compare=$relacao) — deploy superado por um push mais novo. Seguindo para o smoke."
+                break
+              fi
+              echo "produção serve sha=$sha (compare=$relacao vs $GITHUB_SHA) — aguardando 15s..."
+            else
+              echo "produção serve sha=$sha — aguardando 15s..."
+            fi
             if [ "$(date +%s)" -gt "$deadline" ]; then
-              echo "::error::Timeout (20min): produção ainda serve sha=$sha (esperado $GITHUB_SHA). Deploy do Dokploy não concluiu, falhou, ou o health não expõe o SHA." | tee smoke.log
+              echo "::error::Timeout (20min): produção serve sha=$sha e ele não contém $GITHUB_SHA. Deploy do Dokploy não concluiu, falhou, ou o health não expõe o SHA." | tee smoke.log
               exit 1
             fi
-            echo "produção serve sha=$sha — aguardando 15s..."
             sleep 15
           done
 
