@@ -2,6 +2,8 @@
 FROM node:22-alpine AS deps
 WORKDIR /app
 COPY package*.json ./
+ARG NPM_VERSION=12.2.0
+RUN npm install -g npm@${NPM_VERSION}
 RUN npm ci
 
 FROM node:22-alpine AS builder
