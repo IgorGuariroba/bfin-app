@@ -1,4 +1,11 @@
 import "server-only";
+import { context, trace, propagation, metrics, SpanStatusCode } from "@opentelemetry/api";
+import { logger } from "./logger";
+
+const tracer = trace.getTracer("bfin.frontend");
+const meter = metrics.getMeter("bfin.frontend");
+const total = meter.createCounter("bfin.frontend.backend.total");
+const duration = meter.createHistogram("bfin.frontend.backend.duracao", { unit: "s" });
 
 // Gateway HTTP pro bfin-backend (ADR-0017): rotas financeiras da UI chamam o
 // backend internamente já com o userId resolvido, autenticadas por um
@@ -28,24 +35,39 @@ export async function callBackend<T>(path: string, init?: RequestInit): Promise<
     throw new Error("BACKEND_URL/INTERNAL_API_SECRET não configurados");
   }
 
-  const response = await fetch(`${baseUrl}${path}`, {
-    ...init,
-    headers: {
-      "content-type": "application/json",
-      "x-internal-secret": secret,
-      ...init?.headers,
-    },
+  return tracer.startActiveSpan("backend.call", async (span) => {
+    const started = performance.now();
+    let result = "success";
+    try {
+      const headers = new Headers({
+        "content-type": "application/json",
+        "x-internal-secret": secret,
+        ...init?.headers,
+      });
+      propagation.inject(context.active(), headers, {
+        set: (carrier, key, value) => carrier.set(key, value),
+      });
+      const response = await fetch(`${baseUrl}${path}`, { ...init, headers });
+      if (response.status === 204) return undefined as T;
+      const body = await response.json().catch(() => null);
+      if (!response.ok) {
+        const message =
+          body && typeof body === "object" && "error" in body ? String(body.error) : "Erro no backend";
+        throw new BackendError(response.status, message);
+      }
+      return body as T;
+    } catch (error) {
+      result = "error";
+      span.setStatus({ code: SpanStatusCode.ERROR });
+      span.setAttribute("error.type", error instanceof Error ? error.name : "UnknownError");
+      throw error;
+    } finally {
+      span.setAttribute("operation.result", result);
+      const labels = { result };
+      total.add(1, labels);
+      duration.record((performance.now() - started) / 1000, labels);
+      logger.info({ event: "frontend.backend.result", result });
+      span.end();
+    }
   });
-
-  if (response.status === 204) return undefined as T;
-
-  const body = await response.json().catch(() => null);
-
-  if (!response.ok) {
-    const message =
-      body && typeof body === "object" && "error" in body ? String(body.error) : "Erro no backend";
-    throw new BackendError(response.status, message);
-  }
-
-  return body as T;
 }
